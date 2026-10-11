@@ -87,3 +87,23 @@ input{width:100%;background:#10090b;color:#f3e2b6;border:1px solid #8a6a2e;paddi
 .rest-btn{position:absolute;right:12px;bottom:12px;z-index:6}
 .tiny{font-size:12px;opacity:.85}
 h1,h2{font-weight:normal}
+.stall{border-radius:2px;background:rgba(20,12,16,.92);color:#e0b45a;border-color:#e0b45a;transform:translate(-50%,-50%)}
+.trade-gold{color:#e0b45a;margin-bottom:8px;letter-spacing:.08em}
+.trade-gold b{font-weight:normal;color:#f3e2b6}
+.trade-layout{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.trade-col{min-height:0;overflow:auto}
+.trade-col h3{margin:0 0 6px;font-weight:normal;font-size:13px;color:#e0b45a;letter-spacing:.12em;text-transform:uppercase}
+.tile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;align-content:start}
+.tile.poor{opacity:.42}
+.tile.locked{opacity:.55;cursor:default}
+.tile.worn{border-color:#e0b45a}
+.trade-detail{flex:0 0 auto;margin-top:10px;border-top:1px solid #8a6a2e;padding-top:8px;min-height:64px}
+.trade-act{margin-top:6px}
+button:disabled{opacity:.45;cursor:not-allowed}
+#item-tip{position:fixed;z-index:50;max-width:280px;background:#0b0607;border:1px solid #c7a056;color:#f3e2b6;padding:8px 10px;font-size:12px;line-height:1.4;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.6)}
+#item-tip[hidden]{display:none}
+#item-tip b{color:#e0b45a;font-weight:normal;font-size:13px}
+#item-tip .tip-fx{color:#e0b45a}
+#item-tip .tip-cmp{margin-top:4px;border-top:1px solid #6a4a22;padding-top:4px}
+#item-tip .tip-up{color:#8fcf6f}
+#item-tip .tip-down{color:#e0705a}

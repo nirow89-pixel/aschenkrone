@@ -10,6 +10,8 @@ const AUTO_SLOT = "auto";              // eigener Autosave-Slot (Schlüssel "aut
 const HUBS = ["nebelpfad", "platz", "dorfzentrum", "alter_baum"];
 const TIME_COST = { travel: 1, talk: 0, wait: 1, rest: 3 }; // Tageszeit-Schritte
 const ON_NEW_DAY = [];                 // onNewDay-Hooks: fn(day)
+// Nur für Tests: ?debug=1 in der URL gibt bei Neuem Spiel und bei jedem Laden +500 Gold. Ohne Parameter keine Wirkung.
+const DEBUG = (() => { try { return new URLSearchParams(window.location.search).get("debug") === "1"; } catch { return false; } })();
 let activeSlot = AUTO_SLOT;            // Slot für laufendes Speichern: "auto" bis der Spieler ausdrücklich in 1–3 speichert oder daraus lädt
 const EQUIP_SLOTS = [
   { id: "kopf", name: "Kopf", x: 50, y: 10, ph: "items/slot_kopf.jpg" },
@@ -147,6 +149,10 @@ function load(n) {
   state = migrate(raw);
   // Ein laufender Kampf-Tick überlebt das Laden nicht: wieder vor die Wahl stellen.
   if (state.inCombat && state.combat) state.combat.engaged = false;
+  // Offene Gespräche/Handel sind reiner UI-Zustand und lassen sich nach dem Laden nicht fortsetzen.
+  state.dialogue = null; state.trading = false;
+  fixTwoHanded();
+  if (DEBUG) state.hero.gold += 500;
   activeSlot = n;
   return true;
 }
@@ -176,6 +182,7 @@ function newGame(payload) {
   };
   D.STAT_KEYS.forEach((k) => { state.statXp[k.id] = { xp: 0, need: k.id === "grad" ? 40 : 12 }; });
   state.v = SAVE_VERSION;
+  if (DEBUG) state.hero.gold += 500;
   activeSlot = AUTO_SLOT;  // Neues Spiel schreibt nur den Autosave, Slots 1–3 bleiben unberührt
   save(AUTO_SLOT);
   openPlay();
@@ -190,13 +197,14 @@ function gain(key, amount) {
   while (row.xp >= row.need) {
     row.xp -= row.need;
     row.need = Math.round(row.need * 1.25);
-    if (key === "grad") { state.hero.level += 1; state.hero.hpMax += 4; state.hero.hp = Math.min(state.hero.hpMax, state.hero.hp + 4); log("Grad steigt auf " + state.hero.level + "."); }
+    if (key === "grad") { state.hero.level += 1; state.hero.hpMax += 4; state.hero.hp = Math.min(maxHp(), state.hero.hp + 4); log("Grad steigt auf " + state.hero.level + "."); }
     else { state.hero[key] = (state.hero[key] || 0) + 1; log((D.STAT_KEYS.find((s) => s.id === key) || {}).name + " steigt."); }
   }
   state.statXp[key] = row;
 }
 function bumpBond(id, d) {
   const cur = state.bonds[id] || 0;
+  if (d > 0) d += Math.min(2, gearFx("bondPlus"));
   state.bonds[id] = clamp(cur + d, -100, 100);
 }
 function travel(toId) {
@@ -224,6 +232,8 @@ function travel(toId) {
 const EVENT_HANDLERS = {
   // Begegnung starten; liegt gerade eine Erzähler-Rolle offen, beginnt sie nach dem Schließen.
   startEncounter(ev) {
+    const safe = Math.min(30, gearFx("travelSafePct"));
+    if (safe > 0 && Math.random() * 100 < safe) { log("Ihr kommt ungesehen vorbei."); return; }
     if (state.narrator) state.pending = ev.arg;
     else startCombat(ev.arg);
   },
@@ -277,7 +287,7 @@ function engage() {
 function tick() {
   const foe = state.combat;
   if (!foe || !foe.engaged) return;
-  const dmgYou = Math.max(1, (state.hero.atk || 4) - (foe.def || 0) + Math.floor(Math.random() * 3));
+  const dmgYou = Math.max(1, (state.hero.atk || 4) + gearBonus("atk") + gearFx("vsMonster", foe.id) - (foe.def || 0) + Math.floor(Math.random() * 3));
   foe.hp -= dmgYou;
   const hitLine = "Ihr trefft " + foe.name + " (" + dmgYou + ").";
   foe.log.push(hitLine);
@@ -300,7 +310,7 @@ function tick() {
     showLine(blows + "\n" + foe.name + " fällt. +" + gold + " Gold." + (lootName ? " Beute: " + lootName + "." : "") + " Der Weg ist frei.", [{ label: "Weiter", go: "clear" }]);
     persist(); render(); return;
   }
-  const dmgFoe = Math.max(1, (foe.atk || 4) - (state.hero.def || 0));
+  const dmgFoe = Math.max(1, (foe.atk || 4) - ((state.hero.def || 0) + gearBonus("def")));
   state.hero.hp -= dmgFoe;
   const foeLine = foe.name + " trifft euch (" + dmgFoe + ").";
   foe.log.push(foeLine);
@@ -318,7 +328,8 @@ function tick() {
 }
 function flee() {
   if (!state.inCombat) return;
-  if (Math.random() < 0.45 + (state.hero.will || 0) * 0.03) {
+  const fleeFx = clamp(gearFx("fleePct"), -15, 15) / 100;
+  if (Math.random() < clamp(0.45 + ((state.hero.will || 0) + gearBonus("will")) * 0.03 + fleeFx, 0.1, 0.9)) {
     clearInterval(battleTimer); battleTimer = null;
     state.inCombat = false; state.combat = null;
     log("Ihr entgleitet.");
@@ -482,15 +493,72 @@ function waitFor(id) {
 function rest() {
   const loc = D.LOCATIONS[state.location];
   if (!loc || !loc.rest) return;
-  state.hero.hp = state.hero.hpMax;
-  advance(TIME_COST.rest);
+  state.hero.hp = maxHp();
+  advance(Math.max(1, TIME_COST.rest - gearFx("restSteps")));
   log("Ihr ruht und kommt wieder zu Kräften.");
   persist(); render();
 }
+// ---- Ausrüstungswerte & Handel (Erweiterung) ----
+const STAT_NAMES = { atk: "Angriff", def: "Panzer", will: "Wille", hp: "Leben max", heal: "Heilt" };
+function gearBonus(key) {
+  if (!state || !state.equipped) return 0;
+  return Object.values(state.equipped).reduce((sum, id) => sum + ((D.ITEMS[id] && D.ITEMS[id][key]) || 0), 0);
+}
+// Altstände (vor der Zweihand-Regel) bereinigen: Zweihänder + Schild/Waffe rechts -> Beutel.
+function fixTwoHanded() {
+  const w = state && state.equipped && D.ITEMS[state.equipped.waffeL];
+  if (!w || !w.twoHanded) return;
+  ["waffeR", "schild"].forEach((sl) => { if (state.equipped[sl]) { state.inventory.push(state.equipped[sl]); delete state.equipped[sl]; } });
+}
+// Effekte (Item-Feld fx, Werte laut docs/items-werte-2026-10-11.md), summiert wie gearBonus; sub z. B. Monster-ID bei vsMonster.
+function gearFx(key, sub) {
+  if (!state || !state.equipped) return 0;
+  return Object.values(state.equipped).reduce((sum, id) => {
+    const fx = D.ITEMS[id] && D.ITEMS[id].fx;
+    const v = fx && fx[key];
+    return sum + ((sub !== undefined ? (v && v[sub]) : v) || 0);
+  }, 0);
+}
+function maxHp() { return state.hero.hpMax + gearBonus("hp"); }
+function buyPrice(it) {
+  const pct = Math.min(15, gearFx("tradePct"));
+  return Math.max(1, Math.round(it.price * (1 - pct / 100)));
+}
+function sellPrice(it) { return it.price ? Math.floor(it.price / 2) : (it.sell || 0); }
+function statText(it) {
+  if (!it) return "";
+  return (it.slot ? ["atk", "def", "will", "hp"] : ["heal"]).filter((k) => it[k]).map((k) => STAT_NAMES[k] + (k === "heal" ? " " : " +") + it[k]).join(", ");
+}
+function compareText(it) {
+  if (!it || !it.slot) return "";
+  const slots = it.slot === "waffeL" ? ["waffeL", "waffeR"] : [it.slot];
+  const cur = slots.map((sl) => D.ITEMS[state.equipped[sl]]).filter(Boolean)[0];
+  if (!cur) return "Slot frei – nichts angelegt.";
+  const diff = ["atk", "def", "will", "hp"].filter((k) => (it[k] || 0) !== (cur[k] || 0))
+    .map((k) => { const d = (it[k] || 0) - (cur[k] || 0); return STAT_NAMES[k] + " " + (d > 0 ? "+" : "") + d; });
+  return "Angelegt: " + cur.name + (statText(cur) ? " (" + statText(cur) + ")" : "") + " → " + (diff.length ? diff.join(", ") : "gleichwertig");
+}
+function stallById(id) {
+  for (const loc of Object.values(D.LOCATIONS)) for (const st of (loc.stalls || [])) if (st.id === id) return st;
+  return null;
+}
+// Namenloser Marktstand: nutzt den bestehenden Handelsweg (lastTalk.shop, buy, sell, choose("leave")).
+function openStall(id) {
+  if (!state || state.narrator || state.inCombat || state.trading) return;
+  const st = stallById(id);
+  if (!st || !(D.LOCATIONS[state.location].stalls || []).includes(st)) return;
+  lastTalk = { id: st.id, name: st.label, title: "Stand", shop: st.shop, merchant: true, buys: true, stall: true };
+  state.dialogue = { npcId: st.id, node: "shop" };
+  state.trading = true;
+  showFace(null);
+  showLine("Ein Stand mit dem Schild „" + st.label + "“.", [{ label: "Handel beenden", go: "leave" }]);
+  openTrade();
+  render();
+}
 function buy(id) {
   const it = D.ITEMS[id];
-  if (!it || state.hero.gold < it.price) return;
-  state.hero.gold -= it.price;
+  if (!it || state.hero.gold < buyPrice(it)) return;
+  state.hero.gold -= buyPrice(it);
   state.inventory.push(id);
   persist(); openTrade(); render();
 }
@@ -499,7 +567,7 @@ function sell(id) {
   const i = state.inventory.indexOf(id);
   if (i < 0 || !it || !it.sell || it.type === "quest") return;
   state.inventory.splice(i, 1);
-  state.hero.gold += it.sell;
+  state.hero.gold += sellPrice(it);
   persist(); openTrade(); render();
 }
 function layoutDoll(doll) {
@@ -522,9 +590,20 @@ function equip(id) {
   const i = state.inventory.indexOf(id);
   if (i < 0 || !it || !it.slot || it.type === "quest") return;
   if (!EQUIP_SLOTS.some((s) => s.id === it.slot)) return;
+  const held = D.ITEMS[state.equipped.waffeL];
+  if (held && held.twoHanded && !it.twoHanded && (it.slot === "waffeL" || it.slot === "schild")) {
+    log(held.name + " braucht beide Hände. Erst ablegen.");
+    persist(); render(); return;
+  }
+  if (it.twoHanded) {
+    // Zweihänder: belegt beide Hände, Waffe rechts und Schild wandern in den Beutel.
+    ["waffeR", "schild"].forEach((sl) => {
+      if (state.equipped[sl]) { state.inventory.push(state.equipped[sl]); log((D.ITEMS[state.equipped[sl]] || {}).name + " in den Beutel gelegt."); delete state.equipped[sl]; }
+    });
+  }
   let slot = it.slot;
   // Einfach: zweite Waffe geht in die rechte Hand, solange die frei ist.
-  if (slot === "waffeL" && state.equipped.waffeL && !state.equipped.waffeR) slot = "waffeR";
+  if (slot === "waffeL" && !it.twoHanded && state.equipped.waffeL && !state.equipped.waffeR) slot = "waffeR";
   const prev = state.equipped[slot];
   state.inventory.splice(i, 1);
   if (prev) state.inventory.push(prev);
@@ -537,6 +616,7 @@ function unequip(slot) {
   if (!id) return;
   delete state.equipped[slot];
   state.inventory.push(id);
+  state.hero.hp = Math.min(state.hero.hp, maxHp());
   log((D.ITEMS[id] ? D.ITEMS[id].name : id) + " abgelegt.");
   persist(); paintSheet(); render();
 }
@@ -544,36 +624,73 @@ function useItem(id) {
   const it = D.ITEMS[id];
   const i = state.inventory.indexOf(id);
   if (i < 0 || !it || it.type !== "verbrauch") return;
-  if (it.heal) state.hero.hp = Math.min(state.hero.hpMax, state.hero.hp + it.heal);
+  if (it.heal) state.hero.hp = Math.min(maxHp(), state.hero.hp + it.heal + gearFx("potionHeal"));
   state.inventory.splice(i, 1);
   persist(); paintSheet(); render();
 }
+let tradePick = null;
 function openTrade() {
   sheet = "trade";
   document.getElementById("scene-sheet").hidden = false;
-  document.getElementById("sheet-title").textContent = "Handel";
   const npc = lastTalk;
+  if (!npc) return;
+  document.getElementById("sheet-title").textContent = "Handel · " + npc.name;
   const body = document.getElementById("sheet-body");
   const buyList = (npc.shop || []).map((id) => D.ITEMS[id]).filter(Boolean);
-  const sellable = state.inventory.filter((id) => D.ITEMS[id] && D.ITEMS[id].sell && D.ITEMS[id].type !== "quest");
-  body.innerHTML = '<div class="sheet-split"><div><h3>Kaufen</h3><div id="tr-buy"></div></div><div><h3>Verkaufen</h3><div id="tr-sell"></div></div></div>';
+  const gold = state.hero.gold;
+  body.innerHTML = '<div class="trade-gold">Euer Gold: <b id="tr-gold">' + gold + '</b></div>' +
+    '<div class="trade-layout"><div class="trade-col"><h3>Ware</h3><div id="tr-buy" class="tile-grid"></div></div>' +
+    '<div class="trade-col"><h3>Euer Beutel</h3><div id="tr-sell" class="tile-grid"></div></div></div>' +
+    '<div id="tr-detail" class="trade-detail"></div>';
+  const tile = (it, priceTxt, cls, mode, invIndex) => {
+    const d = document.createElement("div");
+    d.className = "card tile" + (cls ? " " + cls : "");
+    d.dataset.item = it.id;
+    d.dataset.mode = mode;
+    d.dataset.tip = it.id; d.dataset.tipMode = mode;
+    d.innerHTML = '<span class="tile-art"><img alt=""></span><b>' + it.name + "</b><div class='tiny'>" + priceTxt + "</div>";
+    const im = d.querySelector("img");
+    if (it.img) onImg(im, it.img); else im.hidden = true;
+    const pick = () => { tradePick = { id: it.id, mode }; paintTradeDetail(); };
+    d.onmouseenter = () => paintTradeDetail({ id: it.id, mode });
+    d.onmouseleave = () => paintTradeDetail();
+    d.onclick = pick;
+    return d;
+  };
   const b = document.getElementById("tr-buy");
-  buyList.forEach((it) => {
-    const d = document.createElement("div");
-    d.className = "card";
-    d.innerHTML = "<b>" + it.name + "</b><div class='tiny'>" + it.price + " Gold</div>";
-    d.onclick = () => buy(it.id);
-    b.appendChild(d);
-  });
+  buyList.forEach((it) => b.appendChild(tile(it, buyPrice(it) + " Gold", gold < buyPrice(it) ? "poor" : "", "buy")));
   const s = document.getElementById("tr-sell");
-  sellable.forEach((id) => {
+  state.inventory.forEach((id) => {
     const it = D.ITEMS[id];
-    const d = document.createElement("div");
-    d.className = "card";
-    d.innerHTML = "<b>" + it.name + "</b><div class='tiny'>" + it.sell + " Gold</div>";
-    d.onclick = () => sell(id);
-    s.appendChild(d);
+    if (!it) return;
+    const ok = it.sell && it.type !== "quest";
+    s.appendChild(tile(it, ok ? sellPrice(it) + " Gold" : "unverkäuflich", ok ? "" : "locked", ok ? "sell" : "none"));
   });
+  Object.keys(state.equipped || {}).forEach((slot) => {
+    const it = D.ITEMS[state.equipped[slot]];
+    if (it) s.appendChild(tile(it, "angelegt", "locked worn", "worn"));
+  });
+  if (!s.children.length) s.innerHTML = "<p class='tiny'>Der Beutel ist leer.</p>";
+  if (tradePick && !(tradePick.mode === "buy" ? buyList.some((it) => it.id === tradePick.id) : state.inventory.includes(tradePick.id) || Object.values(state.equipped).includes(tradePick.id))) tradePick = null;
+  paintTradeDetail();
+}
+function paintTradeDetail(hover) {
+  const box = document.getElementById("tr-detail");
+  if (!box) return;
+  const pick = hover || tradePick;
+  if (!pick) { box.innerHTML = "<span class='tiny'>Ware oder Beutel anklicken, um Werte und Vergleich zu sehen.</span>"; return; }
+  const it = D.ITEMS[pick.id];
+  if (!it) { box.innerHTML = ""; return; }
+  let act = "";
+  if (pick.mode === "buy") act = '<button id="tr-act" data-act="buy"' + (state.hero.gold < buyPrice(it) ? " disabled" : "") + ">Kaufen (" + buyPrice(it) + " Gold)</button>" + (state.hero.gold < buyPrice(it) ? " <span class='tiny'>Zu wenig Gold.</span>" : "");
+  else if (pick.mode === "sell") act = '<button id="tr-act" data-act="sell">Verkaufen (' + sellPrice(it) + " Gold)</button>";
+  else if (pick.mode === "worn") act = "<span class='tiny'>Angelegt. Erst im Beutel ablegen, dann verkaufen.</span>";
+  else act = "<span class='tiny'>Nicht verkäuflich.</span>";
+  box.innerHTML = "<b>" + it.name + "</b>" + (statText(it) ? " · " + statText(it) : "") + "<div class='tiny'>" + (it.text || "") + "</div>" +
+    (compareText(it) ? "<div class='tiny'>" + compareText(it) + "</div>" : "") + "<div class='trade-act'>" + act + "</div>";
+  const btn = document.getElementById("tr-act");
+  if (btn && !hover) btn.onclick = () => (btn.dataset.act === "buy" ? buy(it.id) : sell(it.id));
+  else if (btn) btn.onclick = () => { tradePick = pick; btn.dataset.act === "buy" ? buy(it.id) : sell(it.id); };
 }
 function paintSheet() {
   const body = document.getElementById("sheet-body");
@@ -604,12 +721,19 @@ function paintSheet() {
         const img = document.createElement("img");
         img.alt = "";
         const label = document.createElement("span");
-        const worn = state.equipped[s.id] && D.ITEMS[state.equipped[s.id]];
+        const twoH = s.id === "waffeR" && D.ITEMS[state.equipped.waffeL] && D.ITEMS[state.equipped.waffeL].twoHanded ? D.ITEMS[state.equipped.waffeL] : null;
+        const worn = twoH || (state.equipped[s.id] && D.ITEMS[state.equipped[s.id]]);
         b.dataset.slot = s.id;
-        if (worn) {
+        if (twoH) {
+          label.textContent = twoH.name;
+          b.classList.add("worn", "twohand");
+          b.dataset.tip = twoH.id; b.dataset.tipMode = "slot";
+          onImg(img, twoH.img, [s.ph]);
+          b.onclick = () => unequip("waffeL");
+        } else if (worn) {
           label.textContent = worn.name;
           b.classList.add("worn");
-          b.title = worn.name + " ablegen";
+          b.dataset.tip = worn.id; b.dataset.tipMode = "slot";
           onImg(img, worn.img, [s.ph]);
           b.onclick = () => unequip(s.id);
         } else {
@@ -631,8 +755,8 @@ function paintSheet() {
         const d = document.createElement("div");
         d.className = "card tile";
         d.dataset.item = it.id;
-        const hint = it.type === "verbrauch" ? "Nutzen" : (it.slot ? "Anlegen" : "");
-        d.title = it.text || "";
+        d.dataset.tip = it.id; d.dataset.tipMode = "bag";
+        const hint = [it.type === "verbrauch" ? "Nutzen" : (it.slot ? "Anlegen" : ""), statText(it)].filter(Boolean).join(" · ");
         d.innerHTML = '<span class="tile-art"><img alt=""></span><b>' + it.name + "</b>" + (hint ? "<div class='tiny'>" + hint + "</div>" : "");
         const ti = d.querySelector("img");
         if (it.img) onImg(ti, it.img); else ti.hidden = true;
@@ -659,13 +783,18 @@ function render() {
   const region = D.REGIONS[loc.region];
   document.getElementById("hero-name").textContent = state.hero.name;
   document.getElementById("hero-meta").textContent = state.hero.herkunft + " · " + state.hero.fluch + " · Grad " + state.hero.level;
-  document.getElementById("hp").textContent = state.hero.hp + "/" + state.hero.hpMax;
-  document.getElementById("hpbar").innerHTML = "<div class='bar'><i style='width:" + Math.round(state.hero.hp / state.hero.hpMax * 100) + "%'></i></div>";
+  document.getElementById("hp").textContent = state.hero.hp + "/" + maxHp();
+  document.getElementById("hpbar").innerHTML = "<div class='bar'><i style='width:" + Math.round(state.hero.hp / maxHp() * 100) + "%'></i></div>";
   document.getElementById("gold").textContent = state.hero.gold;
+  [["atk", "atk-val", 4], ["def", "def-val", 0], ["will", "will-val", 0]].forEach(([k, id, base]) => {
+    const n = document.getElementById(id);
+    const g = gearBonus(k);
+    if (n) n.textContent = ((state.hero[k] || base) + g) + (g ? " (+" + g + ")" : "");
+  });
   document.getElementById("loc").textContent = loc.name;
   document.getElementById("phase").textContent = phaseInfo(state.phase).name;
   document.getElementById("day").textContent = state.day;
-  const top = { "top-day": state.day, "top-phase": phaseInfo(state.phase).name, "top-gold": state.hero.gold, "top-hp": state.hero.hp + "/" + state.hero.hpMax };
+  const top = { "top-day": state.day, "top-phase": phaseInfo(state.phase).name, "top-gold": state.hero.gold, "top-hp": state.hero.hp + "/" + maxHp() };
   Object.keys(top).forEach((id) => { const n = document.getElementById(id); if (n) n.textContent = top[id]; });
   onImg(document.getElementById("portrait"), "portraits/" + state.hero.portraitId + ".jpg");
   const lines = state.log.length ? state.log : ["Noch keine Spuren."];
@@ -680,9 +809,10 @@ function render() {
   }
   if (sceneArt) sceneArt.src = art(loc.art);
   if (scene) scene.style.backgroundImage = "none";
-  areaBg(document.getElementById("pane-face"), loc.art, "linear-gradient(rgba(16,9,11,.28), rgba(16,9,11,.18))");
-  areaBg(document.querySelector("#pane-face .pane-body"), loc.art, "linear-gradient(rgba(16,9,11,.28), rgba(16,9,11,.18))");
-  areaBg(document.querySelector("#pane-talk .pane-body"), loc.art, "linear-gradient(rgba(7,4,5,.45), rgba(12,7,8,.55))");
+  // Gebietsbilder: Person = idle_<gebiet>, Gespräch = wait_<gebiet> (Gebiet = LOCATIONS[x].region).
+  areaBg(document.getElementById("pane-face"), region.idle || loc.art, "linear-gradient(rgba(16,9,11,.28), rgba(16,9,11,.18))");
+  areaBg(document.querySelector("#pane-face .pane-body"), region.idle || loc.art, "linear-gradient(rgba(16,9,11,.28), rgba(16,9,11,.18))");
+  areaBg(document.querySelector("#pane-talk .pane-body"), region.wait || loc.art, "linear-gradient(rgba(7,4,5,.45), rgba(12,7,8,.55))");
   document.getElementById("place-name").textContent = loc.name;
   document.getElementById("place-blurb").textContent = loc.blurb || "";
   document.getElementById("btn-rest").hidden = !loc.rest;
@@ -705,10 +835,19 @@ function render() {
     b.onclick = () => present ? talk(p.id) : waitFor(p.id);
     scene.appendChild(b);
   });
+  (loc.stalls || []).forEach((st) => {
+    const b = document.createElement("button");
+    b.className = "arch stall";
+    b.dataset.stall = st.id;
+    b.style.left = st.x + "%"; b.style.top = st.y + "%";
+    b.textContent = st.label;
+    b.onclick = () => openStall(st.id);
+    scene.appendChild(b);
+  });
   const map = document.getElementById("map");
   map.querySelectorAll(".pin").forEach((n) => n.remove());
   document.getElementById("map-rail").textContent = region.name;
-  const locked = !!(state.narrator || state.trading);
+  const locked = !!(state.narrator || state.trading || state.dialogue);
   bg(map, locked ? region.wait : region.map);
   if (!locked) {
     const open = new Set((loc.exits || []).map((ex) => ex.id));
@@ -839,3 +978,80 @@ function paintOptions(note) {
   document.getElementById("opt-menu").onclick = () => location.reload();
 }
 document.getElementById("overlay-close").onclick = () => { document.getElementById("overlay").hidden = true; };
+
+// ---- Item-Tooltip (Beutel-Kachel, Slot auf der Silhouette, Händler-Kachel) ----
+const FX_TEXT = {
+  fleePct: (v) => "Fluchtchance " + (v > 0 ? "+" : "−") + Math.abs(v) + " Prozentpunkte",
+  tradePct: (v) => "Kauft " + v + " % billiger",
+  travelSafePct: (v) => v + " % Chance, einer Begegnung beim Betreten auszuweichen",
+  restSteps: (v) => "Rast kostet " + v + " Tageszeit weniger",
+  potionHeal: (v) => "Tränke heilen +" + v + " Leben",
+  bondPlus: (v) => "+" + v + " Nähe bei jedem Nähe-Gewinn"
+};
+function fxLines(it) {
+  const fx = it.fx || {};
+  return Object.keys(fx).map((k) => {
+    if (k === "vsMonster") return Object.keys(fx[k]).map((m) => "+" + fx[k][m] + " Schaden gegen " + ((D.MONSTER[m] && D.MONSTER[m].name) || m)).join(", ");
+    return FX_TEXT[k] ? FX_TEXT[k](fx[k]) : "";
+  }).filter(Boolean);
+}
+function slotWord(it) {
+  if (it.slot) {
+    if (it.type === "waffe") return it.twoHanded ? "Waffe (beide Hände)" : "Waffe (eine Hand)";
+    const s = EQUIP_SLOTS.find((x) => x.id === it.slot);
+    return s ? s.name : it.slot;
+  }
+  return { verbrauch: "Verbrauch", ware: "Handelsware", quest: "Auftrag" }[it.type] || "";
+}
+function tipCompare(it) {
+  if (!it.slot) return "";
+  let target = it.slot;
+  const held = D.ITEMS[state.equipped.waffeL];
+  if (it.slot === "waffeL" && !it.twoHanded && held && !(held.twoHanded) && !state.equipped.waffeR) return "<div class='tip-cmp'>Rechte Hand frei – kommt dazu.</div>";
+  const cur = D.ITEMS[state.equipped[target]];
+  if (!cur) return "<div class='tip-cmp'>Slot frei.</div>";
+  const rows = ["atk", "def", "will", "hp"].map((k) => {
+    const d = (it[k] || 0) - (cur[k] || 0);
+    return d ? "<span class='" + (d > 0 ? "tip-up" : "tip-down") + "'>" + STAT_NAMES[k] + " " + (d > 0 ? "+" : "") + d + "</span>" : "";
+  }).filter(Boolean);
+  return "<div class='tip-cmp'>Gegen " + esc(cur.name) + ": " + (rows.length ? rows.join(", ") : "gleichwertig") + "</div>";
+}
+function tipHtml(it, mode) {
+  const worn = Object.values(state.equipped || {}).includes(it.id) && (mode === "slot" || mode === "worn");
+  const lines = [];
+  lines.push("<b>" + esc(it.name) + "</b>" + (slotWord(it) ? " <span class='tiny'>· " + slotWord(it) + "</span>" : ""));
+  if (statText(it)) lines.push("<div>" + statText(it) + "</div>");
+  fxLines(it).forEach((l) => lines.push("<div class='tip-fx'>" + l + "</div>"));
+  if (mode === "buy") lines.push("<div>Preis: " + buyPrice(it) + " Gold" + (buyPrice(it) !== it.price ? " <span class='tiny'>(statt " + it.price + ")</span>" : "") + "</div>");
+  else if (it.price && it.sell && it.type !== "quest") lines.push("<div>Verkauf: " + sellPrice(it) + " Gold" + (worn ? " <span class='tiny'>(erst ablegen)</span>" : "") + "</div>");
+  else lines.push("<div class='tiny'>Unverkäuflich</div>");
+  if (!worn) lines.push(tipCompare(it));
+  return lines.join("");
+}
+let tipEl = null;
+let tipTimer = null;
+function showTip(node) {
+  const it = D.ITEMS[node.dataset.tip];
+  if (!it || !state) return hideTip();
+  if (!tipEl) { tipEl = document.createElement("div"); tipEl.id = "item-tip"; document.body.appendChild(tipEl); }
+  tipEl.innerHTML = tipHtml(it, node.dataset.tipMode);
+  tipEl.hidden = false;
+  const r = node.getBoundingClientRect();
+  const w = tipEl.offsetWidth, h = tipEl.offsetHeight;
+  let top = r.top - h - 8;
+  if (top < 4) top = r.bottom + 8;
+  tipEl.style.left = clamp(r.left + r.width / 2 - w / 2, 4, window.innerWidth - w - 4) + "px";
+  tipEl.style.top = clamp(top, 4, window.innerHeight - h - 4) + "px";
+}
+function hideTip() { if (tipEl) tipEl.hidden = true; }
+document.addEventListener("mouseover", (e) => {
+  const n = e.target.closest && e.target.closest("[data-tip]");
+  if (n) showTip(n); else hideTip();
+});
+document.addEventListener("pointerdown", (e) => {
+  if (e.pointerType !== "touch") return;
+  const n = e.target.closest && e.target.closest("[data-tip]");
+  if (!n) return hideTip();
+  showTip(n);
+  clearTimeout(tipTimer); tipTimer = setTimeout(hideTip, 3500);
+});

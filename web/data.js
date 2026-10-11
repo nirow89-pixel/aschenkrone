@@ -76,15 +76,40 @@ const PORTRAITS = {
 };
 
 const ITEMS = {
-  aschenklinge: { id: "aschenklinge", img: "items/aschenklinge.jpg", name: "Aschenklinge", type: "waffe", slot: "waffeL", atk: 3, dmgMin: 4, dmgMax: 8, speed: 2.4, price: 28, sell: 12, text: "Die Schneide hält die Wärme eines alten Feuers." },
-  glasdolch: { id: "glasdolch", img: "items/glasdolch.jpg", name: "Glasdolch", type: "waffe", slot: "waffeL", atk: 5, crit: 6, dmgMin: 3, dmgMax: 6, speed: 1.8, price: 36, sell: 16, text: "Leicht, scharf und leicht zu verstecken." },
-  russmantel: { id: "russmantel", img: "items/russmantel.jpg", name: "Rußmantel", type: "ruestung", slot: "brust", def: 2, price: 22, sell: 9, text: "Der Stoff hält Wind und neugierige Blicke ab." },
-  glutphiole: { id: "glutphiole", img: "items/glutphiole.jpg", name: "Glutphiole", type: "verbrauch", heal: 18, price: 10, sell: 4, text: "Ein Schluck Wärme. Die Rippen werden leichter." },
-  nebeltrank: { id: "nebeltrank", img: "items/nebeltrank.jpg", name: "Nebeltrank", type: "verbrauch", ap: 2, price: 12, sell: 5, text: "Danach fällt der nächste Entschluss leichter." },
-  waldphiole: { id: "waldphiole", img: "items/waldphiole.jpg", name: "Waldphiole", type: "verbrauch", heal: 12, will: 1, price: 14, sell: 6, text: "Bitter. Danach steht der Kopf klarer." },
-  aschesalbe: { id: "aschesalbe", img: "items/aschesalbe.jpg", name: "Aschesalbe", type: "verbrauch", heal: 8, def: 1, price: 11, sell: 4, text: "Zieht auf der Haut und hält eine Weile stand." },
+  aschenklinge: { id: "aschenklinge", img: "items/aschenklinge.jpg", name: "Aschenklinge", type: "waffe", slot: "waffeL", atk: 3, dmgMin: 4, dmgMax: 8, speed: 2.4, price: 28, sell: 14, text: "Die Schneide hält die Wärme eines alten Feuers." },
+  glasdolch: { id: "glasdolch", img: "items/glasdolch.jpg", name: "Glasdolch", type: "waffe", slot: "waffeL", atk: 5, crit: 6, dmgMin: 3, dmgMax: 6, speed: 1.8, fx: { fleePct: 5 }, price: 50, sell: 25, text: "Leicht, scharf und leicht zu verstecken." },
+  russmantel: { id: "russmantel", img: "items/russmantel.jpg", name: "Rußmantel", type: "ruestung", slot: "brust", def: 2, fx: { travelSafePct: 10 }, price: 22, sell: 11, text: "Der Stoff hält Wind und neugierige Blicke ab." },
+  glutphiole: { id: "glutphiole", img: "items/glutphiole.jpg", name: "Glutphiole", type: "verbrauch", heal: 18, price: 10, sell: 5, text: "Ein Schluck Wärme. Die Rippen werden leichter." },
+  nebeltrank: { id: "nebeltrank", img: "items/nebeltrank.jpg", name: "Nebeltrank", type: "verbrauch", ap: 2, price: 12, sell: 6, text: "Danach fällt der nächste Entschluss leichter." },
+  waldphiole: { id: "waldphiole", img: "items/waldphiole.jpg", name: "Waldphiole", type: "verbrauch", heal: 12, will: 1, price: 14, sell: 7, text: "Bitter. Danach steht der Kopf klarer." },
+  aschesalbe: { id: "aschesalbe", img: "items/aschesalbe.jpg", name: "Aschesalbe", type: "verbrauch", heal: 8, def: 1, price: 11, sell: 5, text: "Zieht auf der Haut und hält eine Weile stand." },
   obsidianmuenze: { id: "obsidianmuenze", img: "items/obsidianmuenze.jpg", name: "Obsidianmünze", type: "quest", text: "Auf der einen Seite eine Krone, auf der anderen ein offenes Tor." },
-  aschenkrone: { id: "aschenkrone", name: "Aschenkrone", type: "quest", text: "Das Reifstück des Reichs. Wer es trägt, trägt auch den Titel." }
+  aschenkrone: { id: "aschenkrone", name: "Aschenkrone", type: "quest", text: "Das Reifstück des Reichs. Wer es trägt, trägt auch den Titel." },
+  dorfstahl: { id: "dorfstahl", img: "items/dorfstahl.jpg", name: "Dorfstahl", type: "waffe", slot: "waffeL", atk: 2, price: 18, sell: 9, text: "Ein einfacher Dolch mit gerader Klinge und Ledergriff." },
+  nebelklinge: { id: "nebelklinge", img: "items/nebelklinge.jpg", name: "Nebelklinge", type: "waffe", slot: "waffeL", atk: 4, fx: { vsMonster: { glashexe: 2 } }, price: 42, sell: 21, text: "Ein gerades Schwert mit heller, glatter Klinge und einfachem Querstück." },
+  thronnadel: { id: "thronnadel", img: "items/thronnadel.jpg", name: "Thronnadel", type: "waffe", slot: "waffeL", atk: 3, fx: { vsMonster: { raeuber: 2 } }, price: 34, sell: 17, text: "Ein langer, dünner Stichdolch mit verziertem Messinggriff." },
+  zweihander: { id: "zweihander", img: "items/zweihander.jpg", name: "Zweihänder", type: "waffe", slot: "waffeL", twoHanded: true, atk: 6, fx: { fleePct: -10 }, price: 60, sell: 30, text: "Ein langes, schweres Schwert mit dunkler Parierstange für beide Hände." },
+  aschenschild: { id: "aschenschild", img: "items/aschenschild.jpg", name: "Aschenschild", type: "ruestung", slot: "schild", def: 3, price: 30, sell: 15, text: "Ein runder dunkler Schild mit Eisenrand, Nieten und eingeprägter Krone." },
+  glaspanzer: { id: "glaspanzer", img: "items/glaspanzer.jpg", name: "Glaspanzer", type: "ruestung", slot: "brust", def: 4, fx: { fleePct: -5 }, price: 55, sell: 27, text: "Ein Brustpanzer aus geschuppten, hell glänzenden Metallplatten." },
+  pelzmantel: { id: "pelzmantel", img: "items/pelzmantel.jpg", name: "Pelzmantel", type: "ruestung", slot: "brust", def: 3, fx: { restSteps: 1 }, price: 38, sell: 19, text: "Ein dicker Pelzmantel mit dunkel-violettem Futter und Metallschließe." },
+  samtbrust: { id: "samtbrust", img: "items/samtbrust.jpg", name: "Samtbrust", type: "ruestung", slot: "brust", def: 1, fx: { bondPlus: 1, tradePct: 5 }, price: 26, sell: 13, text: "Ein Mieder aus rotem Samt mit Goldnähten." },
+  knochenhandschuh: { id: "knochenhandschuh", img: "items/knochenhandschuh.jpg", name: "Knochenhandschuh", type: "ruestung", slot: "haende", def: 1, price: 14, sell: 7, text: "Helle Lederhandschuhe, fest genäht." },
+  seidenhand: { id: "seidenhand", img: "items/seidenhand.jpg", name: "Seidenhand", type: "ruestung", slot: "haende", will: 1, fx: { tradePct: 5 }, price: 20, sell: 10, text: "Rote Handschuhe aus Seide." },
+  kronenring: { id: "kronenring", img: "items/kronenring.jpg", name: "Kronenring", type: "schmuck", slot: "kopf", def: 1, will: 1, fx: { bondPlus: 1 }, price: 48, sell: 24, text: "Ein schmaler goldener Stirnreif in Form einer Krone." },
+  glutring: { id: "glutring", img: "items/glutring.jpg", name: "Glutring", type: "schmuck", slot: "ring", atk: 1, fx: { potionHeal: 2 }, price: 32, sell: 16, text: "Ein goldener Ring mit rotem Stein in verzierter Fassung." },
+  nebelamulett: { id: "nebelamulett", img: "items/nebelamulett.jpg", name: "Nebelamulett", type: "schmuck", slot: "amulett", will: 2, fx: { travelSafePct: 10 }, price: 36, sell: 18, text: "Ein dunkler, ovaler Stein in spitzer Metallfassung an einer Silberkette." },
+  ascheohr: { id: "ascheohr", img: "items/ascheohr.jpg", name: "Ascheohr", type: "ware", price: 16, sell: 8, text: "Ein kleiner Ohrring aus Metall. Händler kaufen ihn an." },
+  kussphiole: { id: "kussphiole", img: "items/kussphiole.jpg", name: "Kussphiole", type: "verbrauch", heal: 10, price: 12, sell: 6, text: "Ein rosa Trank in einer kleinen Flasche mit Korken." },
+  spiegeltrank: { id: "spiegeltrank", img: "items/spiegeltrank.jpg", name: "Spiegeltrank", type: "verbrauch", heal: 14, price: 16, sell: 8, text: "Ein klarer Trank in einer verzierten Silberflasche." },
+  wein_der_stunde: { id: "wein_der_stunde", img: "items/wein_der_stunde.jpg", name: "Wein der Stunde", type: "verbrauch", heal: 5, price: 6, sell: 3, text: "Ein Glas Rotwein neben einer brennenden Kerze." },
+  teichbluete: { id: "teichbluete", img: "items/teichbluete.jpg", name: "Teichblüte", type: "ware", price: 8, sell: 4, text: "Eine helle, rosa Blüte vom Teich. Händler kaufen sie an." },
+  leder_hose: { id: "leder_hose", img: "items/leder_hose.jpg", name: "Lederhose", type: "ruestung", slot: "beine", hp: 2, price: 14, sell: 7, text: "Eine dunkle, abgetragene Lederhose mit Kniebesatz und Ziernähten." },
+  fangzahn_kampfrock: { id: "fangzahn_kampfrock", img: "items/fangzahn_kampfrock.jpg", name: "Fangzahn-Kampfrock", type: "ruestung", slot: "beine", def: 1, atk: 1, fx: { vsMonster: { raeuber: 1 } }, price: 32, sell: 16, text: "Ein Kampfrock aus zerrissenem schwarzem Stoff und Lederplatten, mit roter Mittelbahn, Tierzähnen und Knochenzier am Gürtel." },
+  eisen_beinschienen: { id: "eisen_beinschienen", img: "items/eisen_beinschienen.jpg", name: "Eisen-Beinschienen", type: "ruestung", slot: "beine", def: 1, hp: 3, fx: { fleePct: -5 }, price: 46, sell: 23, text: "Zwei Beinschienen aus dunklem Eisen mit Rankenmuster und violetten Einlagen." },
+  wickelstiefel: { id: "wickelstiefel", img: "items/wickelstiefel.jpg", name: "Wickelstiefel", type: "ruestung", slot: "fuesse", fx: { fleePct: 5 }, price: 12, sell: 6, text: "Stiefel aus gewickelten dunklen Stoffbinden mit roten Streifen und hellen, genieteten Lederplatten an Schienbein und Spann." },
+  schnallen_lederstiefel: { id: "schnallen_lederstiefel", img: "items/schnallen_lederstiefel.jpg", name: "Schnallen-Lederstiefel", type: "ruestung", slot: "fuesse", hp: 1, fx: { travelSafePct: 5 }, price: 18, sell: 9, text: "Hohe dunkle Lederstiefel mit mehreren Schnallen und aufgesetzter Lederplatte am Schaft." },
+  amethyst_stiefel: { id: "amethyst_stiefel", img: "items/amethyst_stiefel.jpg", name: "Amethyststiefel", type: "ruestung", slot: "fuesse", def: 1, will: 1, fx: { travelSafePct: 10 }, price: 58, sell: 29, text: "Halbhohe Stiefel aus dunklen Metallplatten mit feinem Rankenmuster und eingesetzten violetten Steinen." },
+  hohe_panzerstiefel: { id: "hohe_panzerstiefel", img: "items/hohe_panzerstiefel.jpg", name: "Hohe Panzerstiefel", type: "ruestung", slot: "fuesse", def: 1, hp: 2, fx: { fleePct: -5 }, price: 52, sell: 26, text: "Kniehohe, spitz zulaufende Plattenstiefel aus dunklem Metall mit Rankenmuster und violetten Steinen." }
 };
 
 const SKILLS = {
@@ -93,7 +118,7 @@ const SKILLS = {
 };
 
 const MONSTER = {
-  russwolf: { id: "russwolf", name: "Rußwolf", hp: 22, atk: 6, def: 1, gold: [6, 14], loot: ["glutphiole"], art: "monsters/russwolf.jpg", text: "Der Wolf kommt vom Pfad, nicht aus der Stadt. Die Schnauze ist rußig, der Blick fest.", wild: true },
+  russwolf: { id: "russwolf", name: "Rußwolf", hp: 28, atk: 7, def: 1, gold: [6, 14], loot: ["glutphiole"], art: "monsters/russwolf.jpg", text: "Der Wolf kommt vom Pfad, nicht aus der Stadt. Die Schnauze ist rußig, der Blick fest.", wild: true },
   glashexe: { id: "glashexe", name: "Glashexe", hp: 28, atk: 7, def: 2, gold: [10, 22], loot: ["glasdolch"], art: "monsters/glashexe.jpg", text: "Sie steht zwischen den Bäumen, als gehöre der Weg ihr.", wild: true },
   raeuber: { id: "raeuber", name: "Räuber", hp: 20, atk: 5, def: 1, gold: [8, 16], loot: ["glutphiole"], human: true, text: "Ein Mann mit Tuch vor dem Mund. Er will den Beutel, nicht ein Gespräch." }
 };
@@ -115,7 +140,7 @@ const NPCs = {
     id: "marktfrau", name: "Maera", title: "Krämerin", location: "markt",
     text: "Maera steht hinter der Bude, als gehöre der Tisch fest zu ihr.",
     art: "npcs/marktfrau.jpg", merchant: true, buys: true,
-    shop: ["glutphiole","nebeltrank","aschesalbe"],
+    shop: ["glutphiole","nebeltrank","aschesalbe","wein_der_stunde","teichbluete"],
     hours: ["morgen","vormittag","mittag","nachmittag"], pin: { x: 78, y: 64 }, faction: "gasse",
     lines: ["Salbe, Trank, Nadel. Sagt, was ihr braucht."],
     talk: { start: "Guten Tag. Die Ware ist frisch genug für den Preis, den ich nenne." }
@@ -203,7 +228,7 @@ const NARRATOR = {
 };
 
 const REGIONS = {
-  vorstadt: { id: "vorstadt", name: "Vor den Toren", map: "maps/vorstadt.jpg", wait: "ui/wait_unterorten.jpg", pins: [
+  vorstadt: { id: "vorstadt", name: "Vor den Toren", map: "maps/vorstadt.jpg", wait: "ui/wait_vorstadt.jpg", idle: "ui/idle_vorstadt.jpg", pins: [
     { id: "nebelpfad", label: "Nebelpfad", x: 50, y: 48 },
     { id: "obsidiansee", label: "Obsidiansee", x: 16, y: 36 },
     { id: "knochenfeld", label: "Knochenfeld", x: 20, y: 74 },
@@ -211,7 +236,7 @@ const REGIONS = {
     { id: "dorfzentrum", label: "Unterorten", x: 80, y: 22 },
     { id: "alter_baum", label: "Düsterwald", x: 84, y: 60 }
   ]},
-  stadt: { id: "stadt", name: "Aschenstadt", map: "maps/stadt.jpg", wait: "ui/wait_unterorten.jpg", pins: [
+  stadt: { id: "stadt", name: "Aschenstadt", map: "maps/stadt.jpg", wait: "ui/wait_stadt.jpg", idle: "ui/idle_stadt.jpg", pins: [
     { id: "platz", label: "Platz", x: 50, y: 48 },
     { id: "burg", label: "Burg", x: 50, y: 14 },
     { id: "tempel", label: "Tempel", x: 80, y: 26 },
@@ -221,14 +246,14 @@ const REGIONS = {
     { id: "gasthaus", label: "Gasthaus", x: 82, y: 58 },
     { id: "nebelpfad", label: "Vor den Toren", x: 50, y: 90 }
   ]},
-  unterorten: { id: "unterorten", name: "Unterorten", map: "maps/unterorten.jpg", wait: "ui/wait_unterorten.jpg", pins: [
+  unterorten: { id: "unterorten", name: "Unterorten", map: "maps/unterorten.jpg", wait: "ui/wait_unterorten.jpg", idle: "ui/idle_unterorten.jpg", pins: [
     { id: "dorfzentrum", label: "Dorfzentrum", x: 50, y: 50 },
     { id: "schmied", label: "Schmiede", x: 18, y: 44 },
     { id: "ratshalle", label: "Ratshalle", x: 50, y: 18 },
     { id: "schenke", label: "Schenke", x: 80, y: 56 },
     { id: "nebelpfad", label: "Nebelpfad", x: 50, y: 90 }
   ]},
-  duesterwald: { id: "duesterwald", name: "Düsterwald", map: "maps/duesterwald.jpg", wait: "ui/wait_unterorten.jpg", pins: [
+  duesterwald: { id: "duesterwald", name: "Düsterwald", map: "maps/duesterwald.jpg", wait: "ui/wait_duesterwald.jpg", idle: "ui/idle_duesterwald.jpg", pins: [
     { id: "alter_baum", label: "Alter Baum", x: 50, y: 46 },
     { id: "hexenhuette", label: "Hexenhütte", x: 18, y: 32 },
     { id: "blueteich", label: "Blütenteich", x: 80, y: 28 },
@@ -251,6 +276,12 @@ const LOCATIONS = {
   burg: { id: "burg", name: "Burg", region: "stadt", blurb: "Mauern über dem Platz. Von hier sieht man die Dächer, und die Dächer sehen einen nicht zurück.", art: "locations/burg.jpg",
     exits: [ { id: "platz", label: "Zum Platz", x: 50, y: 88, arch: true } ] },
   markt: { id: "markt", name: "Markt", region: "stadt", blurb: "Buden stehen in Reihen. Der Zoll hängt an jeder Plane, und Harn sieht, wer bleibt.", art: "locations/markt.jpg",
+    stalls: [
+      { id: "stand_waffen", label: "Waffen", x: 16, y: 40, shop: ["dorfstahl","aschenklinge","thronnadel","glasdolch","nebelklinge","zweihander"] },
+      { id: "stand_ruestung", label: "Rüstung", x: 34, y: 40, shop: ["knochenhandschuh","seidenhand","russmantel","samtbrust","pelzmantel","glaspanzer","aschenschild","leder_hose","fangzahn_kampfrock","eisen_beinschienen","wickelstiefel","schnallen_lederstiefel","amethyst_stiefel","hohe_panzerstiefel"] },
+      { id: "stand_traenke", label: "Tränke", x: 64, y: 30, shop: ["glutphiole","waldphiole","kussphiole","spiegeltrank","nebeltrank"] },
+      { id: "stand_schmuck", label: "Ringe und Amulette", x: 86, y: 30, shop: ["glutring","nebelamulett","kronenring","ascheohr"] }
+    ],
     exits: [ { id: "platz", label: "Zum Platz", x: 50, y: 88, arch: true } ] },
   tempel: { id: "tempel", name: "Tempel", region: "stadt", blurb: "Die Glocke hängt schwer. Sie schlägt selten, und wenn sie schlägt, wird der Platz still.", art: "locations/tempel.jpg",
     exits: [ { id: "platz", label: "Zum Platz", x: 50, y: 90, arch: true } ] },
