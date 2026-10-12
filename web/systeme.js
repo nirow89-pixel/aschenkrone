@@ -682,3 +682,402 @@ SCENE_HANDLERS.brief = (go) => suehne(go.split(":")[1], "busse");
 const STATS_MORE = [];  // fn() -> html
 function sysStatsMore() { return STATS_MORE.map((fn) => fn()).join(""); }
 STATS_MORE.push(factionsHtml);
+
+// =====================================================================
+// Stufe d · Grad, Zeichen, Kampf, Gegner (grad-zeichen-kampf.md Rev. g/h)
+// =====================================================================
+const GROWTH_KEYS = ["atk", "def", "will", "fortune"];
+function gradState() { if (!state.grad) state.grad = { statStart: {}, statPeak: {}, pending: null, nachhol: 0, pfad: {}, questGift: {}, declined: [] }; return state.grad; }
+function wachstum() {
+  const g = gradState(); let sum = 0;
+  GROWTH_KEYS.forEach((k) => { const d = Math.max(0, (g.statPeak[k] || 0) - (g.statStart[k] || 0)); sum += k === "fortune" ? Math.floor(d / 2) : d; });
+  return sum;
+}
+function gradFor(w) { let n = 1; D.GRAD_STUFEN.forEach((s) => { if (w >= s.min) n = s.grad; }); return n; }
+function gradName(n) { return (D.GRAD_STUFEN.find((s) => s.grad === n) || D.GRAD_STUFEN[0]).name; }
+function zeichenSlots() { const l = state.hero.level || 1; return l >= 5 ? 4 : l >= 3 ? 3 : 2; }
+// Nach jedem Grundwert-Anstieg: Höchststand nachführen, Grad prüfen (+4 Leben, eine offene Wahl, nie zwei).
+function trackPeak() {
+  if (!state || !state.grad) return;
+  const g = state.grad;
+  GROWTH_KEYS.forEach((k) => { g.statPeak[k] = Math.max(g.statPeak[k] || 0, state.hero[k] || 0); });
+  const target = gradFor(wachstum());
+  while ((state.hero.level || 1) < target) {
+    state.hero.level += 1; state.hero.hpMax += 4; state.hero.hp = Math.min(maxHp(), state.hero.hp + 4);
+    if (state.hero.level === 4 || state.hero.level === 7) { state.hero.apMax = (state.hero.apMax || 2) + 1; }
+    if (!g.pending) g.pending = { grad: state.hero.level, offers: gradOffers() };
+    log("Grad steigt auf " + state.hero.level + " (" + gradName(state.hero.level) + ").");
+  }
+}
+function gradOffers() { return typeof gradPerkOffers === "function" ? gradPerkOffers() : []; }
+// Wahl: Richtung (Mal M1–M4, Stufe 1/2/3) oder Perk aus den Angeboten.
+function chooseGradUp(kind, id) {
+  const g = gradState(); if (!g.pending) return false;
+  if (kind === "pfad") {
+    const cur = g.pfad[id] || 0;
+    if (!(id in D.PFAD_ZEICHEN) || cur >= 3) return false;
+    if (cur === 2 && (state.hero.level < 4 || (state.act || 1) < 2)) return false;  // Stufe 3 erst ab Grad 4 und Act 2
+    const distinct = Object.keys(g.pfad).filter((p) => g.pfad[p] > 0);
+    if (!cur && distinct.length >= 2 && (state.act || 1) < 2) return false;     // Act 1: höchstens 2 Richtungen
+    g.pfad[id] = cur + 1;
+    const z = D.PFAD_ZEICHEN[id][cur]; if (z) learnZeichen(z);
+    if (typeof grantPerk === "function") grantPerk("mal", "mal_des_" + { krieger: "kriegers", magier: "magiers", dieb: "diebes", diplomat: "diplomaten" }[id], { quelle: "grad", stufe: g.pfad[id] });
+  } else if (kind === "perk") {
+    if (!(g.pending.offers || []).includes(id) || typeof grantPerkById !== "function") return false;
+    grantPerkById(id, { quelle: "grad" });
+    (g.pending.offers || []).filter((x) => x !== id).forEach((x) => g.declined.push(x));
+  } else return false;
+  g.pending = null;
+  if (g.nachhol > 0) { g.nachhol -= 1; g.pending = { grad: state.hero.level, offers: gradOffers(), nachhol: true }; }
+  persist(); render(); if (sheet) paintSheet();
+  return true;
+}
+function zState() { if (!state.zeichen) state.zeichen = { learned: {}, slots: [] }; return state.zeichen; }
+function learnZeichen(id) {
+  const z = zState(); if (!D.ZEICHEN[id] || z.learned[id]) return;
+  z.learned[id] = { lvl: 1, xp: 0, day: 0, dayXp: 0 };
+  if (z.slots.filter(Boolean).length < zeichenSlots()) z.slots.push(id);
+  log("Neues Zeichen: " + D.ZEICHEN[id].name + ".");
+}
+function equipZeichen(id) {
+  if (state.inCombat) return;
+  const z = zState(); if (!z.learned[id]) return;
+  if (z.slots.includes(id)) z.slots = z.slots.filter((x) => x !== id);
+  else if (z.slots.length < zeichenSlots()) z.slots.push(id);
+  persist(); paintSheet(); render();
+}
+const ZEICHEN_NEED = [0, 5, 8, 12, 17];
+function zeichenXp(id) {
+  const l = zState().learned[id]; if (!l || l.lvl >= 5) return;
+  if (l.day !== state.day) { l.day = state.day; l.dayXp = 0; }
+  if (l.dayXp >= 3) return;
+  l.dayXp += 1; l.xp += 1;
+  if (l.xp >= ZEICHEN_NEED[l.lvl]) { l.xp = 0; l.lvl += 1; log(D.ZEICHEN[id].name + " steigt auf Stufe " + l.lvl + "."); }
+}
+// ---- Kampfwerte ----
+function weaponOf(slot) { const it = D.ITEMS[state.equipped && state.equipped[slot]]; return it && it.type === "waffe" ? it : null; }
+function heroSpeed() {
+  const a = weaponOf("waffeL"), b = weaponOf("waffeR");
+  if (a && b) return ((a.speed || 2.0) + (b.speed || 2.0)) / 2;
+  return (a && a.speed) || (b && b.speed) || 2.0;
+}
+function gearAtkCombat() {
+  const pfadK = (gradState().pfad.krieger || 0) >= 3 ? 0.75 : 0.5;
+  let sum = 0;
+  Object.keys(state.equipped || {}).forEach((sl) => { const it = D.ITEMS[state.equipped[sl]]; if (!it || !it.atk) return; sum += sl === "waffeR" && weaponOf("waffeL") ? Math.floor(it.atk * pfadK) : it.atk; });
+  return sum;
+}
+function critChance(extra) {
+  const w = weaponOf("waffeL");
+  const cap = (gradState().pfad.dieb || 0) >= 3 ? 40 : 35;
+  return Math.min(cap, (state.hero.crit || 0) + ((w && w.crit) || 0) + Math.floor((state.hero.fortune || 0) / 10) + perkStat("crit") + (extra || 0));
+}
+function perkFxNum(k, sub) { return typeof perkFx === "function" ? perkFx(k, sub) : 0; }
+function rnd(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+// Schaden des Helden mit Mindestschaden 20 %; Krit ×1,5 (mind. +1). pct = Zeichen-Faktor.
+function heroHit(c, pct, critBonus) {
+  const tot = atkEff() + gearAtkCombat();
+  const w = weaponOf("waffeL");
+  const wurf = w && w.dmgMax ? rnd(0, w.dmgMax - w.dmgMin) : rnd(0, 2);
+  const vs = gearFx("vsMonster", c.id) + (c.wild || (c.tags || []).includes("wild") ? perkFxNum("vsTag", "wild") : 0);
+  let dmg = Math.max(Math.ceil(0.2 * tot), tot + vs - (c.def || 0) + wurf, 1);
+  if (c.weaponHalf) dmg = Math.max(1, Math.floor(dmg / 2));
+  if (c.armored && dmg < 3) dmg = 1;
+  dmg = Math.max(1, Math.round(dmg * (pct || 1)));
+  if (Math.random() * 100 < critChance(critBonus)) { dmg = Math.max(dmg + 1, Math.floor(dmg * 1.5)); c.lastCrit = true; } else c.lastCrit = false;
+  return dmg;
+}
+function foeHit(c) {
+  const armor = defEff() + gearBonus("def") + (c.eisenhaut && c.eisenhaut.left > 0 ? c.eisenhaut.amt : 0);
+  let dmg = Math.max(Math.ceil(0.3 * c.atk), c.atk - armor + rnd(0, c.var === undefined ? 1 : c.var));
+  if (Math.random() * 100 < (c.crit || 0)) dmg = Math.floor(dmg * 1.5);
+  if (c.eisenhaut && c.eisenhaut.left > 0) c.eisenhaut.left -= 1;
+  return Math.max(1, dmg);
+}
+function startCombatSys(id) {
+  const proto = D.MONSTER[id];
+  if (!proto) return false;
+  if (proto.unique && state.flags["cleared_" + id]) return false;  // Unikate fail-closed
+  if (proto.id === "russwolf" && (state.flags.wolf_dealt || state.flags.wolf_spared || state.flags.wolf_bargain)) return false;
+  state.inCombat = true;
+  state.combat = { ...proto, hp: proto.hp, hpMax: proto.hp, engaged: false, log: [], t: 0, nextHero: 0, nextFoe: proto.speed || 2.0, ticks: 0, lastFlee: -99,
+    ap: state.hero.apMax || 2, cd: {}, used: {}, dots: [], stun: 0, slow: null, eisenhaut: null, foeHits: 0, heroHits: 0, seed: Math.floor(Math.random() * 1e9) };
+  lastTalk = null;
+  log(proto.name + " steht im Weg.");
+  return true;
+}
+function addDot(c, kind, per, left) {
+  const ex = c.dots.find((d) => d.kind === kind);
+  if (ex) { ex.left = left; return; }
+  if (c.dots.length >= 2) return;
+  c.dots.push({ kind, per, left });
+}
+// Zeichen-Auswahl im Autobattle: Slot-Reihenfolge, bereit und genug Atem.
+function pickZeichen(c) {
+  const z = zState();
+  for (const id of z.slots) {
+    const Z = D.ZEICHEN[id]; if (!Z || !z.learned[id]) continue;
+    let cost = Z.ap; if (Z.magic && (gradState().pfad.magier || 0) >= 3) cost = Math.max(1, cost - 1);
+    if ((c.cd[id] || 0) > 0 || c.ap < cost) continue;
+    if (id === "heilfunke" && state.hero.hp >= maxHp() / 2) continue;
+    if (id === "eisenhaut" && c.eisenhaut && c.eisenhaut.left > 0) continue;
+    if (id === "wundmal" && state.hero.hp <= 3) continue;
+    return { id, cost };
+  }
+  return null;
+}
+function useZeichen(c, id, cost) {
+  const l = zState().learned[id].lvl, we = willEff(), zp = 1 + perkFxNum("zauberPct") / 100;
+  c.ap -= cost; c.cd[id] = D.ZEICHEN[id].cd; c.used[id] = true;
+  const name = D.ZEICHEN[id].name;
+  let dmg = 0, line = "";
+  if (id === "schnellschlag") { const n = l >= 5 ? 3 : 2; for (let i = 0; i < n; i++) dmg += heroHit(c, 0.6 + 0.05 * (l - 1)); line = name + ": " + n + " schnelle Schläge"; }
+  else if (id === "eisenhaut") { c.eisenhaut = { amt: l >= 3 ? 3 : 2, left: 4 + (l - 1) }; line = name + ": eure Haut wird hart"; }
+  else if (id === "solarplexus") { dmg = heroHit(c, 0.8 + 0.1 * (l - 1)); c.stun = c.unique ? 1 : (l >= 5 ? 2 : 1); line = name; }
+  else if (id === "feuerball") { dmg = Math.round((rnd(6, 10) + Math.floor(we / 3) + 2 * (l - 1)) * (zp + perkFxNum("zauberPct", "feuer") / 100)); if (l >= 5) addDot(c, "brand", 2, 2); line = name; }
+  else if (id === "froststachel") { dmg = Math.round((rnd(4, 7) + Math.floor(we / 4) + (l - 1)) * zp); c.slow = { pct: l >= 5 ? 40 : 25, left: 3 + (l - 1) }; line = name; }
+  else if (id === "heilfunke") { const h = Math.round((rnd(6, 10) + Math.floor(we / 3) + 2 * (l - 1)) * (1 + perkFxNum("heilPct") / 100) * (1 + perkFxNum("healInPct") / 100)); state.hero.hp = Math.min(maxHp(), state.hero.hp + h); line = name + ": +" + h + " Leben"; }
+  else if (id === "giftklinge") { addDot(c, "gift", (l >= 5 ? 3 : 2) * (c.id === "thronassel" ? 2 : 1), 4 + (l - 1)); dmg = heroHit(c); line = name; }
+  else if (id === "schattenhieb") { const sure = l >= 5 && c.hp < c.hpMax / 2; dmg = heroHit(c, 1.3 + 0.1 * (l - 1), sure ? 100 : 25); line = name; }
+  else if (id === "blutung") { const tot = Math.max(4, 1 + Math.floor(c.hpMax * (0.10 + 0.02 * (l - 1)))); addDot(c, "blutung", Math.ceil(tot / 4), 4); line = name; }
+  else if (id === "wundmal") { dmg = heroHit(c); const heal = Math.floor(dmg * (0.5 + 0.1 * (l - 1))); state.hero.hp = Math.min(maxHp(), state.hero.hp + heal - (l >= 5 ? 0 : 2)); line = name + ": +" + heal + " Leben"; }
+  return { dmg, line };
+}
+function combatLine(c, line) { c.log.push(line); log(line); }
+function heroSwing(c) {
+  c.heroHits += 1;
+  Object.keys(c.cd).forEach((k) => { if (c.cd[k] > 0) c.cd[k] -= 1; });
+  let dmg = 0, line = "";
+  const z = pickZeichen(c);
+  if (z) { const r = useZeichen(c, z.id, z.cost); dmg = r.dmg; line = r.line + (dmg ? " (" + dmg + ")" : "") + "."; c.lastMagic = !!D.ZEICHEN[z.id].magic; }
+  else { dmg = heroHit(c); line = "Ihr trefft " + c.name + " (" + dmg + ")" + (c.lastCrit ? ", ein harter Treffer" : "") + "."; c.lastMagic = false; }
+  // Schaden über Zeit
+  c.dots.forEach((d) => { dmg += d.per; d.left -= 1; });
+  c.dots = c.dots.filter((d) => d.left > 0);
+  c.hp -= dmg;
+  const ls = perkFxNum("lifesteal");
+  if (ls > 0 && dmg >= 4) state.hero.hp = Math.min(maxHp(), state.hero.hp + Math.max(1, Math.floor(dmg * ls / 100)));
+  if (c.reflect && dmg > 0) state.hero.hp -= Math.min(3, Math.max(1, Math.floor(dmg * c.reflect / 100)));
+  combatLine(c, line);
+}
+function foeSwing(c, free) {
+  if (!free && c.stun > 0) { c.stun -= 1; combatLine(c, c.name + " ringt nach Luft."); return; }
+  const dmg = foeHit(c);
+  state.hero.hp -= dmg; c.foeHits += 1;
+  const rf = perkFxNum("reflect");
+  if (rf > 0) c.hp -= Math.min(3, Math.max(1, Math.floor(dmg * rf / 100)));
+  combatLine(c, c.name + " trifft euch (" + dmg + ").");
+  // Zweiter Atem (S9): einmal je Tag bei Leben ≤ 25 %
+  const za = perkFxNum("zweiterAtem");
+  if (za > 0 && state.hero.hp > 0 && state.hero.hp <= maxHp() / 4 && state.daily.zweiterAtem !== state.day) {
+    state.daily.zweiterAtem = state.day; const h = Math.round(maxHp() * za / 100); state.hero.hp = Math.min(maxHp(), state.hero.hp + h); combatLine(c, "Zweiter Atem: +" + h + " Leben.");
+  }
+}
+function foeSpeed(c) {
+  let sp = (c.speed2 && c.hp < c.hpMax / 2) ? c.speed2 : (c.speed || 2.0);
+  if (c.slow && c.slow.left > 0) { sp = sp / (1 - Math.min(40, c.slow.pct) / 100); c.slow.left -= 1; }
+  return sp;
+}
+function sysTick() {
+  const c = state.combat;
+  if (!c || !c.engaged) return;
+  c.ticks += 1; c.t = Math.round((c.t + 0.4) * 10) / 10;
+  let guard = 0;
+  while (guard++ < 8 && state.combat === c) {
+    const heroDue = c.t >= c.nextHero, foeDue = c.t >= c.nextFoe;
+    if (!heroDue && !foeDue) break;
+    if (heroDue && (!foeDue || c.nextHero <= c.nextFoe)) {
+      heroSwing(c); c.nextHero += heroSpeed();
+      if (c.hp <= 0) return combatVictory(c);
+      if (c.surrender && c.hp < c.hpMax * 0.25) return combatSurrender(c);
+    } else {
+      foeSwing(c); c.nextFoe += foeSpeed(c);
+      if (c.hp <= 0) return combatVictory(c);
+      if (state.hero.hp <= 0) return combatDefeat(c);
+    }
+  }
+  persist(); render();
+}
+function stopTimer() { if (battleTimer) { clearInterval(battleTimer); battleTimer = null; } }
+function combatXp(key, n) {
+  const room = Math.max(0, 8 - (state.daily.kampfXp || 0));
+  const x = Math.min(room, n); if (x <= 0) return 0;
+  state.daily.kampfXp = (state.daily.kampfXp || 0) + x; gain(key, x); return x;
+}
+function combatVictory(c) {
+  stopTimer();
+  const gold = c.gold[0] + Math.floor(Math.random() * (c.gold[1] - c.gold[0] + 1));
+  state.hero.gold += gold;
+  const loot = [];
+  (c.loot || []).forEach((id) => { if (D.ITEMS[id]) { state.inventory.push(id); loot.push(D.ITEMS[id].name); } });
+  Object.keys(c.lootChance || {}).forEach((id) => { if (D.ITEMS[id] && Math.random() * 100 < c.lootChance[id]) { state.inventory.push(id); loot.push(D.ITEMS[id].name); } });
+  if (c.id === "russwolf") {  // nur der Quest-Wolf setzt Wolf-Flags
+    state.flags.wolf_tot = true; state.flags.wolf_slain = true; state.flags.cleared_russwolf = true;
+    if (!state.flags.wolf_dealt) { state.flags.wolf_dealt = true; state.flags.sim_bonds_wolf_settled = true; }
+    state.pendingNarrator = { ...D.NARRATOR.wolf_tot };
+    if (typeof grantPerk === "function") grantPerk("mal", "mal_des_wolfstoeters", { quelle: "story" });
+  }
+  if (c.unique || c.quest) state.flags["cleared_" + c.id] = true;
+  const xp = [];
+  const a = combatXp("atk", 2); if (a) xp.push("Angriff +" + a);
+  if (c.foeHits >= 3) { const d = combatXp("def", 2); if (d) xp.push("Panzer +" + d); }
+  if (c.lastMagic && (gradState().pfad.magier || 0) > 0) { const w = combatXp("will", 1); if (w) xp.push("Wille +" + w); }
+  Object.keys(c.used).forEach(zeichenXp);
+  state.inCombat = false; state.combat = null;
+  log(c.name + " fällt. +" + gold + " Gold.");
+  const text = c.log.slice(-6).join("\n") + "\n\n" + c.name + " fällt.\nGold: +" + gold + (loot.length ? "\nBeute: " + loot.join(", ") : "") + (xp.length ? "\nÜbung: " + xp.join(", ") : "") +
+    (Object.keys(c.used).length ? "\nZeichen geübt: " + Object.keys(c.used).map((z) => D.ZEICHEN[z].name).join(", ") : "") + "\nDer Weg ist frei.";
+  lastTalk = null;
+  showFace({ id: c.id, name: c.name, title: "Besiegt", art: "monsters/" + (c.art ? c.art.split("/").pop().replace(".jpg", "") : c.id) + "_tot.jpg" });
+  showLine(text, [{ label: "Weiter", go: "clear" }]);
+  persist(); render();
+  showFace({ id: c.id, name: c.name, title: "Besiegt", art: "monsters/" + (c.art ? c.art.split("/").pop().replace(".jpg", "") : c.id) + "_tot.jpg" });
+  showLine(text, [{ label: "Weiter", go: "clear" }]);
+}
+function combatSurrender(c) {
+  stopTimer();
+  c.engaged = false; c.surrendered = true;
+  combatLine(c, c.name + " lässt die Waffe sinken und hebt die Hände.");
+  persist(); render();
+}
+// Ergebener Mensch: laufen lassen (0) / ausrauben (Soft +1) / Gnadenstoß (Medium +2, Haltung +2)
+CHOOSE_HOOKS.ergeben = (go) => {
+  const c = state.combat; if (!c || !c.surrendered) return false;
+  const art = go.split(":")[1];
+  let line = "";
+  if (art === "laufen") line = "Ihr lasst ihn laufen. Er verschwindet zwischen den Büschen.";
+  else if (art === "rauben") { const g = rnd(5, 10); state.hero.gold += g; applyChoiceEffects({ grad: "soft", richtung: "yield", origin: "player", tag: "ausgeraubt" }); line = "Ihr nehmt ihm den Beutel ab. +" + g + " Gold."; }
+  else if (art === "gnade") { applyChoiceEffects({ grad: "medium", richtung: "yield", origin: "player", tag: "gnadenstoss", effects: { korr: 2, haltung: 2 } }); state.hero.gold += c.gold[0]; line = "Ihr beendet es. Es ist still danach."; }
+  state.inCombat = false; state.combat = null; combatXp("atk", 2);
+  lastTalk = null; persist(); render(); showFace(null); showLine(line, [{ label: "Weiter", go: "clear" }]);
+  return true;
+};
+const SAFE_WAKE = { stadt: "platz", vorstadt: "dorfzentrum", unterorten: "dorfzentrum", duesterwald: "dorfzentrum" };
+function combatDefeat(c) {
+  if (c.id === "russwolf") { stopTimer(); wolfDefeat(); afterDefeat(c); return; }
+  stopTimer();
+  const blows = c.log.slice(-6).join("\n");
+  state.hero.hp = Math.max(4, Math.floor(state.hero.hpMax / 3));
+  state.inCombat = false; state.combat = null;
+  let lost = 0;
+  if (c.human) { lost = Math.min(30, Math.floor(state.hero.gold * 0.15)); state.hero.gold -= lost; }
+  const reg = D.LOCATIONS[state.location] && D.LOCATIONS[state.location].region;
+  state.location = SAFE_WAKE[reg] || "dorfzentrum";
+  advance(2);
+  afterDefeat(c);
+  log("Ihr fallt und kommt in " + D.LOCATIONS[state.location].name + " wieder zu euch.");
+  lastTalk = null;
+  persist(); autosave(); render(); showFace(null);
+  showLine(blows + "\nIhr kommt in " + D.LOCATIONS[state.location].name + " wieder zu euch." + (lost ? " Euer Beutel ist um " + lost + " Gold leichter." : "") + " Ihr seid angeschlagen.", [{ label: "Weiter", go: "clear" }]);
+}
+function afterDefeat(c) {
+  state.buffs = (state.buffs || []).filter((b) => b.id !== "angeschlagen");
+  state.buffs.push({ id: "angeschlagen", name: "Angeschlagen", mods: { atk: -1, def: -1 }, until: "rast" });
+  if (state.values) bumpWk(-10);
+  state.daily.zufall = 3;  // Spawn-Schutz bis Tageswechsel
+  const w = state.world; w.defeats = (w.defeats || []).filter((d) => d >= state.day - 6).concat([state.day]);
+}
+function sysFlee() {
+  const c = state.combat; if (!c || c.surrendered) return;
+  if (c.engaged && c.ticks - c.lastFlee < 3) { c.note = "Noch keine Lücke."; render(); return; }
+  c.lastFlee = c.ticks;
+  const fleePct = clamp(gearFx("fleePct") + perkFxNum("fleePct"), -15, 15) / 100;
+  const dieb = (gradState().pfad.dieb || 0) > 0 ? 0.05 : 0;
+  const chance = clamp(0.45 + willEff() * 0.03 + fleePct + dieb - (c.unique ? 0.15 : 0), 0.1, 0.9);
+  if (Math.random() < chance) {
+    stopTimer(); state.inCombat = false; state.combat = null;
+    if (c.id === "thronassel") state.daily.zufall = (state.daily.zufall || 0) + 1;
+    log("Ihr entgleitet."); showFace(null); showLine("Ihr entgleitet. Der Schlag geht vorbei.", []);
+  } else {
+    c.note = "Der Weg bleibt versperrt.";
+    foeSwing(c, true);  // Erstschlag des Gegners
+    if (state.hero.hp <= 0) { combatDefeat(c); return; }
+    c.engaged = true; if (!battleTimer) battleTimer = setInterval(tick, 400);
+  }
+  persist(); render();
+}
+// Zufallsbegegnungen (nur SPAWN_TABLES, nie in Stadt/Dorf), Tagesdeckel 3.
+function rollSpawn(locId) {
+  const t = D.SPAWN_TABLES[locId]; if (!t || state.inCombat) return null;
+  if (t.after && !state.flags[t.after]) return null;
+  if ((state.daily.zufall || 0) >= 3) return null;
+  const pi = ["abend"].includes(state.phase) ? 1 : state.phase === "nacht" ? 2 : 0;
+  const safe = Math.min(30, gearFx("travelSafePct") + perkFxNum("travelSafePct", D.LOCATIONS[locId].region) + perkFxNum("travelSafePct", locId));
+  const chance = t.chance[pi] * (1 - safe / 100);
+  if (Math.random() * 100 >= chance) return null;
+  const pakt = state.flags.wolf_spared || state.flags.wolf_bargain;
+  const rows = t.rows.filter((r) => !(r.wolf && pakt)).filter((r) => !(D.MONSTER[r.id].unique && state.flags["cleared_" + r.id]));
+  const sum = rows.reduce((s, r) => s + r.w, 0); if (!sum) return null;
+  let x = Math.random() * sum; const row = rows.find((r) => (x -= r.w) < 0) || rows[0];
+  state.daily.zufall = (state.daily.zufall || 0) + 1;
+  return row.id;
+}
+function nebelpfadBlocked() { return false; }  // jeder Wolf-Ausgang öffnet den Pfad (Rev. g); einzige Quelle
+// Jagen: garantierte Begegnung an Wildorten, 1 Phase, zählt zum Deckel.
+SCENE_EXTRAS.push(() => {
+  const t = D.SPAWN_TABLES[state.location]; if (!t || (t.after && !state.flags[t.after])) return [];
+  return [{ label: "Jagen", go: "jagen", why: (state.daily.zufall || 0) >= 3 ? "Für heute genug." : "" }];
+});
+SCENE_HANDLERS.jagen = () => {
+  const t = D.SPAWN_TABLES[state.location]; if ((state.daily.zufall || 0) >= 3) return "";
+  const pakt = state.flags.wolf_spared || state.flags.wolf_bargain;
+  const rows = t.rows.filter((r) => !(r.wolf && pakt)); if (!rows.length) return "";
+  state.daily.zufall = (state.daily.zufall || 0) + 1; advance(1);
+  startCombatSys(rows[Math.floor(Math.random() * rows.length)].id); persist(); render(); return "";
+};
+// Migration v5 -> v6: Grad aus Wachstum, statStart (BASE + Herkunft + alte Fluch-mods), Nachhol-Wahlen, Atem.
+function migV6(s) {
+  const prev = state; state = s;
+  try {
+    const h = s.hero, g = gradState();
+    if (!Object.keys(g.statStart).length) {
+      const H = D.HERKUENFTE[h.herkunftId] || {}, F = D.FLUECHE[h.fluchId] || {};
+      GROWTH_KEYS.forEach((k) => { g.statStart[k] = (D.BASE_HERO[k] || 0) + ((H.mods || {})[k] || 0) + ((F.mods || {})[k] || 0); g.statPeak[k] = Math.max(g.statStart[k], h[k] || 0); });
+      const old = h.level || 1, calc = gradFor(wachstum());
+      h.level = Math.max(old, calc);
+      if (h.level > 1 && !Object.keys(g.pfad).length) { g.pending = { grad: h.level, offers: [], nachhol: true }; g.nachhol = Math.max(0, h.level - 2); }
+    }
+    if (typeof h.apMax !== "number") h.apMax = 2;
+    zState();
+    if (s.combat) { const p = D.MONSTER[s.combat.id] || {}; s.combat = { ...p, ...s.combat, t: s.combat.t || 0, nextHero: s.combat.nextHero || 0, nextFoe: s.combat.nextFoe || p.speed || 2, ticks: s.combat.ticks || 0, lastFlee: -99, ap: s.combat.ap || h.apMax, cd: s.combat.cd || {}, used: s.combat.used || {}, dots: s.combat.dots || [], foeHits: s.combat.foeHits || 0, heroHits: s.combat.heroHits || 0 }; }
+  } finally { state = prev; }
+  return s;
+}
+function gradPanelHtml() {
+  const g = gradState(), w = wachstum(), lvl = state.hero.level;
+  const next = D.GRAD_STUFEN.find((s) => s.grad === lvl + 1);
+  let html = "<h3>Grad</h3><div class='card'><b>Grad " + lvl + "</b> · " + gradName(lvl) + dbg("Wachstum " + w) +
+    "<div class='tiny'>" + (next ? "Bis " + next.name + ": noch " + (next.min - w) + " Wachstum" + (lvl >= 7 ? ". Weiteres Wachstum nur noch über Glück." : "") : "Höchster Grad erreicht.") + "</div>" +
+    "<div class='tiny'>" + GROWTH_KEYS.map((k) => ({ atk: "Angriff", def: "Panzer", will: "Wille", fortune: "Glück" }[k]) + " " + (state.hero[k] || 0) + (g.statPeak[k] > (state.hero[k] || 0) ? " (Höchststand " + g.statPeak[k] + ")" : "")).join(" · ") + "</div></div>";
+  if (g.pending) {
+    html += "<div class='card'><b>Grad steigt – eure Wahl</b><div class='tiny'>Die Wahl kann warten, aber es bleibt nur eine offen.</div><div class='choice-grid'>" +
+      ["krieger", "magier", "dieb", "diplomat"].map((p) => "<button data-grad='pfad:" + p + "'>" + { krieger: "Krieger", magier: "Magier", dieb: "Dieb", diplomat: "Diplomat" }[p] + " · Stufe " + ((g.pfad[p] || 0) + 1) + "</button>").join("") +
+      (g.pending.offers || []).map((id) => "<button data-grad='perk:" + id + "'>" + esc(typeof perkName === "function" ? perkName(id) : id) + "</button>").join("") + "</div></div>";
+  }
+  return html;
+}
+function zeichenSheetHtml() {
+  const z = zState(), n = zeichenSlots();
+  let html = "<h3>Angelegt (" + z.slots.length + "/" + n + ")</h3><div class='zeichen-row'>";
+  for (let i = 0; i < 4; i++) {
+    const id = z.slots[i];
+    if (i >= n) html += "<div class='z-slot locked' title='ab Grad " + (i === 2 ? 3 : 5) + "'>Grad " + (i === 2 ? 3 : 5) + "</div>";
+    else if (id) html += "<button class='z-slot' data-zeichen='" + id + "' style=\"background-image:url('" + art(D.ZEICHEN[id].art) + "')\">" + esc(D.ZEICHEN[id].name) + "</button>";
+    else html += "<div class='z-slot leer'>frei</div>";
+  }
+  html += "</div><h3>Gelernt</h3>";
+  const ids = Object.keys(z.learned);
+  html += ids.length ? ids.map((id) => { const Z = D.ZEICHEN[id], l = z.learned[id]; return "<div class='card perk'><b>" + esc(Z.name) + "</b> · Stufe " + l.lvl + " · Atem " + Z.ap + "<div class='tiny'>" + esc(Z.text) + "</div><button data-zeichen='" + id + "'>" + (z.slots.includes(id) ? "Ablegen" : "Anlegen") + "</button></div>"; }).join("")
+    : "<p class='tiny'>Noch keine Zeichen. Ein Grad-Aufstieg mit Richtung Krieger, Magier oder Dieb öffnet das erste.</p>";
+  return html;
+}
+function bagZeichenHtml() {
+  const z = zState(), n = zeichenSlots(); let html = "<div class='zeichen-row' id='bag-zeichen'>";
+  for (let i = 0; i < n; i++) { const id = z.slots[i]; html += id ? "<div class='z-slot' title='" + esc(D.ZEICHEN[id].name) + "' style=\"background-image:url('" + art(D.ZEICHEN[id].art) + "')\">" + esc(D.ZEICHEN[id].name) + "</div>" : "<div class='z-slot leer'>Zeichen</div>"; }
+  return html + "</div>";
+}
+function wireSheet(body) {
+  body.querySelectorAll("[data-zeichen]").forEach((b) => { b.onclick = () => equipZeichen(b.dataset.zeichen); });
+  body.querySelectorAll("[data-grad]").forEach((b) => { b.onclick = () => { const [k, id] = b.dataset.grad.split(":"); chooseGradUp(k, id); }; });
+}
+STATS_MORE.unshift(gradPanelHtml);

@@ -67,13 +67,13 @@ const HERKUENFTE = {
   ascheadel: { id: "ascheadel", name: "Ascheadel", text: "Dein Haus hat den Brand überlebt. Man kennt den Namen und erwartet Haltung.", mods: { hp: 8, atk: 1, def: 3, gold: 40, will: 1 } },
   gossenschatten: { id: "gossenschatten", name: "Gossenschatten", text: "Du kommst aus engen Gassen. Du weißt, wann man spricht und wann man geht.", mods: { hp: 2, atk: 4, def: 0, gold: 12, crit: 8 } },
   tempelkind: { id: "tempelkind", name: "Tempelkind", text: "Du bist bei den Glocken aufgewachsen. Leute werden still, wenn du den Ton triffst.", mods: { hp: 6, atk: 0, def: 2, gold: 18, will: 4, heal: 6 } },
-  nebelwanderer: { id: "nebelwanderer", name: "Nebelwanderer", text: "Du kennst Wege zwischen den Dörfern, die auf keiner Karte stehen.", mods: { hp: 4, atk: 2, def: 1, gold: 20, ap: 2, will: 2 } }
+  nebelwanderer: { id: "nebelwanderer", name: "Nebelwanderer", text: "Du kennst Wege zwischen den Dörfern, die auf keiner Karte stehen.", mods: { hp: 4, atk: 2, def: 1, gold: 20, ap: 1, will: 2 } }
 };
 
 const FLUECHE = {
   glasherz: { id: "glasherz", name: "Glasherz", text: "Was dich trifft, trifft oft auch den, der zuschlägt.", mods: { hp: -8, reflect: 25 } },
   kronenbrand: { id: "kronenbrand", name: "Kronenbrand", text: "Deine Hände werden warm, wenn Macht nah ist. Manche spüren das und weichen.", mods: { atk: 5, def: -1 } },
-  stumme_glocke: { id: "stumme_glocke", name: "Stille Glocke", text: "Zufälle neigen sich dir zu. Nicht immer freundlich.", mods: { will: 3, fortune: 15 } },
+  stumme_glocke: { id: "stumme_glocke", name: "Stumme Glocke", text: "Zufälle neigen sich dir zu. Nicht immer freundlich.", mods: { will: 3, fortune: 15 } },
   blutmond: { id: "blutmond", name: "Blutmond", text: "Wunden an anderen wärmen dich. Der Preis bleibt an dir haften.", mods: { lifesteal: 20, hp: -2 } }
 };
 
@@ -89,7 +89,7 @@ const ITEMS = {
   glasdolch: { id: "glasdolch", img: "items/glasdolch.jpg", name: "Glasdolch", type: "waffe", slot: "waffeL", atk: 5, crit: 6, dmgMin: 3, dmgMax: 6, speed: 1.8, fx: { fleePct: 5 }, price: 50, sell: 25, text: "Leicht, scharf und leicht zu verstecken." },
   russmantel: { id: "russmantel", img: "items/russmantel.jpg", name: "Rußmantel", type: "ruestung", slot: "brust", def: 2, fx: { travelSafePct: 10 }, price: 22, sell: 11, text: "Der Stoff hält Wind und neugierige Blicke ab." },
   glutphiole: { id: "glutphiole", img: "items/glutphiole.jpg", name: "Glutphiole", type: "verbrauch", heal: 18, price: 10, sell: 5, text: "Ein Schluck Wärme. Die Rippen werden leichter." },
-  nebeltrank: { id: "nebeltrank", img: "items/nebeltrank.jpg", name: "Nebeltrank", type: "verbrauch", ap: 2, price: 12, sell: 6, text: "Danach fällt der nächste Entschluss leichter." },
+  nebeltrank: { id: "nebeltrank", img: "items/nebeltrank.jpg", name: "Nebeltrank", type: "verbrauch", ap: 1, price: 12, sell: 6, text: "Danach fällt der nächste Entschluss leichter." },
   waldphiole: { id: "waldphiole", img: "items/waldphiole.jpg", name: "Waldphiole", type: "verbrauch", heal: 12, will: 1, wk: 5, price: 14, sell: 7, text: "Bitter. Danach steht der Kopf klarer." },
   aschesalbe: { id: "aschesalbe", img: "items/aschesalbe.jpg", name: "Aschesalbe", type: "verbrauch", heal: 8, def: 1, price: 11, sell: 5, text: "Zieht auf der Haut und hält eine Weile stand." },
   obsidianmuenze: { id: "obsidianmuenze", img: "items/obsidianmuenze.jpg", name: "Obsidianmünze", type: "quest", text: "Auf der einen Seite eine Krone, auf der anderen ein offenes Tor." },
@@ -97,7 +97,7 @@ const ITEMS = {
   dorfstahl: { id: "dorfstahl", img: "items/dorfstahl.jpg", name: "Dorfstahl", type: "waffe", slot: "waffeL", atk: 2, price: 18, sell: 9, text: "Ein einfacher Dolch mit gerader Klinge und Ledergriff." },
   nebelklinge: { id: "nebelklinge", img: "items/nebelklinge.jpg", name: "Nebelklinge", type: "waffe", slot: "waffeL", atk: 4, fx: { vsMonster: { glashexe: 2 } }, price: 42, sell: 21, text: "Ein gerades Schwert mit heller, glatter Klinge und einfachem Querstück." },
   thronnadel: { id: "thronnadel", img: "items/thronnadel.jpg", name: "Thronnadel", type: "waffe", slot: "waffeL", atk: 3, fx: { vsMonster: { raeuber: 2 } }, price: 34, sell: 17, text: "Ein langer, dünner Stichdolch mit verziertem Messinggriff." },
-  zweihander: { id: "zweihander", img: "items/zweihander.jpg", name: "Zweihänder", type: "waffe", slot: "waffeL", twoHanded: true, atk: 6, fx: { fleePct: -10 }, price: 60, sell: 30, text: "Ein langes, schweres Schwert mit dunkler Parierstange für beide Hände." },
+  zweihander: { id: "zweihander", img: "items/zweihander.jpg", name: "Zweihänder", type: "waffe", slot: "waffeL", twoHanded: true, atk: 6, speed: 2.8, fx: { fleePct: -10 }, price: 60, sell: 30, text: "Ein langes, schweres Schwert mit dunkler Parierstange für beide Hände." },
   aschenschild: { id: "aschenschild", img: "items/aschenschild.jpg", name: "Aschenschild", type: "ruestung", slot: "schild", def: 3, price: 30, sell: 15, text: "Ein runder dunkler Schild mit Eisenrand, Nieten und eingeprägter Krone." },
   glaspanzer: { id: "glaspanzer", img: "items/glaspanzer.jpg", name: "Glaspanzer", type: "ruestung", slot: "brust", def: 4, fx: { fleePct: -5 }, price: 55, sell: 27, text: "Ein Brustpanzer aus geschuppten, hell glänzenden Metallplatten." },
   pelzmantel: { id: "pelzmantel", img: "items/pelzmantel.jpg", name: "Pelzmantel", type: "ruestung", slot: "brust", def: 3, fx: { restSteps: 1 }, price: 38, sell: 19, text: "Ein dicker Pelzmantel mit dunkel-violettem Futter und Metallschließe." },
@@ -127,10 +127,46 @@ const SKILLS = {
 };
 
 const MONSTER = {
-  russwolf: { id: "russwolf", name: "Rußwolf", hp: 28, atk: 7, def: 1, gold: [6, 14], loot: ["glutphiole"], art: "monsters/russwolf.jpg", text: "Der Wolf kommt vom Pfad, nicht aus der Stadt. Die Schnauze ist rußig, der Blick fest.", wild: true },
-  glashexe: { id: "glashexe", name: "Glashexe", hp: 28, atk: 7, def: 2, gold: [10, 22], loot: ["glasdolch"], art: "monsters/glashexe.jpg", text: "Sie steht zwischen den Bäumen, als gehöre der Weg ihr.", wild: true },
-  raeuber: { id: "raeuber", name: "Räuber", hp: 20, atk: 5, def: 1, gold: [8, 16], loot: ["glutphiole"], art: "monsters/raeuber.jpg", human: true, text: "Ein Mann mit Tuch vor dem Mund. Er will den Beutel, nicht ein Gespräch." }
+  // Werte laut grad-zeichen-kampf.md §5.2 (Rev. e). speed = Sekunden je Schlag, crit in %.
+  russwolf: { id: "russwolf", name: "Rußwolf", hp: 28, atk: 7, def: 1, speed: 2.2, crit: 5, gold: [6, 14], loot: ["glutphiole"], art: "monsters/russwolf.jpg", text: "Der Wolf kommt vom Pfad, nicht aus der Stadt. Die Schnauze ist rußig, der Blick fest.", wild: true, quest: true },
+  russwolf_wild: { id: "russwolf_wild", name: "Rußwolf (Rudel)", hp: 28, atk: 7, def: 1, speed: 2.2, crit: 5, gold: [6, 14], loot: ["glutphiole"], art: "monsters/russwolf.jpg", text: "Ein Wolf aus dem Rudel. Er hat Hunger, keinen Auftrag.", wild: true, tags: ["wild", "wolf"] },
+  russwolf_jung: { id: "russwolf_jung", name: "Junger Rußwolf", hp: 21, atk: 5, def: 1, speed: 2.2, crit: 5, gold: [3, 8], loot: ["glutphiole"], art: "monsters/russwolf.jpg", text: "Jung und mager. Er prüft, ob ihr weglauft.", wild: true, tags: ["wild", "wolf"] },
+  glashexe: { id: "glashexe", name: "Glashexe", hp: 38, atk: 10, def: 3, speed: 2.2, crit: 5, reflect: 10, gold: [10, 22], loot: ["glasdolch"], art: "monsters/glashexe.jpg", text: "Sie steht zwischen den Bäumen, als gehöre der Weg ihr.", wild: false, unique: true },
+  raeuber: { id: "raeuber", name: "Räuber", hp: 22, atk: 5, def: 1, speed: 2.0, crit: 5, gold: [8, 16], loot: ["glutphiole"], lootChance: { leder_hose: 20 }, art: "monsters/raeuber.jpg", human: true, surrender: true, text: "Ein Mann mit Tuch vor dem Mund. Er will den Beutel, nicht ein Gespräch.", tags: ["mensch"] },
+  nebelkind: { id: "nebelkind", name: "Nebelkind", hp: 26, atk: 8, def: 3, speed: 1.8, crit: 0, weaponHalf: true, gold: [0, 6], loot: ["nebeltrank"], art: "monsters/nebelkind.jpg", text: "Ein Umriss aus Nebel, kaum größer als ein Kind. Klingen gehen halb durch ihn hindurch.", wild: true, tags: ["wild"] },
+  thronassel: { id: "thronassel", name: "Thronassel", hp: 70, atk: 12, def: 7, speed: 3.0, crit: 0, armored: true, gold: [30, 50], loot: [], art: "monsters/thronassel.jpg", text: "Ein gepanzertes Ding, so groß wie ein Thronsessel. Es kriecht, und der Boden knirscht.", unique: true },
+  kronenbruch: { id: "kronenbruch", name: "Kronenbruch", hp: 90, atk: 13, def: 8, speed: 2.6, speed2: 2.0, crit: 10, gold: [60, 90], loot: [], art: "monsters/kronenbruch.jpg", text: "Ein Ritter ohne Herrn. Auf dem Helm sitzt ein gesprungener Reif.", unique: true }
 };
+// Zufallsbegegnungen nur an Wildorten (nie in Stadt oder Dorf, Entscheid Leitung). Chance je Tag/Abend/Nacht in %.
+const SPAWN_TABLES = {
+  nebelpfad: { chance: [10, 15, 25], rows: [{ id: "raeuber", w: 70 }, { id: "russwolf_jung", w: 30, wolf: true }], after: "wolf_dealt" },
+  obsidiansee: { chance: [10, 15, 25], rows: [{ id: "raeuber", w: 100 }] },
+  knochenfeld: { chance: [20, 25, 35], rows: [{ id: "russwolf_wild", w: 50, wolf: true }, { id: "raeuber", w: 50 }] },
+  alter_baum: { chance: [15, 20, 30], rows: [{ id: "russwolf_wild", w: 60, wolf: true }, { id: "raeuber", w: 40 }] },
+  hexenhuette: { chance: [15, 20, 30], rows: [{ id: "russwolf_wild", w: 60, wolf: true }, { id: "raeuber", w: 40 }] },
+  blueteich: { chance: [0, 15, 25], rows: [{ id: "russwolf_jung", w: 100, wolf: true }] },
+  sumpf: { chance: [0, 15, 25], rows: [{ id: "russwolf_jung", w: 100, wolf: true }] }
+};
+// Zeichen (grad-zeichen-kampf.md §3.4): Atem, Abklingen in Heldenschlägen.
+const ZEICHEN = {
+  schnellschlag: { id: "schnellschlag", name: "Schnellschlag", pfad: "krieger", ap: 2, cd: 3, art: "skills/schnellschlag.jpg", text: "Doppelschlag, je 60 % Schaden." },
+  eisenhaut: { id: "eisenhaut", name: "Eisenhaut", pfad: "krieger", ap: 2, cd: 8, art: "skills/eisenhaut.jpg", text: "Panzer +2 für 4 Gegnerschläge." },
+  solarplexus: { id: "solarplexus", name: "Solarplexus", pfad: "krieger", ap: 2, cd: 7, art: "skills/solarplexus.jpg", text: "80 % Schaden, der Gegner setzt einen Schlag aus." },
+  feuerball: { id: "feuerball", name: "Feuerball", pfad: "magier", ap: 1, cd: 5, magic: true, art: "skills/feuerball.jpg", text: "6–10 Schaden plus ein Drittel des Willens, ignoriert Panzer." },
+  froststachel: { id: "froststachel", name: "Froststachel", pfad: "magier", ap: 2, cd: 6, magic: true, art: "skills/froststachel.jpg", text: "4–7 Schaden, verlangsamt den Gegner." },
+  heilfunke: { id: "heilfunke", name: "Heilfunke", pfad: "magier", ap: 2, cd: 8, magic: true, art: "skills/heilfunke.jpg", text: "Heilt 6–10 plus ein Drittel des Willens (unter halber Leben)." },
+  giftklinge: { id: "giftklinge", name: "Giftklinge", pfad: "dieb", ap: 1, cd: 6, art: "skills/giftklinge.jpg", text: "Vergiftet: 2 Schaden je Schlag, 4 Schläge." },
+  schattenhieb: { id: "schattenhieb", name: "Schattenhieb", pfad: "dieb", ap: 2, cd: 6, art: "skills/schattenhieb.jpg", text: "130 % Schaden, Krit-Chance +25 %." },
+  blutung: { id: "blutung", name: "Blutung", pfad: "dieb", ap: 1, cd: 7, art: "skills/blutung.jpg", text: "Blutung über 4 Schläge." },
+  wundmal: { id: "wundmal", name: "Wundmal", pfad: "fluch", ap: 2, cd: 9, art: "skills/wundmal.jpg", text: "Voller Schaden, heilt euch um die Hälfte, kostet 2 Leben." }
+};
+const PFAD_ZEICHEN = { krieger: ["schnellschlag", "eisenhaut", "solarplexus"], magier: ["feuerball", "froststachel", "heilfunke"], dieb: ["giftklinge", "schattenhieb", "blutung"], diplomat: [] };
+const GRAD_STUFEN = [
+  { grad: 1, min: 0, name: "Ungezeichnet" }, { grad: 2, min: 10, name: "Angesengt" }, { grad: 3, min: 20, name: "Gezeichnet" },
+  { grad: 4, min: 28, name: "Geprüft" }, { grad: 5, min: 35, name: "Gehärtet" }, { grad: 6, min: 41, name: "Erprobt" },
+  { grad: 7, min: 46, name: "Gefürchtet" }, { grad: 8, min: 47, name: "Aschegeboren" }, { grad: 9, min: 48, name: "Kronennah" },
+  { grad: 10, min: 49, name: "Kronenwürdig" }
+];
 
 const NPCs = {
   burgvogt: {
@@ -469,7 +505,7 @@ const LOCATIONS = {
     exits: [ { id: "platz", label: "Zum Platz", x: 50, y: 88, arch: true } ] },
   nebelpfad: { id: "nebelpfad", name: "Nebelpfad", region: "vorstadt", blurb: "Der Boden ist nass, die Sicht kurz. Der Weg trägt Stadt und Dorf, solange niemand ihn sperrt.", art: "locations/nebelpfad.jpg", wild: true,
     events: [
-      { id: "russwolf", when: { flags: { cleared_russwolf: false } }, once: false, priority: 10, run: "startEncounter", arg: "russwolf" }
+      { id: "russwolf", when: { flags: { cleared_russwolf: false, wolf_dealt: false } }, once: false, priority: 10, run: "startEncounter", arg: "russwolf" }
     ],
     exits: [
       { id: "obsidiansee", label: "Obsidiansee" },
@@ -528,5 +564,5 @@ const WOLF_LINES = {
 window.D = {
   WORLD, FACTIONS, DAY_PHASES, BOND_STEPS, STAT_KEYS,
   HERKUENFTE, FLUECHE, PORTRAITS, ITEMS, SKILLS, MONSTER, NPCs, QUESTS,
-  NARRATOR, REGIONS, LOCATIONS, BASE_HERO, WOLF_LINES
+  NARRATOR, REGIONS, LOCATIONS, BASE_HERO, WOLF_LINES, SPAWN_TABLES, ZEICHEN, PFAD_ZEICHEN, GRAD_STUFEN
 };

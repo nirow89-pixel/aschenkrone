@@ -145,3 +145,6 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .z-slot.leer{opacity:.6}
 .z-slot.locked{opacity:.3;cursor:default}
 .victory-art{max-width:220px;max-height:160px;display:block;margin:0 auto 6px}
+#sheet-body > .bag-layout{height:auto;flex:1 1 0}
+#bag-zeichen{flex:0 0 auto;margin-top:6px}
+.hero-acts{flex-wrap:wrap}

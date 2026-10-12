@@ -134,7 +134,9 @@ const MIGRATIONS = [
   // v3 -> v4: Beziehungen (relations, npcEnd, world.pendingBonds), wolf_tot -> wolf_slain gespiegelt.
   function v3to4(s) { return migV4(s); },
   // v4 -> v5: Fraktionen als Achsen (gunst = max(0,n), zorn = max(0,−n)); state.factions bleibt Spiegel.
-  function v4to5(s) { return migV5(s); }
+  function v4to5(s) { return migV5(s); },
+  // v5 -> v6: Grad aus Wachstum (statStart/statPeak), Nachhol-Wahlen, Zeichen, Kampfstand.
+  function v5to6(s) { return migV6(s); }
 ];
 const SAVE_VERSION = MIGRATIONS.length;
 function migrate(s) {
@@ -172,14 +174,16 @@ function load(n) {
   return true;
 }
 
+// Fluchwahl bei der Erstellung entfällt (Entscheid Nico); Flüche kommen als Perks im Spiel.
 function createHero(name, herkunftId, fluchId, portraitId) {
   const h = D.HERKUENFTE[herkunftId] || D.HERKUENFTE.gossenschatten;
-  const f = D.FLUECHE[fluchId] || D.FLUECHE.kronenbrand;
+  const f = { id: null, name: "", mods: {} };
   const portrait = D.PORTRAITS[portraitId] || D.PORTRAITS[herkunftId];
   const hero = { name: (name || "Namenlos").slice(0, 18), herkunftId: h.id, fluchId: f.id, portraitId: portrait.id, herkunft: h.name, fluch: f.name, ...D.BASE_HERO };
   const apply = (mods = {}) => {
     if (mods.hp) { hero.hp += mods.hp; hero.hpMax += mods.hp; }
     ["atk", "def", "will", "gold", "fortune", "crit"].forEach((k) => { if (mods[k]) hero[k] = (hero[k] || 0) + mods[k]; });
+    if (mods.ap) { hero.ap += mods.ap; hero.apMax += mods.ap; }  // Atem: Nebelwanderer +1
   };
   apply(h.mods); apply(f.mods);
   hero.hp = clamp(hero.hp, 8, 99);
@@ -208,6 +212,7 @@ function log(line) {
   state.log = state.log.slice(0, 30);
 }
 function gain(key, amount) {
+  if (key === "grad") return;  // Grad entsteht aus Wachstum, nicht aus XP (grad-zeichen-kampf §2.1)
   const row = state.statXp[key] || { xp: 0, need: 12 };
   if (amount > 0) noteTrain(key);
   row.xp += amount;
@@ -220,6 +225,7 @@ function gain(key, amount) {
     else { state.hero[key] = (state.hero[key] || 0) + 1; log((D.STAT_KEYS.find((s) => s.id === key) || {}).name + " steigt."); }
   }
   state.statXp[key] = row;
+  trackPeak();
 }
 // Nähe: Kurve, Tagesdeckel, bondPlus nur bei Gespräch/Geschenk (beziehungen.md §2), Umsetzung in systeme.js.
 function bumpBond(id, d, opts) { return bumpBondSys(id, d, opts); }
@@ -242,6 +248,7 @@ function travel(toId) {
   }
   const ev = pickEvent(toId);
   if (ev) runEvent(ev, {});
+  else { const sp = rollSpawn(toId); if (sp) EVENT_HANDLERS.startEncounter({ arg: sp }); }
   gain("grad", 2);
   persist();
   if (HUBS.includes(toId)) autosave();
@@ -289,21 +296,15 @@ function runEvent(ev, ctx) {
   if (ev.once) state.flags["ev_" + ev.id] = true;
   EVENT_HANDLERS[ev.run](ev, ctx || {});
 }
-function startCombat(id) {
-  const proto = D.MONSTER[id];
-  if (!proto) return;
-  state.inCombat = true;
-  state.combat = { ...proto, hp: proto.hp, hpMax: proto.hp, engaged: false, log: [] };
-  lastTalk = null;
-  log(proto.name + " steht im Weg.");
-}
+function startCombat(id) { startCombatSys(id); }  // Kampfstand mit Tempo, Atem, Zeichen (systeme.js)
 function engage() {
   if (!state.combat || state.combat.engaged) return;
   state.combat.engaged = true;
   if (battleTimer) return;
   battleTimer = setInterval(tick, 400);
 }
-function tick() {
+function tick() { sysTick(); }  // Zeit-Akkumulator, Mindestschaden, Zeichen (systeme.js)
+function tickAlt() {
   const foe = state.combat;
   if (!foe || !foe.engaged) return;
   const dmgYou = Math.max(1, (state.hero.atk || 4) + gearBonus("atk") + gearFx("vsMonster", foe.id) - (foe.def || 0) + Math.floor(Math.random() * 3));
@@ -345,7 +346,8 @@ function tick() {
   }
   persist(); render();
 }
-function flee() {
+function flee() { if (state.inCombat) sysFlee(); }  // ein Versuch je 3 Ticks, Fehlschlag = Erstschlag
+function fleeAlt() {
   if (!state.inCombat) return;
   const fleeFx = clamp(gearFx("fleePct"), -15, 15) / 100;
   if (Math.random() < clamp(0.45 + willEff() * 0.03 + fleeFx, 0.1, 0.9)) {  // willEff: Gear-Wille höchstens +3
@@ -501,7 +503,7 @@ function showLine(text, choices) {
     b.onclick = () => choose(c.go);
     box.appendChild(b);
   });
-  document.getElementById("combat-acts").hidden = !(state.inCombat && state.combat && !state.combat.engaged);
+  document.getElementById("combat-acts").hidden = !(state.inCombat && state.combat && !state.combat.engaged && !state.combat.surrendered);
 }
 function waitFor(id) {
   const npc = D.NPCs[id];
@@ -759,11 +761,12 @@ function paintTradeDetail(hover) {
 }
 function paintSheet() {
   const body = document.getElementById("sheet-body");
-  const titles = { inventory: "Beutel", quests: "Bitten", stats: "Werte" };
+  const titles = { inventory: "Beutel", quests: "Bitten", stats: "Werte", zeichen: "Zeichen" };
   document.getElementById("sheet-title").textContent = titles[sheet] || "";
-  body.classList.toggle("scroll", sheet === "stats" || sheet === "quests");
+  body.classList.toggle("scroll", sheet === "stats" || sheet === "quests" || sheet === "zeichen");
+  if (sheet === "zeichen") { body.innerHTML = zeichenSheetHtml(); wireSheet(body); return; }
   if (sheet === "inventory") {
-    body.innerHTML = '<div class="bag-layout"><div class="paperdoll" id="paperdoll"><img class="doll-art" id="doll-art" alt=""></div><div id="bag-list"></div></div>';
+    body.innerHTML = '<div class="bag-layout"><div class="paperdoll" id="paperdoll"><img class="doll-art" id="doll-art" alt=""></div><div id="bag-list"></div></div>' + bagZeichenHtml();
     const doll = document.getElementById("paperdoll");
     const figure = art("ui/siluette.jpg");
     let dollArt = document.getElementById("doll-art");
@@ -842,6 +845,7 @@ function paintSheet() {
       const pct = Math.round((xp.xp / xp.need) * 100);
       return "<div class='card'><b>" + k.name + "</b> " + value + "<div class='bar'><i style='width:" + pct + "%'></i></div><div class='tiny'>" + xp.xp + " / " + xp.need + "</div></div>";
     }).join("") + valuesHtml() + relationsHtml() + (typeof sysStatsMore === "function" ? sysStatsMore() : "");
+    wireSheet(body);
   }
 }
 function render() {
@@ -849,7 +853,7 @@ function render() {
   const loc = D.LOCATIONS[state.location];
   const region = D.REGIONS[loc.region];
   document.getElementById("hero-name").textContent = state.hero.name;
-  document.getElementById("hero-meta").textContent = state.hero.herkunft + " · " + state.hero.fluch + " · Grad " + state.hero.level;
+  document.getElementById("hero-meta").textContent = state.hero.herkunft + " · Grad " + state.hero.level + " · " + gradName(state.hero.level);
   document.getElementById("hp").textContent = state.hero.hp + "/" + maxHp();
   document.getElementById("hpbar").innerHTML = "<div class='bar'><i style='width:" + Math.round(state.hero.hp / maxHp() * 100) + "%'></i></div>";
   document.getElementById("gold").textContent = state.hero.gold;
@@ -952,7 +956,7 @@ function render() {
     });
   }
   const acts = document.getElementById("combat-acts");
-  if (acts) acts.hidden = !(state.inCombat && state.combat && !state.combat.engaged);
+  if (acts) acts.hidden = !(state.inCombat && state.combat && !state.combat.engaged && !state.combat.surrendered);
   const narr = document.getElementById("narrator");
   narr.hidden = !state.narrator;
   if (state.narrator) {
@@ -966,7 +970,9 @@ function render() {
     const foe = state.combat;
     showFace(foe);
     if (!foe.engaged) {
-      const choices = foe.id === "russwolf"
+      const choices = foe.surrendered
+        ? [{ label: "Laufen lassen", go: "ergeben:laufen" }, { label: "Ausrauben", go: "ergeben:rauben" }, { label: "Gnadenstoß", go: "ergeben:gnade" }]
+        : foe.id === "russwolf" && !state.flags.wolf_dealt
         ? [{ label: "Gehen lassen", go: "spare" }, { label: "Verhandeln", go: "bargain" }]
         : [];
       showLine((foe.note ? foe.note + "\n" : "") + (foe.text || ""), choices);
@@ -995,7 +1001,6 @@ function cards(el, data, cur, fn) {
 let herkunftId = "gossenschatten", fluchId = "kronenbrand", portraitId = "gossenschatten";
 function paintNew() {
   cards(document.getElementById("herkunft-grid"), D.HERKUENFTE, herkunftId, (id) => { herkunftId = id; paintNew(); });
-  cards(document.getElementById("fluch-grid"), D.FLUECHE, fluchId, (id) => { fluchId = id; paintNew(); });
   const faces = document.getElementById("portrait-grid");
   faces.innerHTML = "";
   Object.values(D.PORTRAITS).forEach((p) => {
@@ -1009,7 +1014,7 @@ function paintNew() {
 }
 document.getElementById("btn-new").onclick = () => { paintNew(); document.getElementById("root-menu").hidden = true; document.getElementById("new-menu").hidden = false; };
 document.getElementById("btn-back").onclick = () => { document.getElementById("new-menu").hidden = true; document.getElementById("root-menu").hidden = false; };
-document.getElementById("btn-enter").onclick = () => newGame({ name: document.getElementById("new-hero-name").value.trim(), herkunftId, fluchId, portraitId });
+document.getElementById("btn-enter").onclick = () => newGame({ name: document.getElementById("new-hero-name").value.trim(), herkunftId, portraitId });
 document.getElementById("btn-load").onclick = () => {
   const box = document.getElementById("slots");
   box.innerHTML = "";
