@@ -178,8 +178,9 @@ const TALK_HOOKS_LATE = [];  // Optionen nach den übrigen Haken (Arbeit, Traini
 const DAILY_ACTIONS = [
   // npcs: nur über diese NPCs (Gesprächsoption), nicht mehr im Ortsfenster (Korrekturliste Nico).
   { id: "work", label: "Arbeiten", locs: ["schmied", "markt", "gasthaus"], steps: 2, flag: "work", npcs: ["branna", "kraemerin", "jorun"] },
-  { id: "train_atk", label: "Trainieren: Angriff", locs: ["burg", "platz"], steps: 2, flag: "train", npcs: ["burgvogt", "edrik"] },
-  { id: "train_def", label: "Trainieren: Panzer", locs: ["burg", "platz"], steps: 2, flag: "train", npcs: ["burgvogt", "edrik"] },
+  // Training bei Harn (Burg) und Edrik (Platz) gegen Gold, wie Lernen bei Selene/Rorik.
+  { id: "train_atk", label: "Trainieren: Angriff (14 Gold)", locs: ["burg", "platz"], steps: 2, flag: "train", gold: 14, npcs: ["burgvogt", "edrik"] },
+  { id: "train_def", label: "Trainieren: Panzer (12 Gold)", locs: ["burg", "platz"], steps: 2, flag: "train", gold: 12, npcs: ["burgvogt", "edrik"] },
   { id: "pray", label: "Beten", locs: ["tempel"], steps: 1, flag: "pray" },
   { id: "confess", label: "Beichten", locs: ["tempel"], steps: 1, flag: "pray" },
   // Lernen nur noch bei Selene (Wille) und Rorik (Glück) in der Ratshalle, gegen Gold; Katakomben ohne Lernen (Ausbesserung 2).
