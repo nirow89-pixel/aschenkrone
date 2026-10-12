@@ -283,7 +283,11 @@ const LOCATIONS = {
     ],
     exits: [ { id: "platz", label: "Zum Platz", x: 50, y: 88, arch: true } ] },
   tempel: { id: "tempel", name: "Tempel", region: "stadt", blurb: "Die Glocke hängt schwer. Sie schlägt selten, und wenn sie schlägt, wird der Platz still.", art: "locations/tempel.jpg",
-    exits: [ { id: "platz", label: "Zum Platz", x: 50, y: 90, arch: true } ] },
+    exits: [ { id: "katakomben", label: "Katakomben", x: 70, y: 80, arch: true },  // Torbogen an den Altarstufen
+      { id: "platz", label: "Zum Platz", x: 50, y: 90, arch: true } ] },
+  katakomben: { id: "katakomben", name: "Katakomben", region: "stadt", blurb: "Eine Treppe führt unter den Tempel. Hinter dem Gitter liegen Gänge mit Grabnischen und Kerzen.", art: "locations/katakomben.jpg",
+    parent: "tempel", pass: "ui/pass_kata.jpg",
+    exits: [ { id: "tempel", label: "Zurück zum Tempel" } ] },
   gassen: { id: "gassen", name: "Gassen", region: "stadt", blurb: "Die Gassen sind eng. Türen öffnen sich nur, wenn jemand den Preis schon kennt.", art: "locations/gassen.jpg",
     exits: [
       { id: "bordell", label: "Rote Tür", x: 78, y: 70, arch: true },  // Torbogen auf dem Rundbogen rechts
@@ -334,7 +338,11 @@ const LOCATIONS = {
       { id: "nebelpfad", label: "Nebelpfad" }
     ] },
   hexenhuette: { id: "hexenhuette", name: "Hexenhütte", region: "duesterwald", blurb: "Rauch steht über dem Kessel. An der Schwelle hängen Kräuter, die man nicht ohne Frage nimmt.", art: "locations/hexenhuette.jpg",
-    exits: [ { id: "alter_baum", label: "Alter Baum", x: 50, y: 90, arch: true } ] },
+    exits: [ { id: "hexenhuette_innen", label: "Tür", x: 46, y: 78, arch: true },  // Torbogen auf der Haustür
+      { id: "alter_baum", label: "Alter Baum", x: 50, y: 90, arch: true } ] },
+  hexenhuette_innen: { id: "hexenhuette_innen", name: "Hexenhütte (innen)", region: "duesterwald", blurb: "Ein Raum mit Feuerstelle, Tisch und Spiegel. Unter der Decke trocknen Kräuter.", art: "locations/hexenhaus.jpg",
+    parent: "hexenhuette", pass: "ui/pass_huette.jpg",
+    exits: [ { id: "hexenhuette", label: "Zurück zur Hexenhütte" } ] },
   blueteich: { id: "blueteich", name: "Blütenteich", region: "duesterwald", blurb: "Blüten liegen auf dem Wasser. Der Baum bleibt der Weg zurück.", art: "locations/blueteich.jpg",
     exits: [ { id: "alter_baum", label: "Alter Baum", x: 50, y: 90, arch: true } ] },
   sumpf: { id: "sumpf", name: "Sumpf", region: "duesterwald", blurb: "Der Boden gibt nach. Wer weiter will, kehrt besser zum Baum um.", art: "locations/sumpf.jpg",
