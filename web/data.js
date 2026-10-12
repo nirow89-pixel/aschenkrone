@@ -170,14 +170,14 @@ const GRAD_STUFEN = [
 
 const NPCs = {
   burgvogt: {
-    id: "burgvogt", name: "Harn", title: "Burgvogt", location: "markt",
+    id: "burgvogt", name: "Harn", title: "Burgvogt", location: "burg",
     text: "Harn trägt den Ring des Königs sichtbar. Wer ihn anspricht, spricht mit der Stadt.",
     art: "npcs/burgvogt.jpg", merchant: false,
-    hours: ["vormittag","mittag","nachmittag"], pin: { x: 58, y: 68 }, faction: "krone",
+    hours: ["vormittag","mittag","nachmittag"], pin: { x: 34, y: 78 }, faction: "krone",
     lines: ["Die Wege nach Unterorten sind offen. Bringt Bericht, wenn etwas den Zoll stört."],
     talk: {
       start: "Ihr seid neu genug, dass die Stadt euren Namen noch nicht führt. Sprecht kurz und haltet euch an die Ordnung.",
-      quest: "Am Nebelpfad hält ein Wolf die Karren auf. Die Boten warten, der Zoll bleibt liegen. Wenn das Tier tot ist, kommt zu mir auf den Markt.",
+      quest: "Am Nebelpfad hält ein Wolf die Karren auf. Die Boten warten, der Zoll bleibt liegen. Wenn das Tier tot ist, kommt zu mir auf die Burg.",
       done: "Der Pfad ist wieder nutzbar. Die Stadt merkt sich, wer ihre Wege freihält."
     }
   },
@@ -398,8 +398,8 @@ const NPCs = {
 const QUESTS = {
   wolfspfad: {
     id: "wolfspfad", title: "Der Wolf am Nebelpfad", giver: "burgvogt",
-    where: "Nebelpfad, danach Markt der Aschenstadt",
-    goal: "Tötet den Rußwolf am Nebelpfad und meldet Harn auf dem Markt, dass der Weg wieder frei ist.",
+    where: "Nebelpfad, danach Burg der Aschenstadt",
+    goal: "Tötet den Rußwolf am Nebelpfad und meldet Harn auf der Burg, dass der Weg wieder frei ist.",
     text: "Harn will den Pfad offen halten. Der Wolf hält Karren und Boten auf, und die Stadt verliert Zoll.",
     reward: { gold: 18, ansehen: 1, bond: { burgvogt: 8 } }
   },
@@ -423,7 +423,7 @@ const NARRATOR = {
   },
   stadt: {
     id: "stadt", title: "Aschenstadt", art: null,
-    text: "Aschenstadt trägt Malriks Ordnung offen. Die Tore schließen pünktlich, die Buden zahlen Zoll, und Harn steht dort, wo man einen Vogt erwartet. Die Glocken im Tempel schlagen selten. In den Gassen hinter dem Markt öffnen sich Türen nur für den, der den Preis kennt."
+    text: "Aschenstadt trägt Malriks Ordnung offen. Die Tore schließen pünktlich, die Buden zahlen Zoll, und Harn steht auf der Burg, wo man einen Vogt erwartet. Die Glocken im Tempel schlagen selten. In den Gassen hinter dem Markt öffnen sich Türen nur für den, der den Preis kennt."
   },
   vorstadt: {
     id: "vorstadt", title: "Der Nebelpfad", art: null,
@@ -481,9 +481,9 @@ const LOCATIONS = {
       { id: "gassen", label: "Gassen" },
       { id: "nebelpfad", label: "Vor den Toren" }
     ] },
-  burg: { id: "burg", name: "Burg", region: "stadt", blurb: "Mauern über dem Platz. Von hier sieht man die Dächer, und die Dächer sehen einen nicht zurück.", art: "locations/burg.jpg",
+  burg: { id: "burg", name: "Burg", region: "stadt", blurb: "Mauern über dem Platz. Harn hält hier Ordnung. Von hier sieht man die Dächer, und die Dächer sehen einen nicht zurück.", art: "locations/burg.jpg",
     exits: [ { id: "platz", label: "Zum Platz", x: 50, y: 88, arch: true } ] },
-  markt: { id: "markt", name: "Markt", region: "stadt", blurb: "Buden stehen in Reihen. Der Zoll hängt an jeder Plane, und Harn sieht, wer bleibt.", art: "locations/markt.jpg",
+  markt: { id: "markt", name: "Markt", region: "stadt", blurb: "Buden stehen in Reihen. Der Zoll hängt an jeder Plane, und wer bleibt, wird gesehen.", art: "locations/markt.jpg",
     stalls: [
       { id: "stand_waffen", label: "Waffen", x: 16, y: 40, shop: ["dorfstahl","aschenklinge","thronnadel","glasdolch","nebelklinge","zweihander"] },
       { id: "stand_ruestung", label: "Rüstung", x: 34, y: 40, shop: ["knochenhandschuh","seidenhand","russmantel","samtbrust","pelzmantel","glaspanzer","aschenschild","leder_hose","fangzahn_kampfrock","eisen_beinschienen","wickelstiefel","schnallen_lederstiefel","amethyst_stiefel","hohe_panzerstiefel"] },

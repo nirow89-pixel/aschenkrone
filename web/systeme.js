@@ -1277,6 +1277,14 @@ function migV7(s) {
   } finally { state = prev; }
   return s;
 }
+// Migration v7 -> v8: Harn (Burgvogt) von Markt nach Burg. Quest-Status wolfspfad bleibt;
+// Abgabe läuft über NPC-Id, daher weiterhin auf der Burg möglich.
+function migV8(s) {
+  if (!s.flags) s.flags = {};
+  // Ort liegt in data.js; Save trägt nur Quest-Status. Nichts an quests.wolfspfad ändern.
+  s.flags.sim_harn_burg = true;
+  return s;
+}
 const ROMAN = ["", "I", "II", "III"];
 function perkRowHtml(e) {
   const P = D.PERKS[e.id];

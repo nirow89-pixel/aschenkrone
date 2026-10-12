@@ -138,7 +138,9 @@ const MIGRATIONS = [
   // v5 -> v6: Grad aus Wachstum (statStart/statPeak), Nachhol-Wahlen, Zeichen, Kampfstand.
   function v5to6(s) { return migV6(s); },
   // v6 -> v7: Perks (Male/Flüche/Segen); alter Fluch -> perks.flueche fluch_<alt> (Stufe 3, baked, migriert).
-  function v6to7(s) { return migV7(s); }
+  function v6to7(s) { return migV7(s); },
+  // v7 -> v8: Harn (Burgvogt) steht auf der Burg statt auf dem Markt; Wolf-Quest bleibt per NPC-Id abgebbar.
+  function v7to8(s) { return migV8(s); }
 ];
 const SAVE_VERSION = MIGRATIONS.length;
 function migrate(s) {
