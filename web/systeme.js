@@ -770,7 +770,7 @@ function gearAtkCombat() {
 function critChance(extra) {
   const w = weaponOf("waffeL");
   const cap = (gradState().pfad.dieb || 0) >= 3 ? 40 : 35;
-  return Math.min(cap, (state.hero.crit || 0) + ((w && w.crit) || 0) + Math.floor((state.hero.fortune || 0) / 10) + perkStat("crit") + (extra || 0));
+  return Math.min(cap, (state.hero.crit || 0) + ((w && w.crit) || 0) + Math.floor(((state.hero.fortune || 0) + perkStat("fortune")) / 10) + perkStat("crit") + (extra || 0));
 }
 function perkFxNum(k, sub) { return typeof perkFx === "function" ? perkFx(k, sub) : 0; }
 function rnd(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
@@ -1081,3 +1081,221 @@ function wireSheet(body) {
   body.querySelectorAll("[data-grad]").forEach((b) => { b.onclick = () => { const [k, id] = b.dataset.grad.split(":"); chooseGradUp(k, id); }; });
 }
 STATS_MORE.unshift(gradPanelHtml);
+
+// =====================================================================
+// Stufe e · Male, Flüche, Segen (male-fluche-segen.md, fx gzk §12.4)
+// =====================================================================
+const PERK_GROUP = { mal: "male", fluch: "flueche", segen: "segen" };
+function perkState() { if (!state.perks) state.perks = { male: [], flueche: [], segen: [], migrated: false }; return state.perks; }
+function perkList(all) {
+  if (!state || !state.perks) return [];
+  const p = state.perks; return [].concat(p.male, p.flueche, p.segen).filter((e) => all || !e.ruht);
+}
+function perkEntry(id) { return perkList(true).find((e) => e.id === id) || null; }
+function perkName(id) { return (D.PERKS[id] && D.PERKS[id].name) || id; }
+// fx einer Stufe; migrierte (baked) Einträge liefern nur die laufende Wirkung (reflect, lifesteal).
+function perkStageFx(e) {
+  const P = D.PERKS[e.id]; if (!P) return {};
+  if (e.baked) return P.migFx || {};
+  return P.stufen[Math.min(P.stufen.length, e.stufe || 1) - 1] || {};
+}
+// Stapelregel: je fx-Art stärkster voll, zweiter halb (1 Nachkommastelle), nur innerhalb gleichen Vorzeichens; dann summieren.
+function perkFx(key, sub) {
+  const vals = [];
+  perkList().forEach((e) => { const fx = perkStageFx(e); let v = fx[key]; if (v && typeof v === "object") v = sub !== undefined ? v[sub] : 0; if (typeof v === "number" && v) vals.push(v); });
+  const side = (arr) => { arr.sort((a, b) => Math.abs(b) - Math.abs(a)); return (arr[0] || 0) + Math.round(((arr[1] || 0) / 2) * 10) / 10; };
+  return side(vals.filter((v) => v > 0)) + side(vals.filter((v) => v < 0));
+}
+// Flache Werte (atk, def, will, hp, crit, fortune, …) stapeln normal; atk/def/will werden beim Lesen auf +3 gedeckelt.
+function perkMod(key) {
+  if (!state || !state.perks) return 0;
+  if (["fleePct", "travelSafePct", "tradePct", "zauberPct", "heilPct", "reflect", "lifesteal", "regenPct", "healInPct"].includes(key)) return perkFx(key);
+  return perkList().reduce((s, e) => { const v = perkStageFx(e)[key]; return s + (typeof v === "number" ? v : 0); }, 0);
+}
+function perkTradePct(npc) {
+  if (!npc || !state.perks) return 0;
+  const targets = ["alle"]; if (npc.faction) targets.push(npc.faction); if (npc.id) targets.push(npc.id);
+  if (npc.location === "schmied") targets.push("schmied");
+  return targets.reduce((s, t) => s + perkFx("tradePct", t), 0);
+}
+function syncPerkFlags() {
+  const f = state.flags;
+  Object.keys(D.PERKS).forEach((id) => {
+    const e = perkEntry(id);
+    if (f["perk_" + id] && !e) f["perk_" + id + "_gehabt"] = true;
+    f["perk_" + id] = !!e && !e.ruht; f["perk_" + id + "_s2"] = !!e && (e.stufe || 1) >= 2; f["perk_" + id + "_s3"] = !!e && (e.stufe || 1) >= 3;
+  });
+}
+function slotsUsed(group) { return perkState()[group].filter((e) => !e.migriert && !e.ruht).length; }
+// Prüft, ob ein Perk erworben werden kann. Liefert "" oder den Grund.
+function perkBlocked(id, opts) {
+  const P = D.PERKS[id]; if (!P) return "Unbekannt.";
+  opts = opts || {};
+  const own = perkEntry(id);
+  const ex = (P.exklusiv || []).concat(Object.keys(D.PERKS).filter((k) => (D.PERKS[k].exklusiv || []).includes(id)));
+  const clash = ex.find((x) => { const e = perkEntry(x); return e && !(e.migriert && x === "fluch_stumme_glocke"); });
+  if (clash && !own) return "Verträgt sich nicht mit " + perkName(clash) + ".";
+  if (own) return "";  // Doppelerwerb hebt nur die Stufe
+  if (P.art === "segen") {
+    if (slotsUsed("segen") >= 3) return "Kein Platz mehr für einen Segen.";
+    if (P.geber && !P.ortSegen && perkState().segen.some((e) => !e.ruht && D.PERKS[e.id] && D.PERKS[e.id].geber === P.geber)) return "Von dieser Seite tragt ihr schon einen Segen.";
+  }
+  if (P.art !== "mal" && slotsUsed("flueche") + slotsUsed("segen") >= 5 && P.art === "segen") return "Ihr tragt schon genug.";
+  if (opts.npc && !canPlead(opts.npc)) return "Nicht unter Druck.";  // keine Perk-Vergabe bei Erpressung/Abhängigkeit
+  return "";
+}
+// grantPerk: Doppelerwerb = höchste Stufe; volle Fluch-Slots -> der älteste nicht migrierte Fluch ruht.
+function grantPerkById(id, opts) {
+  const P = D.PERKS[id]; if (!P) return false;
+  opts = opts || {};
+  if (perkBlocked(id, opts)) return false;
+  const group = PERK_GROUP[P.art], ps = perkState();
+  const max = P.stufen.length; const st = Math.min(max, opts.stufe || 1);
+  const own = ps[group].find((e) => e.id === id);
+  if (own) { if (st > (own.stufe || 1)) { own.stufe = st; perkLog(P.art, id, "stufe", opts.quelle); } }
+  else {
+    if (P.art === "fluch" && !opts.migriert && slotsUsed("flueche") >= 3) {
+      const old = ps.flueche.find((e) => !e.migriert && !e.ruht); if (old) { old.ruht = true; perkLog("fluch", old.id, "ruht", "slot"); log(perkName(old.id) + " ruht."); }
+    }
+    const e = { id, quelle: opts.quelle || "story", seit: state.day, stufe: st };
+    if (P.sichtbar === "verborgen") e.verborgen = true;
+    if (opts.geber) e.geber = opts.geber;
+    if (opts.migriert) { e.baked = opts.baked === undefined ? true : opts.baked; e.migriert = true; }
+    if (opts.herkunftTag) e.herkunftTag = opts.herkunftTag;
+    ps[group].push(e);
+    perkLog(P.art, id, "erhalten", opts.quelle);
+    if (!opts.migriert) log((P.art === "mal" ? "Ein Mal: " : P.art === "fluch" ? "Ein Fluch: " : "Ein Segen: ") + (e.verborgen ? "etwas Unbekanntes" : P.name) + ".");
+  }
+  const cur = ps[group].find((e) => e.id === id);
+  (P.oeffnetAb && P.oeffnetAb[cur.stufe] || []).forEach(learnZeichen);
+  // M6/S3: Wolfstöter entzieht das Gastrecht
+  if (id === "mal_des_wolfstoeters") removePerk("segen_waldgastrecht", "entzogen");
+  syncPerkFlags(); state.hero.hp = Math.min(state.hero.hp, maxHp());
+  return true;
+}
+function grantPerk(art, id, opts) { return grantPerkById(id, opts); }
+function removePerk(id, why) {
+  const ps = perkState(); let hit = false;
+  Object.keys(ps).forEach((g) => { if (Array.isArray(ps[g])) { const n = ps[g].length; ps[g] = ps[g].filter((e) => e.id !== id || (g === "male")); if (ps[g].length !== n) hit = true; } });
+  if (hit) { perkLog(D.PERKS[id].art, id, "verloren", why); log(perkName(id) + (why === "entzogen" ? " wurde entzogen." : " ist von euch genommen.")); syncPerkFlags(); state.hero.hp = Math.min(Math.max(1, state.hero.hp), maxHp()); }
+  return hit;
+}
+function perkLog(art, id, aktion, grund) { if (!state.perkLog) state.perkLog = []; state.perkLog.push({ day: state.day, art, id, aktion, grund: grund || "" }); state.perkLog = state.perkLog.slice(-60); }
+// Grad-Angebot: 2 Segen + 1 „guter“ Fluch aus der Grad-Liste, gefiltert; abgelehnte kommen nicht wieder.
+function gradPerkOffers() {
+  const g = gradState(), pool = Object.keys(D.PERKS).filter((id) => D.PERKS[id].grad && !perkEntry(id) && !(g.declined || []).includes(id) && !perkBlocked(id));
+  const shuffle = (a) => a.map((x) => [Math.random(), x]).sort((p, q) => p[0] - q[0]).map((p) => p[1]);
+  return shuffle(pool.filter((id) => D.PERKS[id].art === "segen")).slice(0, 2).concat(shuffle(pool.filter((id) => D.PERKS[id].art === "fluch")).slice(0, 1));
+}
+// when-Keys für Nebenwege: perkAll, perkAny, perkNone (Hauptpfad darf sie nicht nutzen)
+function sysWhenPerk(w) {
+  if (w.perkAll && !w.perkAll.every((id) => state.flags["perk_" + id])) return false;
+  if (w.perkAny && !w.perkAny.some((id) => state.flags["perk_" + id])) return false;
+  if (w.perkNone && w.perkNone.some((id) => state.flags["perk_" + id])) return false;
+  return true;
+}
+// ---- Erwerb im bestehenden Inhalt (Act 1, klein) ----
+TALK_HOOKS.push((npc, c) => {
+  if (npc.id === "tamsin" && state.quests.tamsin_wolf === "done" && (state.bonds.tamsin || 0) >= 30 && !perkEntry("segen_tamsins_tisch") && !perkBlocked("segen_tamsins_tisch", { npc: "tamsin" }))
+    c.push({ label: "Bei Tamsin am Tisch Platz nehmen", go: "perk:segen_tamsins_tisch" });
+  if (npc.id === "priester" && !perkEntry("segen_der_glocke") && rel("priester").trust >= 40 && state.values.korrPeak <= 39 && !perkBlocked("segen_der_glocke", { npc: "priester" }))
+    c.push({ label: "Um den Segen der Glocke bitten", go: "perk:segen_der_glocke" });
+  if (npc.id === "priester" && !perkEntry("segen_des_zuhoerens") && (state.values.rufBeichten || 0) >= 3 && !perkBlocked("segen_des_zuhoerens", { npc: "priester" }))
+    c.push({ label: "Eld fragen, wie er zuhört", go: "perk:segen_des_zuhoerens" });
+  if (npc.id === "enno" && (state.world.ratDienst || 0) >= 3 && !perkEntry("segen_brot_und_dach") && !perkBlocked("segen_brot_und_dach", { npc: "enno" }))
+    c.push({ label: "Enno nach einem Platz im Dorf fragen", go: "perk:segen_brot_und_dach" });
+  if (npc.id === "hella" && canPlead("hella")) {
+    if (!perkEntry("fluch_nebelpreis")) c.push({ label: "Hella um Hilfe bitten (sie nennt einen Preis)", go: "perk:fluch_nebelpreis" });
+    else if (state.day - perkEntry("fluch_nebelpreis").seit >= 14) c.push({ label: "Den genannten Preis zahlen (20 Gold)", go: "preis:hella" });
+    ["fluch_glasherz", "fluch_blutmond"].forEach((f) => { if (perkEntry(f) && !perkEntry(f).migriert) c.push({ label: perkName(f) + " bei Hella abgeben (eine Erinnerung)", go: "abgeben:" + f }); });
+  }
+  if (npc.id === "priester") {
+    perkState().flueche.filter((e) => e.id !== "fluch_gassenschuld" && e.id !== "fluch_nebelpreis").slice(0, 2).forEach((e) => c.push({ label: perkName(e.id) + " brechen lassen (Bußdienst)", go: "brechen:" + e.id }));
+  }
+});
+const PERK_LINES = {
+  segen_tamsins_tisch: "Tamsin schiebt euch einen Stuhl hin. „Der bleibt eurer.“",
+  segen_der_glocke: "Eld legt die Hand an die Glocke. Sie summt, ohne zu schlagen.",
+  segen_des_zuhoerens: "„Hört nicht auf die Worte. Hört, wann sie kommen.“",
+  segen_brot_und_dach: "Enno nickt. „Wer mit anpackt, hat hier ein Dach.“",
+  fluch_nebelpreis: "Hella legt euch Kräuter auf und sagt einen Preis, leise. Eure Wunden schließen sich."
+};
+CHOOSE_HOOKS.perk = (go, npc) => {
+  const id = go.split(":")[1];
+  const why = perkBlocked(id, { npc: npc.id });
+  if (why) return why;
+  if (id === "fluch_nebelpreis") state.hero.hp = maxHp();
+  grantPerkById(id, { quelle: "npc:" + npc.id, geber: npc.id });
+  return PERK_LINES[id] || "";
+};
+CHOOSE_HOOKS.preis = () => { if (state.hero.gold < 20) return "Euer Gold reicht nicht. Hella wartet."; state.hero.gold -= 20; removePerk("fluch_nebelpreis", "geloest"); return "Hella nimmt das Gold und nickt. Der Preis ist bezahlt."; };
+CHOOSE_HOOKS.abgeben = (go, npc) => { const id = go.split(":")[1]; removePerk(id, "abgegeben"); remember("hella", id.replace("fluch_", "") + "_preis", 2, true); return "Hella nimmt euch etwas ab, an das ihr euch nicht mehr ganz erinnert."; };
+CHOOSE_HOOKS.brechen = (go) => { const id = go.split(":")[1]; const e = perkEntry(id); if (!e) return ""; advance(2); removePerk(id, "gebrochen"); return "Ihr haltet Totenwache und läutet bis die Arme schwer sind. Der Fluch löst sich."; };
+// Segen der Esse: Arbeit an 5 verschiedenen Tagen in der Schmiede
+const _doDaily = doDaily;
+doDaily = function (id) {
+  const at = state.location;
+  _doDaily(id);
+  if (id === "work" && at === "schmied") { const w = state.world; w.esseTage = Array.from(new Set((w.esseTage || []).concat([state.day]))); if (w.esseTage.length >= 5 && !perkEntry("segen_der_esse") && !perkBlocked("segen_der_esse")) grantPerkById("segen_der_esse", { quelle: "ereignis:esse" }); }
+};
+const _suehne = suehne;
+suehne = function (f, art) { const r = _suehne(f, art); if (r && f === "rat" && art === "dienst") state.world.ratDienst = (state.world.ratDienst || 0) + 1; return r; };
+const _confessionRuf = confessionRuf;
+confessionRuf = function (who) { const r = _confessionRuf(who); if (r) state.values.rufBeichten = (state.values.rufBeichten || 0) + 1; return r; };
+// Spiegelhunger: dritter Spiegeltrank in 7 Tagen
+const _useItem = useItem;
+useItem = function (id) {
+  const had = state.inventory.includes(id);
+  _useItem(id);
+  if (had && id === "spiegeltrank") { const w = state.world; w.spiegel = (w.spiegel || []).filter((d) => d >= state.day - 6).concat([state.day]); if (w.spiegel.length >= 3) grantPerkById("fluch_spiegelhunger", { quelle: "ereignis:spiegeltrank" }); persist(); render(); }
+};
+// Wolf-Ausgänge: Paktmal
+const _parkWolfBonds = parkWolfBonds;
+parkWolfBonds = function (outcome) { _parkWolfBonds(outcome); grantPerkById("mal_des_wolfspakts", { quelle: "story", herkunftTag: outcome }); };
+onNewDay((day) => {
+  if (!state || !state.perks) return;
+  // Spiegelhunger klingt ab: 7 Tage ohne Spiegeltrank -> Stufe −1
+  const e = perkEntry("fluch_spiegelhunger"); const w = state.world;
+  if (e && (w.spiegel || []).every((d) => d < day - 7)) { if ((e.stufe || 1) <= 1) removePerk(e.id, "verklungen"); else { e.stufe -= 1; w.spiegel = [day]; } }
+  // Segen Stufe 2 nach 14 Tagen gehalten
+  perkState().segen.forEach((s) => { if (!s.ruht && (s.stufe || 1) < D.PERKS[s.id].stufen.length && day - s.seit >= 14) s.stufe = 2; });
+  syncPerkFlags();
+});
+// Migration v6 -> v7: alter Fluch (hero.fluchId) -> perks.flueche fluch_<alt>, Stufe 3, baked, migriert.
+function migV7(s) {
+  const prev = state; state = s;
+  try {
+    perkState();
+    if (!s.perks.migrated) {
+      const alt = s.hero.fluchId; const id = D.FLUCH_MIGRATION[alt];
+      if (id) grantPerkById(id, { quelle: "migration", stufe: 3, migriert: true, baked: s.hero.fluch ? true : "unsicher" });
+      s.perks.migrated = true;
+    }
+    if (s.flags.wolf_slain && !perkEntry("mal_des_wolfstoeters") && !perkEntry("mal_des_wolfspakts")) grantPerkById("mal_des_wolfstoeters", { quelle: "story", herkunftTag: "wolf_slain" });
+    else if ((s.flags.wolf_spared || s.flags.wolf_bargain) && !perkEntry("mal_des_wolfspakts") && !perkEntry("mal_des_wolfstoeters")) grantPerkById("mal_des_wolfspakts", { quelle: "story", herkunftTag: s.flags.wolf_bargain ? "wolf_bargain" : "wolf_spared" });
+    syncPerkFlags();
+  } finally { state = prev; }
+  return s;
+}
+const ROMAN = ["", "I", "II", "III"];
+function perkRowHtml(e) {
+  const P = D.PERKS[e.id];
+  if (e.verborgen) return "<div class='card perk' title='Etwas an euch hat sich verändert. Jemand Kundiges könnte es benennen.'><b>Unbekanntes</b> · ?</div>";
+  const herk = e.quelle === "migration" ? "Seit jeher" : e.quelle === "grad" ? "Grad" : /^npc:/.test(e.quelle) ? (D.NPCs[e.quelle.slice(4)] || {}).name || "Begegnung" : "Geschichte";
+  const tip = P.text + " Wirkung: " + P.wirkung + "." + (P.bedingung ? " Bedingung: " + P.bedingung + "." : "") + (P.loesen ? " Lösen: " + P.loesen + "." : "");
+  return "<div class='card perk" + (e.ruht ? " ruht" : "") + "' title='" + esc(tip).replace(/'/g, "&#39;") + "'><b>" + esc(P.name) + "</b> · " + ROMAN[e.stufe || 1] + " · " + esc(herk) + (e.ruht ? " · ruht" : "") +
+    "<div class='tiny'>" + esc(P.wirkung) + (P.loesen ? " · " + esc(P.loesen) : "") + "</div>" + (DEBUG ? dbg(JSON.stringify(perkStageFx(e))) : "") +
+    (P.art === "segen" ? "<button data-ablegen='" + e.id + "'>Ablegen</button>" : "") + "</div>";
+}
+function perksHtml() {
+  const ps = perkState();
+  return "<h3>Male</h3>" + (ps.male.length ? ps.male.map(perkRowHtml).join("") : "<p class='tiny'>Keine.</p>") +
+    "<h3>Flüche " + slotsUsed("flueche") + "/3</h3>" + (ps.flueche.length ? ps.flueche.map(perkRowHtml).join("") : "<p class='tiny'>Keine.</p>") +
+    "<h3>Segen " + slotsUsed("segen") + "/3</h3>" + (ps.segen.length ? ps.segen.map(perkRowHtml).join("") : "<p class='tiny'>Keine.</p>");
+}
+STATS_MORE.splice(1, 0, perksHtml);
+const _wireSheet = wireSheet;
+wireSheet = function (body) {
+  _wireSheet(body);
+  body.querySelectorAll("[data-ablegen]").forEach((b) => { b.onclick = () => { if (window.confirm(perkName(b.dataset.ablegen) + " wirklich ablegen?")) { removePerk(b.dataset.ablegen, "abgelegt"); persist(); paintSheet(); render(); } }; });
+};

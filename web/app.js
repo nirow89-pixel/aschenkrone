@@ -136,7 +136,9 @@ const MIGRATIONS = [
   // v4 -> v5: Fraktionen als Achsen (gunst = max(0,n), zorn = max(0,−n)); state.factions bleibt Spiegel.
   function v4to5(s) { return migV5(s); },
   // v5 -> v6: Grad aus Wachstum (statStart/statPeak), Nachhol-Wahlen, Zeichen, Kampfstand.
-  function v5to6(s) { return migV6(s); }
+  function v5to6(s) { return migV6(s); },
+  // v6 -> v7: Perks (Male/Flüche/Segen); alter Fluch -> perks.flueche fluch_<alt> (Stufe 3, baked, migriert).
+  function v6to7(s) { return migV7(s); }
 ];
 const SAVE_VERSION = MIGRATIONS.length;
 function migrate(s) {
@@ -545,7 +547,7 @@ function gearFx(key, sub) {
     return sum + ((sub !== undefined ? (v && v[sub]) : v) || 0);
   }, 0);
 }
-function maxHp() { return state.hero.hpMax + gearBonus("hp"); }
+function maxHp() { return Math.max(1, state.hero.hpMax + gearBonus("hp") + (typeof perkMod === "function" ? perkMod("hp") : 0)); }
 function buyPrice(it) {
   const pct = Math.min(15, gearFx("tradePct") + (typeof perkTradePct === "function" ? perkTradePct(lastTalk) : 0));
   return Math.max(1, Math.round(it.price * (1 - pct / 100) * rufPreisFaktor(lastTalk)));
