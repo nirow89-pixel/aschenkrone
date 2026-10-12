@@ -33,15 +33,24 @@ const DAY_PHASES = [
 ];
 
 const BOND_STEPS = [
+  { min: -100, id: "todfeind", name: "Todfeind" },
   { min: -80, id: "hass", name: "Hass" },
+  { min: -65, id: "groll", name: "Groll" },
   { min: -50, id: "feind", name: "Feindschaft" },
+  { min: -37, id: "misstrauen", name: "Misstrauen" },
   { min: -25, id: "kalt", name: "Abneigung" },
+  { min: -15, id: "kuehl", name: "Kühl" },
   { min: -8, id: "fremd", name: "Fremd" },
   { min: 8, id: "bekannt", name: "Bekannt" },
+  { min: 15, id: "freundlich", name: "Freundlich" },
   { min: 22, id: "wohl", name: "Wohlgesinnt" },
+  { min: 30, id: "zugetan", name: "Zugetan" },
   { min: 38, id: "vertraut", name: "Vertraut" },
+  { min: 46, id: "herzlich", name: "Herzlich" },
   { min: 55, id: "verbunden", name: "Verbunden" },
+  { min: 63, id: "innig", name: "Innig" },
   { min: 72, id: "nahe", name: "Nahe" },
+  { min: 80, id: "ergeben", name: "Ergeben" },
   { min: 88, id: "unzertrennlich", name: "Unzertrennlich" }
 ];
 

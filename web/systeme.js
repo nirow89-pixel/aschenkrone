@@ -322,3 +322,183 @@ function renderDaily(scene) {
   box.hidden = !box.innerHTML;
   box.querySelectorAll("[data-daily]").forEach((b) => { b.onclick = () => doDaily(b.dataset.daily); });
 }
+
+// =====================================================================
+// Stufe b · Beziehungen: Nähe-Kurve, Tagesdeckel, Vertrauen, Status, Gedächtnis, Verblassen, pendingBonds (beziehungen.md)
+// =====================================================================
+const NPC_ALIAS = { burgvogt: "harn", priester: "eld", marktfrau: "maera" };
+const NPC_ALIAS_BACK = Object.fromEntries(Object.entries(NPC_ALIAS).map(([a, b]) => [b, a]));
+function npcId(id) { return NPC_ALIAS_BACK[id] || id; }  // Konzept-ID (harn) -> data.js-ID (burgvogt)
+const STATUS_EXCLUDES = {
+  rivale: ["partner", "verbuendet"], verbuendet: ["rivale", "erpresst"], abhaengig_npc: ["begehren", "affaere"],
+  erpresst: ["freundschaft", "partner", "verbuendet", "begehren", "affaere"], begehren: ["erpresst", "abhaengig_npc", "ex"],
+  affaere: ["erpresst", "abhaengig_npc", "ex"], partner: ["rivale", "erpresst"], ex: ["begehren", "affaere", "partner"]
+};
+function freshRelation(day) { return { trust: 20, status: ["bekanntschaft"], memory: [], memoryCore: [], secrets: [], betrayed: false, dailyGain: { day: 0, sum: 0, trust: 0 }, lastContact: day, talkDay: 0, gifts: {} }; }
+function rel(id) {
+  id = npcId(id);
+  if (!state.relations) state.relations = {};
+  if (!state.relations[id]) state.relations[id] = freshRelation(state.day);
+  return state.relations[id];
+}
+function hasStatus(id, st) { const r = state.relations && state.relations[npcId(id)]; return !!r && r.status.includes(st); }
+function addStatus(id, st) {
+  const r = rel(id);
+  if ((STATUS_EXCLUDES[st] || []).some((x) => r.status.includes(x)) && st !== "erpresst") return false;
+  if (st === "partner" && Object.keys(state.relations).some((k) => state.relations[k].status.includes("partner"))) return false;
+  if (st === "erpresst") {  // Erpressung beendet Freundschaft, Pakt, Begehren, Partnerschaft; Affäre wird ex
+    r.status = r.status.filter((x) => !["freundschaft", "verbuendet", "begehren", "partner"].includes(x));
+    if (r.status.includes("affaere")) { r.status = r.status.filter((x) => x !== "affaere"); r.status.push("ex"); r.exUntil = state.day + 14; }
+    if (!r.status.includes("bekanntschaft")) r.status.push("bekanntschaft");
+    remember(id, "erpresst_von_spieler", 3, true);
+  }
+  if (st === "freundschaft") r.status = r.status.filter((x) => x !== "bekanntschaft");
+  if (!r.status.includes(st)) r.status.push(st);
+  return true;
+}
+function dropStatus(id, st) { const r = rel(id); r.status = r.status.filter((x) => x !== st); if (st === "freundschaft" && !r.status.includes("bekanntschaft")) r.status.push("bekanntschaft"); }
+// Verführung (nur angedeutet) ist gesperrt, solange Erpressung oder Abhängigkeit besteht – in beide Richtungen (Leitung).
+function canSeduce(id) { const r = state.relations && state.relations[npcId(id)]; if (!r) return false; return !["erpresst", "abhaengig_npc", "abhaengig_spieler"].some((s) => r.status.includes(s)) && !r.betrayed && !(state.npcEnd && state.npcEnd[npcId(id)]); }
+// Erpressung kann nie ein Flehen/Bitten erzwingen: Erpresste NPCs bieten keine Fürsprache und keine Perks.
+function canPlead(id) { return canSeduce(id) || (!hasStatus(id, "erpresst") && !hasStatus(id, "abhaengig_npc")); }
+function remember(id, tag, weight, core) {
+  const r = rel(id); const e = { tag, weight: weight || 1, day: state.day };
+  if (core) {
+    r.memoryCore.push(e);
+    if (r.memoryCore.length > 12) {  // Überlauf: zusammenfassen, nie löschen (werte §8.5)
+      const old = r.memoryCore.shift(); let sum = r.memoryCore.find((x) => x.tag === "vieles_erlebt");
+      if (!sum) { sum = { tag: "vieles_erlebt", tags: [], weight: 0, day: old.day }; r.memoryCore.unshift(sum); }
+      sum.tags.push(old.tag); sum.weight = Math.max(sum.weight, old.weight);
+    }
+  } else { r.memory.push(e); r.memory = r.memory.slice(-20); }
+}
+function npcMemoryHas(id, tag) { const r = state.relations && state.relations[npcId(id)]; if (!r) return false; return r.memory.concat(r.memoryCore).some((m) => m.tag === tag || (m.tags || []).includes(tag)); }
+function npcPresent(id, loc, phase) { const n = D.NPCs[npcId(id)]; if (!n || (state.npcEnd && state.npcEnd[n.id])) return false; return n.location === (loc || state.location) && (!n.hours || n.hours.includes(phase || state.phase)); }
+function isWitness(id, loc, phase) { return npcPresent(id, loc, phase); }
+// Gewinnkurve stückweise: bis 55 ×1, 55–80 ×½, über 80 ×⅓. raw = Rohpunkte; liefert echten Zuwachs.
+function bondCurve(cur, raw) {
+  let v = cur, left = raw;
+  while (left > 1e-9 && v < 100) {
+    const f = v < 55 ? 1 : v < 80 ? 0.5 : 1 / 3; const edge = v < 55 ? 55 : v < 80 ? 80 : 100;
+    const room = (edge - v) / f; const use = Math.min(left, room);
+    v += use * f; left -= use;
+  }
+  return v - cur;
+}
+function bondDayCap(cur) { return cur < 38 ? 6 : cur < 55 ? 4 : cur < 80 ? 3 : 2; }
+function round1(n) { return Math.round(n * 10) / 10; }
+// bumpBond(id, d, { source }) – source: talk | gift | first | quest | quest_story | hard | manip
+function bumpBondSys(id, d, opts) {
+  opts = opts || {};
+  id = npcId(id);
+  const src = opts.source || "quest";
+  const cur = state.bonds[id] || 0;
+  const r = rel(id);
+  if (d > 0) {
+    if ((src === "talk" || src === "gift") && typeof gearFx === "function") d += Math.min(2, gearFx("bondPlus"));
+    if (src === "first" && typeof perkMod === "function") d = Math.max(1, d + perkMod("bondErstPlus"));
+    if (r.betrayed) return 0;
+    let gainV = bondCurve(cur, d);
+    if (src !== "quest_story" && src !== "hard") {
+      if (r.dailyGain.day !== state.day) r.dailyGain = { day: state.day, sum: 0, trust: 0 };
+      const room = Math.max(0, bondDayCap(cur) - r.dailyGain.sum);
+      gainV = Math.min(gainV, room);
+      r.dailyGain.sum += gainV;
+    }
+    state.bonds[id] = round1(clamp(cur + gainV, -100, 100));
+  } else state.bonds[id] = round1(clamp(cur + d, -100, 100));
+  if (["talk", "gift", "quest", "quest_story"].includes(src)) r.lastContact = state.day;
+  return state.bonds[id] - cur;
+}
+function bumpTrust(id, d, opts) {
+  const r = rel(id); opts = opts || {};
+  if (r.betrayed) { r.trust = 0; return; }
+  if (d > 0) {
+    if (r.trust >= 70 && !opts.risk) return;
+    if (r.dailyGain.day !== state.day) r.dailyGain = { day: state.day, sum: 0, trust: 0 };
+    const cap = r.trust < 40 ? 10 : 5;
+    d = Math.min(d, Math.max(0, cap - r.dailyGain.trust)); r.dailyGain.trust += d;
+  }
+  r.trust = clamp(r.trust + d, 0, 100);
+}
+function betray(id) { const r = rel(id); r.betrayed = true; r.trust = 0; r.status = r.status.filter((s) => s === "bekanntschaft"); remember(id, "verraten", 3, true); }
+function trustWord(t) { return t < 15 ? "glaubt nichts" : t < 40 ? "vorsichtig" : t < 70 ? "verlässt sich auf euch" : "würde für euch lügen"; }
+const STATUS_NAMES = { bekanntschaft: "Bekanntschaft", freundschaft: "Freundschaft", rivale: "Rivale", verbuendet: "Verbündet", schuldner: "Ihr schuldet", glaeubiger: "Schuldet euch", abhaengig_npc: "Abhängig von euch", abhaengig_spieler: "Ihr seid abhängig", erpresst: "Erpresst", begehren: "Anziehung", affaere: "Heimlich", partner: "Partner", ex: "Getrennt" };
+// Gespräch: erstes Treffen +4 (Vertrauen 20), danach einmal je Tag +1 (mit bondPlus, unter Deckel).
+function onTalk(id) {
+  const r = rel(id);
+  if (r.talkDay !== state.day) { r.talkDay = state.day; if (state.flags["met_" + id + "_tag"]) bumpBondSys(id, 1, { source: "talk" }); }
+  state.flags["met_" + id + "_tag"] = true;
+  bookPendingByReport(id);
+}
+// Wolf-Bindungen parken (werte §8.4): Bericht beim NPC bucht voll, Gerücht nach 2 Tagen 60 %.
+function parkWolfBonds(outcome) {
+  if (state.flags.sim_bonds_wolf_settled) return;
+  state.flags.sim_bonds_wolf_settled = true;
+  if (!state.world) state.world = {};
+  if (!Array.isArray(state.world.pendingBonds)) state.world.pendingBonds = [];
+  const D_ = { wolf_spared: { burgvogt: -2, tamsin: 4 }, wolf_bargain: { burgvogt: -3, tamsin: 2 } }[outcome];
+  if (!D_) return;  // Erschlagen: die Quest-Abgabe ist der Bericht (keine Doppelbuchung)
+  Object.keys(D_).forEach((npc) => state.world.pendingBonds.push({ npc, delta: D_[npc], origTag: outcome, day: state.day }));
+}
+function bookPendingByReport(id) { /* Bericht nur über ausdrückliche Option (talkChoices "Vom Pfad erzählen") */ }
+function hasPendingBond(id) { return ((state.world && state.world.pendingBonds) || []).some((p) => p.npc === id); }
+function reportPending(id, factor) {
+  const list = (state.world && state.world.pendingBonds) || [];
+  list.filter((p) => p.npc === id).forEach((p) => { if (!(state.npcEnd && state.npcEnd[id])) bumpBondSys(id, round1(p.delta * (factor || 1)), { source: "quest_story" }); });
+  state.world.pendingBonds = list.filter((p) => p.npc !== id);
+}
+onNewDay((day) => {
+  if (!state || !state.relations) return;
+  const pb = (state.world && state.world.pendingBonds) || [];
+  pb.filter((p) => day - p.day >= 2).forEach((p) => reportPending(p.npc, 0.6));  // Gerücht kommt an
+  Object.keys(state.relations).forEach((id) => {
+    const r = state.relations[id]; const b = state.bonds[id] || 0;
+    if (r.exUntil && day >= r.exUntil) { dropStatus(id, "ex"); r.exUntil = 0; remember(id, "ex_" + id, 1); }
+    if ((state.npcEnd && state.npcEnd[id]) || r.betrayed) return;
+    const idle = day - (r.lastContact || day);
+    if (idle < 8) return;
+    if (b > 55) state.bonds[id] = Math.max(55, b - 1);
+    else if (b > 38 && (idle - 8) % 3 === 0) state.bonds[id] = Math.max(38, b - 1);
+  });
+});
+function migV4(s) {
+  if (!s.relations || typeof s.relations !== "object") s.relations = {};
+  if (!s.npcEnd || typeof s.npcEnd !== "object") s.npcEnd = {};
+  if (!s.world || typeof s.world !== "object") s.world = {};
+  if (!Array.isArray(s.world.pendingBonds)) s.world.pendingBonds = [];
+  Object.keys(s.flags || {}).forEach((k) => {
+    const m = /^met_(.+)$/.exec(k); if (!m || !D.NPCs[m[1]] || s.relations[m[1]]) return;
+    s.relations[m[1]] = freshRelation(s.day || 1); s.flags[k + "_tag"] = true;
+  });
+  // Alt-Bonds sind gültig, nur genauer angezeigt. Kanonisches Wolf-Flag lesen: wolf_slain || wolf_tot.
+  if (s.flags.wolf_tot && !s.flags.wolf_slain) s.flags.wolf_slain = true;
+  if (s.flags.wolf_slain || s.flags.wolf_spared || s.flags.wolf_bargain) { s.flags.wolf_dealt = true; s.flags.sim_bonds_wolf_settled = true; }
+  return s;
+}
+function relationsHtml() {
+  const ids = Object.keys(state.bonds);
+  if (!ids.length) return "<h3>Nähe</h3><p class='tiny'>Noch niemand kennt euch.</p>";
+  return "<h3>Nähe</h3>" + ids.map((id) => {
+    const r = state.relations && state.relations[id];
+    const st = r ? r.status.map((s) => STATUS_NAMES[s] || s).join(", ") : "";
+    return "<div class='tiny'><b>" + esc(D.NPCs[id] ? D.NPCs[id].name : id) + "</b>: " + bondLabel(state.bonds[id]) + (r ? " · " + trustWord(r.trust) : "") + (st ? " · " + esc(st) : "") +
+      dbg("Nähe " + state.bonds[id] + (r ? ", Vertrauen " + r.trust : "")) + "</div>";
+  }).join("");
+}
+// ---- Gesprächs-Haken: weitere Stufen hängen sich hier an ----
+const TALK_HOOKS = [];   // fn(npc, choices) fügt Optionen an (nur im Knoten "start")
+const CHOOSE_HOOKS = {}; // go-Präfix -> fn(go, npc) ; true = erledigt
+function sysTalkChoices(npc, choices) { TALK_HOOKS.forEach((fn) => { try { fn(npc, choices); } catch (e) { console.error(e); } }); }
+function sysChoose(go) {
+  const key = Object.keys(CHOOSE_HOOKS).find((k) => go === k || go.startsWith(k + ":"));
+  if (!key) return false;
+  const npc = state.dialogue && (D.NPCs[state.dialogue.npcId] || lastTalk);
+  const line = CHOOSE_HOOKS[key](go, npc);
+  if (line === false) return false;
+  persist(); render();
+  showFace(lastTalk); showLine(typeof line === "string" ? line : "", talkChoices());
+  return true;
+}
+TALK_HOOKS.push((npc, c) => { if (hasPendingBond(npc.id)) c.push({ label: "Vom Pfad erzählen", go: "report_wolf" }); });
+CHOOSE_HOOKS.report_wolf = (go, npc) => { reportPending(npc.id, 1); remember(npc.id, "wolf_bericht", 1); return "Ihr erzählt, was am Pfad geschah. " + npc.name + " hört zu und merkt es sich."; };

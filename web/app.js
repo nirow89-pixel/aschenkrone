@@ -74,7 +74,7 @@ function advance(steps) {
 onNewDay((day) => log("Tag " + day + " beginnt."));
 onNewDay(() => { if (state) state.stock = {}; });  // Händler füllen über Nacht auf Grundbestand auf
 function bondLabel(v) {
-  let name = "Fremd";
+  let name = D.BOND_STEPS[0].name;  // Skala unten geschlossen (Todfeind)
   for (const s of D.BOND_STEPS) if (v >= s.min) name = s.name;
   return name;
 }
@@ -130,7 +130,9 @@ const MIGRATIONS = [
     return s;
   },
   // v2 -> v3: Werte (werte.md): state.values, state.daily, state.buffs, Flag-Spiegel.
-  function v2to3(s) { return migV3(s); }
+  function v2to3(s) { return migV3(s); },
+  // v3 -> v4: Beziehungen (relations, npcEnd, world.pendingBonds), wolf_tot -> wolf_slain gespiegelt.
+  function v3to4(s) { return migV4(s); }
 ];
 const SAVE_VERSION = MIGRATIONS.length;
 function migrate(s) {
@@ -217,11 +219,8 @@ function gain(key, amount) {
   }
   state.statXp[key] = row;
 }
-function bumpBond(id, d) {
-  const cur = state.bonds[id] || 0;
-  if (d > 0) d += Math.min(2, gearFx("bondPlus"));
-  state.bonds[id] = clamp(cur + d, -100, 100);
-}
+// Nähe: Kurve, Tagesdeckel, bondPlus nur bei Gespräch/Geschenk (beziehungen.md §2), Umsetzung in systeme.js.
+function bumpBond(id, d, opts) { return bumpBondSys(id, d, opts); }
 function travel(toId) {
   if (!toId || !state) return;
   if (state.narrator || state.dialogue || state.inCombat || state.trading) return;
@@ -319,7 +318,7 @@ function tick() {
       lootName = (D.ITEMS[foe.loot[0]] && D.ITEMS[foe.loot[0]].name) || "";
     }
     state.flags["cleared_" + foe.id] = true;
-    if (foe.id === "russwolf") { state.flags.wolf_tot = true; state.pendingNarrator = { ...D.NARRATOR.wolf_tot }; }
+    if (foe.id === "russwolf") { state.flags.wolf_tot = true; state.flags.wolf_slain = true; state.flags.wolf_dealt = true; state.pendingNarrator = { ...D.NARRATOR.wolf_tot }; }
     gain("atk", 4); gain("grad", 8);
     log(foe.name + " fällt. +" + gold + " Gold.");
     const blows = foe.log.join("\n");
@@ -363,6 +362,7 @@ function resolveWolf(flag) {
   state.combat = null;
   state.flags[flag] = true;
   state.flags.cleared_russwolf = true;
+  if (!state.flags.wolf_dealt) { state.flags.wolf_dealt = true; parkWolfBonds(flag); }
   state.pending = null;
   log(flag === "wolf_spared" ? "Ihr lasst den Rußwolf gehen." : "Ihr einigt euch mit dem Rußwolf.");
   lastTalk = null;
@@ -400,7 +400,8 @@ function talk(id) {
   if (!npc || npc.location !== state.location) return;
   if (npc.hours && !npc.hours.includes(state.phase)) return;
   state.dialogue = { npcId: id, node: "start" };
-  if (!state.flags["met_" + id]) { state.flags["met_" + id] = true; bumpBond(id, 4); }
+  if (!state.flags["met_" + id]) { state.flags["met_" + id] = true; rel(id); bumpBond(id, 4, { source: "first" }); }
+  onTalk(id);
   lastTalk = npc;
   advance(TIME_COST.talk);
   renderTalk();
@@ -413,9 +414,10 @@ function talkChoices() {
   const choices = [];
   if (node === "start") {
     if (npc.id === "burgvogt" && !state.quests.wolfspfad) choices.push({ label: "Nach dem Pfad fragen", go: "quest" });
-    if (npc.id === "burgvogt" && state.quests.wolfspfad === "active" && state.flags.wolf_tot) choices.push({ label: "Den Wolf melden", go: "done" });
+    if (npc.id === "burgvogt" && state.quests.wolfspfad === "active" && (state.flags.wolf_slain || state.flags.wolf_tot)) choices.push({ label: "Den Wolf melden", go: "done" });
     if (npc.id === "tamsin" && !state.quests.tamsin_wolf) choices.push({ label: "Fragen, was das Dorf braucht", go: "quest" });
-    if (npc.id === "tamsin" && state.quests.tamsin_wolf === "active" && state.flags.wolf_tot) choices.push({ label: "Sagen, der Pfad ist frei", go: "done" });
+    if (npc.id === "tamsin" && state.quests.tamsin_wolf === "active" && (state.flags.wolf_slain || state.flags.wolf_tot)) choices.push({ label: "Sagen, der Pfad ist frei", go: "done" });
+    sysTalkChoices(npc, choices);
     if (npc.merchant) choices.push({ label: "Handeln", go: "shop" });
   }
   if (node === "shop") choices.push({ label: "Handel beenden", go: "endtrade" });
@@ -435,18 +437,19 @@ function choose(go) {
     showLine("", []);
     render(); return;
   }
+  if (sysChoose(go)) return;
   const npc = D.NPCs[state.dialogue.npcId];
   if (go === "quest") {
     if (npc.id === "burgvogt") state.quests.wolfspfad = "active";
     if (npc.id === "tamsin") state.quests.tamsin_wolf = "active";
-    bumpBond(npc.id, 3);
+    bumpBond(npc.id, 3, { source: "quest_story" });
   }
   if (go === "done") {
     if (npc.id === "burgvogt" && state.quests.wolfspfad === "active") {
-      state.quests.wolfspfad = "done"; state.hero.gold += 18; bumpBond("burgvogt", 8); state.factions.krone = (state.factions.krone || 0) + 6; gain("ansehen", 6);
+      state.quests.wolfspfad = "done"; state.hero.gold += 18; bumpBond("burgvogt", 8, { source: "quest_story" }); bumpTrust("burgvogt", 8); state.factions.krone = (state.factions.krone || 0) + 6; gain("ansehen", 6);
     }
     if (npc.id === "tamsin" && state.quests.tamsin_wolf === "active") {
-      state.quests.tamsin_wolf = "done"; state.hero.gold += 8; bumpBond("tamsin", 10); state.factions.rat = (state.factions.rat || 0) + 5;
+      state.quests.tamsin_wolf = "done"; state.hero.gold += 8; bumpBond("tamsin", 10, { source: "quest_story" }); bumpTrust("tamsin", 8); state.factions.rat = (state.factions.rat || 0) + 5;
     }
   }
   state.dialogue.node = go === "endtrade" ? "start" : go;
@@ -836,7 +839,7 @@ function paintSheet() {
       const value = k.id === "grad" ? state.hero.level : (state.hero[k.id] || 0);
       const pct = Math.round((xp.xp / xp.need) * 100);
       return "<div class='card'><b>" + k.name + "</b> " + value + "<div class='bar'><i style='width:" + pct + "%'></i></div><div class='tiny'>" + xp.xp + " / " + xp.need + "</div></div>";
-    }).join("") + valuesHtml() + "<h3>Nähe</h3>" + Object.keys(state.bonds).map((id) => "<div class='tiny'>" + (D.NPCs[id] ? D.NPCs[id].name : id) + ": " + bondLabel(state.bonds[id]) + " (" + state.bonds[id] + ")</div>").join("");
+    }).join("") + valuesHtml() + relationsHtml() + (typeof sysStatsMore === "function" ? sysStatsMore() : "");
   }
 }
 function render() {
