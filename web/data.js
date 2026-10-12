@@ -142,7 +142,7 @@ const NPCs = {
     art: "npcs/marktfrau.jpg", merchant: true, buys: true,
     shop: ["glutphiole","nebeltrank","aschesalbe","wein_der_stunde","teichbluete"],
     stock: { glutphiole: 4, nebeltrank: 3, aschesalbe: 3, wein_der_stunde: 5, teichbluete: 4 },
-    hours: ["morgen","vormittag","mittag","nachmittag"], pin: { x: 78, y: 64 }, faction: "gasse",
+    hours: ["morgen","vormittag","mittag","nachmittag"], pin: { x: 66, y: 76 }, faction: "gasse",
     lines: ["Salbe, Trank, Nadel. Sagt, was ihr braucht."],
     talk: { start: "Guten Tag. Die Ware ist frisch genug für den Preis, den ich nenne." }
   },
@@ -150,7 +150,7 @@ const NPCs = {
     id: "priester", name: "Eld", title: "Glöckner", location: "tempel",
     text: "Eld hält die Glocke, obwohl sie selten schlägt.",
     art: "npcs/priester.jpg", merchant: false,
-    hours: ["morgen","mittag","abend"], pin: { x: 52, y: 46 }, faction: "tempel",
+    hours: ["morgen","mittag","abend"], pin: { x: 62, y: 82 }, faction: "tempel",
     lines: ["Wer im Tempel spricht, soll es vollständig tun."],
     talk: { start: "Setzt euch, wenn die Beine schwer sind. Die Stille hier gehört niemandem ganz." }
   },
@@ -158,7 +158,7 @@ const NPCs = {
     id: "tamsin", name: "Tamsin", title: "Wirtin", location: "dorfzentrum",
     text: "Tamsin kennt jedes Gesicht, das länger als eine Nacht bleibt.",
     art: "npcs/tamsin.jpg",
-    merchant: false, hours: ["mittag","nachmittag","abend","nacht"], pin: { x: 48, y: 60 }, faction: "rat", rest: true,
+    merchant: false, hours: ["mittag","nachmittag","abend","nacht"], pin: { x: 40, y: 72 }, faction: "rat", rest: true,
     lines: ["Brot und Lager gibt es, wenn ihr zahlt und keinen Streit anfangt."],
     talk: {
       start: "Willkommen in Unterorten. Der Brunnen ist sauber. Sagt, was ihr sucht.",
@@ -178,7 +178,7 @@ const NPCs = {
     text: "Hella öffnet die Tür nur, wenn sie den Schritt kennt.",
     art: "npcs/hella.jpg",
     merchant: true, buys: true, shop: ["waldphiole","nebeltrank","aschesalbe"], stock: { waldphiole: 4, nebeltrank: 3, aschesalbe: 3 },
-    hours: ["morgen","vormittag","nachmittag","abend","nacht"], pin: { x: 18, y: 68 }, faction: "nebel",
+    hours: ["morgen","vormittag","nachmittag","abend","nacht"], pin: { x: 33, y: 87 }, faction: "nebel",
     lines: ["Die Hütte ist offen. Der Sumpf nicht. Fragt, bevor ihr pflückt."],
     talk: { start: "Ihr kommt vom Pfad. Setzt euch oder geht. Beides ist eine Entscheidung." }
   }
@@ -283,7 +283,7 @@ const LOCATIONS = {
     ],
     exits: [ { id: "platz", label: "Zum Platz", x: 50, y: 88, arch: true } ] },
   tempel: { id: "tempel", name: "Tempel", region: "stadt", blurb: "Die Glocke hängt schwer. Sie schlägt selten, und wenn sie schlägt, wird der Platz still.", art: "locations/tempel.jpg",
-    exits: [ { id: "katakomben", label: "Katakomben", x: 70, y: 80, arch: true },  // Torbogen an den Altarstufen
+    exits: [ { id: "katakomben", label: "Katakomben", x: 17, y: 96, arch: true },  // Torbogen zwischen den vorderen linken Säulen
       { id: "platz", label: "Zum Platz", x: 50, y: 90, arch: true } ] },
   katakomben: { id: "katakomben", name: "Katakomben", region: "stadt", blurb: "Eine Treppe führt unter den Tempel. Hinter dem Gitter liegen Gänge mit Grabnischen und Kerzen.", art: "locations/katakomben.jpg",
     parent: "tempel", pass: "ui/pass_kata.jpg",
