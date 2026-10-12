@@ -182,8 +182,9 @@ const DAILY_ACTIONS = [
   { id: "train_def", label: "Trainieren: Panzer", locs: ["burg", "platz"], steps: 2, flag: "train", npcs: ["burgvogt", "edrik"] },
   { id: "pray", label: "Beten", locs: ["tempel"], steps: 1, flag: "pray" },
   { id: "confess", label: "Beichten", locs: ["tempel"], steps: 1, flag: "pray" },
-  { id: "study_will", label: "Lernen: Wille", locs: ["ratshalle", "katakomben"], steps: 2, flag: "study" },
-  { id: "study_fortune", label: "Lernen: Glück", locs: ["ratshalle", "katakomben"], steps: 2, flag: "study" },
+  // Lernen nur noch bei Selene (Wille) und Rorik (Glück) in der Ratshalle, gegen Gold; Katakomben ohne Lernen (Ausbesserung 2).
+  { id: "study_will", label: "Lernen: Wille (12 Gold)", locs: ["ratshalle"], steps: 2, flag: "study", gold: 12, npcs: ["selene"] },
+  { id: "study_fortune", label: "Lernen: Glück (10 Gold)", locs: ["ratshalle"], steps: 2, flag: "study", gold: 10, npcs: ["rorik"] },
   { id: "tavern", label: "Einkehren und rasten (6 Gold)", locs: ["schenke", "gasthaus"], steps: 3, flag: "tavern", gold: 6, npcs: ["marktfrau", "jorun"] },
   { id: "redDoor", label: "Hinter die rote Tür (8 Gold)", locs: ["bordell"], steps: 1, flag: "redDoor", gold: 8 },
   { id: "stille", label: "Stille am Baum", locs: ["alter_baum"], steps: 1, flag: "pray" }
@@ -315,11 +316,12 @@ function valuesHtml() {
   const pct = Math.round((v.wk / wm) * 100);
   const gw = gearBonus("will");
   return "<h3>Wille und Haltung</h3>" +
-    "<div class='card'><b>Titel</b> " + esc(titel()) + "<div class='tiny'>" + esc(KORR_TEXT[korrTier().id]) + "</div></div>" +
-    "<div class='card'><b>Wille</b> " + willTierName(we) + dbg("willEff " + we + (gw > 3 ? ", Ausr. +" + gw + " wirksam +3" : "")) +
-    "<div class='tiny'>Willenskraft</div><div class='bar wk'><i style='width:" + pct + "%'></i></div>" + dbg(v.wk + "/" + wm) + "</div>" +
-    "<div class='card'><b>Korruption</b> " + korrTier().name + dbg(v.korr + ", Höchststand " + v.korrPeak + ", Buße " + v.buss) + "</div>" +
-    "<div class='card'><b>Haltung</b> " + haltungTier().name + dbg(v.haltung) + "</div>";
+    "<div class='card' data-tip='' data-vtip='titel'><b>Titel</b> " + esc(titel()) + "<div class='tiny'>" + esc(KORR_TEXT[korrTier().id]) + "</div></div>" +
+    "<div class='card' data-tip='' data-vtip='wille'><b>Wille</b> " + willTierName(we) + " <span class='vnum'>" + we + "</span>" + dbg(gw > 3 ? "Ausr. +" + gw + " wirksam +3" : "") + "</div>" +
+    "<div class='card' data-tip='' data-vtip='wk'><b>Willenskraft</b> <span class='vnum'>" + v.wk + " / " + wm + "</span><div class='bar wk'><i style='width:" + pct + "%'></i></div></div>" +
+    "<div class='card' data-tip='' data-vtip='korr'><b>Korruption</b> " + korrTier().name + " <span class='vnum'>" + v.korr + "</span><div class='tiny'>Höchststand " + v.korrPeak + " · Buße " + v.buss + "</div></div>" +
+    "<div class='card' data-tip='' data-vtip='haltung'><b>Haltung</b> " + haltungTier().name + " <span class='vnum'>" + v.haltung + "</span></div>" +
+    (typeof defenseHtml === "function" ? defenseHtml() : "");
 }
 const SCENE_EXTRAS = [];  // fn() -> [{ label, go, why }]
 function dailyButtonsHtml() {
@@ -881,12 +883,15 @@ function heroSwing(c) {
 }
 function foeSwing(c, free) {
   if (!free && c.stun > 0) { c.stun -= 1; combatLine(c, c.name + " ringt nach Luft."); return; }
-  const dmg = foeHit(c);
+  let dmg = foeHit(c);
   c.fxFoe = c.human || (c.tags || []).includes("mensch") ? "schwert" : (c.weaponHalf ? "fluch" : "klaue");
+  const def = heroDefense(c);  // Ausweichen (0) / Parade (halb, min. 1) nach dem Mindestschaden
+  if (def === "dodge") { c.heroDodges = (c.heroDodges || 0) + 1; c.fxFoe = "ausweichen"; combatLine(c, c.name + " schlägt zu, ihr weicht aus."); return; }
+  if (def === "parry") { dmg = Math.max(1, Math.floor(dmg / 2)); c.heroParries = (c.heroParries || 0) + 1; }
   state.hero.hp -= dmg; c.foeHits += 1;
   const rf = perkFxNum("reflect");
   if (rf > 0) c.hp -= Math.min(3, Math.max(1, Math.floor(dmg * rf / 100)));
-  combatLine(c, c.name + " trifft euch (" + dmg + ").");
+  combatLine(c, def === "parry" ? "Ihr pariert, " + c.name + " trifft nur halb (" + dmg + ")." : c.name + " trifft euch (" + dmg + ").");
   // Zweiter Atem (S9): einmal je Tag bei Leben ≤ 25 %
   const za = perkFxNum("zweiterAtem");
   if (za > 0 && state.hero.hp > 0 && state.hero.hp <= maxHp() / 4 && state.daily.zweiterAtem !== state.day) {
@@ -909,7 +914,6 @@ function sysTick() {
     if (heroDue && (!foeDue || c.nextHero <= c.nextFoe)) {
       heroSwing(c); c.nextHero += heroSpeed();
       if (c.hp <= 0) return combatVictory(c);
-      if (c.surrender && c.hp < c.hpMax * 0.25) return combatSurrender(c);
     } else {
       foeSwing(c); c.nextFoe += foeSpeed(c);
       if (c.hp <= 0) return combatVictory(c);
@@ -946,7 +950,7 @@ function combatVictory(c) {
   Object.keys(c.used).forEach(zeichenXp);
   state.inCombat = false; state.combat = null;
   log(c.name + " fällt. +" + gold + " Gold.");
-  const text = c.log.slice(-6).join("\n") + "\n\n" + c.name + " fällt.\nGold: +" + gold + (loot.length ? "\nBeute: " + loot.join(", ") : "") + (xp.length ? "\nÜbung: " + xp.join(", ") : "") +
+  const text = c.name + " fällt.\nGold: +" + gold + (loot.length ? "\nBeute: " + loot.join(", ") : "") + (xp.length ? "\nÜbung: " + xp.join(", ") : "") +
     (Object.keys(c.used).length ? "\nZeichen geübt: " + Object.keys(c.used).map((z) => D.ZEICHEN[z].name).join(", ") : "") + "\nDer Weg ist frei.";
   lastTalk = null;
   showFace({ id: c.id, name: c.name, title: "Besiegt", art: "monsters/" + (c.art ? c.art.split("/").pop().replace(".jpg", "") : c.id) + "_tot.jpg" });
@@ -956,15 +960,12 @@ function combatVictory(c) {
   showLine(text, [{ label: "Weiter", go: "clear" }]);
 }
 function wolfMalErlaubt(c) { return !!(c && c.legendary && state.flags.wolf_legendaer); }
-function combatSurrender(c) {
-  stopTimer();
-  c.engaged = false; c.surrendered = true;
-  combatLine(c, c.name + " lässt die Waffe sinken und hebt die Hände.");
-  persist(); render();
-}
-// Ergebener Mensch: laufen lassen (0) / ausrauben (Soft +1) / Gnadenstoß (Medium +2, Haltung +2)
+// Ausbesserung 2: kein Ergeben mehr. Ein besiegter Gegner ist tot; alte Aufrufe enden als Sieg.
+function combatSurrender(c) { c.surrendered = false; c.hp = 0; return combatVictory(c); }
+// Alt (bis v9): Ergebener Mensch. Jeder Ausgang zählt jetzt als Tötung (Sieg mit Beute), Wahl entfällt.
 CHOOSE_HOOKS.ergeben = (go) => {
   const c = state.combat; if (!c || !c.surrendered) return false;
+  combatSurrender(c); return true;
   const art = go.split(":")[1];
   let line = "";
   if (art === "laufen") line = "Ihr lasst ihn laufen. Er verschwindet zwischen den Büschen.";
@@ -990,7 +991,7 @@ function combatDefeat(c) {
   log("Ihr fallt und kommt in " + D.LOCATIONS[state.location].name + " wieder zu euch.");
   lastTalk = null;
   persist(); autosave(); render(); showFace(null);
-  showLine(blows + "\nIhr kommt in " + D.LOCATIONS[state.location].name + " wieder zu euch." + (lost ? " Euer Beutel ist um " + lost + " Gold leichter." : "") + " Ihr seid angeschlagen.", [{ label: "Weiter", go: "clear" }]);
+  showLine("Ihr fallt.\nIhr kommt in " + D.LOCATIONS[state.location].name + " wieder zu euch." + (lost ? " Euer Beutel ist um " + lost + " Gold leichter." : "") + " Ihr seid angeschlagen.", [{ label: "Weiter", go: "clear" }]);
 }
 function afterDefeat(c) {
   state.buffs = (state.buffs || []).filter((b) => b.id !== "angeschlagen");
@@ -1364,26 +1365,28 @@ function weaponFx() {
 let combatSeen = null;  // { id, foeHp, heroHp } für Treffer-Effekte zwischen zwei Renders
 function hpPct(a, b) { return Math.max(0, Math.min(100, Math.round(a / Math.max(1, b) * 100))); }
 function fxIcon(win, kind, target) {
-  const bar = win.querySelector(target === "foe" ? ".cw-foe .cw-bar" : ".cw-hero .cw-bar");
+  const bar = win.querySelector(target === "foe" ? ".cw-foe .cw-frame" : ".cw-hero .cw-frame");  // Effekte auf das Bild, nicht den Balken
   if (!bar) return;
   const ico = document.createElement("span");
   ico.className = "cw-fx " + (target === "foe" ? "to-foe" : "to-hero") + " fx-" + kind;
   ico.dataset.fx = kind;
   if (hasArt("fx/fx_" + kind + ".png")) { const img = document.createElement("img"); img.alt = ""; img.src = art("fx/fx_" + kind + ".png"); ico.appendChild(img); ico.classList.add("has-img"); }
   else ico.textContent = FX_GLYPH[kind] || "✦";
-  bar.parentElement.appendChild(ico);
+  bar.appendChild(ico);
   setTimeout(() => ico.remove(), 900);
   const panel = bar.closest(".cw-side");
   panel.classList.remove("hit"); void panel.offsetWidth; panel.classList.add("hit");
   if (kind === "heilung") { panel.classList.remove("heal"); void panel.offsetWidth; panel.classList.add("heal"); }
-  win.classList.remove("shake"); void win.offsetWidth; win.classList.add("shake");
+  bar.classList.remove("shake"); void bar.offsetWidth; bar.classList.add("shake");
 }
 function renderCombatWin() {
   const win = document.getElementById("combat-win");
   const shell = document.getElementById("shell");
   if (!win) return;
-  const c = state && state.inCombat && state.combat;
+  const end = state && !state.inCombat && state.combatEnd;
+  const c = (state && state.inCombat && state.combat) || end;
   shell.classList.toggle("fighting", !!c);
+  win.classList.toggle("ended", !!end);
   if (!c) { win.hidden = true; combatSeen = null; return; }
   const loc = D.LOCATIONS[state.location] || {};
   if (win.hidden || win.dataset.loc !== state.location) {
@@ -1394,12 +1397,14 @@ function renderCombatWin() {
   win.hidden = false;
   if (!win.querySelector(".cw-foe")) {
     win.innerHTML = "<div class='cw-title'>Kampf</div><div class='cw-arena'>" +
-      "<div class='cw-side cw-hero'><div class='cw-frame'><img class='cw-art' alt=''></div><div class='cw-name'></div><div class='cw-bar'><i></i></div><div class='cw-hp'></div></div>" +
+      "<div class='cw-side cw-foe'><div class='cw-frame'><img class='cw-art' alt=''></div><div class='cw-name'></div><div class='cw-bar'><i></i><span class='cw-hp'></span></div></div>" +
       "<div class='cw-vs'>◆</div>" +
-      "<div class='cw-side cw-foe'><div class='cw-frame'><img class='cw-art' alt=''></div><div class='cw-name'></div><div class='cw-bar'><i></i></div><div class='cw-hp'></div></div></div>" +
-      "<div class='cw-log'></div><div class='cw-acts'><button class='cw-fight menu-btn'>Kämpfen</button><button class='cw-flee menu-btn'>Entgleiten</button></div>";
+      "<div class='cw-side cw-hero'><div class='cw-frame'><img class='cw-art' alt=''></div><div class='cw-name'></div><div class='cw-bar'><i></i><span class='cw-hp'></span></div></div></div>" +
+      "<div class='cw-log'></div><div class='cw-result' hidden></div><div class='cw-acts'><button class='cw-fight menu-btn'>Kämpfen</button><button class='cw-flee menu-btn'>Entgleiten</button></div>" +
+      "<div class='cw-end' hidden><button class='cw-weiter menu-btn'>Weiter</button></div>";
     win.querySelector(".cw-fight").onclick = engage;
     win.querySelector(".cw-flee").onclick = flee;
+    win.querySelector(".cw-weiter").onclick = () => choose("clear");
   }
   const hero = win.querySelector(".cw-hero"), foe = win.querySelector(".cw-foe");
   const pa = avatarOf(state.hero);
@@ -1407,11 +1412,23 @@ function renderCombatWin() {
   if (foe.dataset.p !== c.id) { foe.dataset.p = c.id; onImg(foe.querySelector("img"), c.art, ["monsters/" + c.id + ".jpg"]); }
   hero.querySelector(".cw-name").textContent = state.hero.name;
   foe.querySelector(".cw-name").textContent = c.name;
+  if (end) {  // Endfenster: bleibt offen bis „Weiter“
+    foe.querySelector(".cw-bar i").style.width = hpPct(end.hp, end.hpMax) + "%";
+    hero.querySelector(".cw-bar i").style.width = hpPct(state.hero.hp, maxHp()) + "%";
+    foe.querySelector(".cw-hp").textContent = Math.max(0, end.hp) + " / " + end.hpMax;
+    hero.querySelector(".cw-hp").textContent = Math.max(0, state.hero.hp) + " / " + maxHp();
+    win.querySelector(".cw-log").innerHTML = (end.log || []).slice(-3).map((l) => "<div>" + esc(l) + "</div>").join("");
+    const res = win.querySelector(".cw-result"); res.hidden = false; res.innerHTML = "<b>" + esc(end.title) + "</b>" + (end.gain ? "<div>" + esc(end.gain) + "</div>" : "");
+    win.querySelector(".cw-acts").hidden = true; win.querySelector(".cw-end").hidden = false;
+    foe.classList.toggle("dead", end.result === "sieg");
+    combatSeen = null; return;
+  }
+  win.querySelector(".cw-result").hidden = true; win.querySelector(".cw-end").hidden = true; foe.classList.remove("dead");
   hero.querySelector(".cw-bar i").style.width = hpPct(state.hero.hp, maxHp()) + "%";
   foe.querySelector(".cw-bar i").style.width = hpPct(c.hp, c.hpMax) + "%";
   hero.querySelector(".cw-hp").textContent = Math.max(0, state.hero.hp) + " / " + maxHp();
   foe.querySelector(".cw-hp").textContent = Math.max(0, c.hp) + " / " + c.hpMax;
-  const lines = c.log.slice(-4);
+  const lines = c.log.slice(-3);
   win.querySelector(".cw-log").innerHTML = (lines.length ? lines : [c.note || c.text || ""]).map((l) => "<div>" + esc(l) + "</div>").join("");
   const acts = win.querySelector(".cw-acts");
   acts.hidden = !!(c.engaged || c.surrendered);
@@ -1423,4 +1440,191 @@ function renderCombatWin() {
     if (c.fxHero === "schild" && c.eisenhaut && c.eisenhaut.left > 0 && !combatSeen.schild) fxIcon(win, "schild", "hero");
   }
   combatSeen = { seed: c.seed, foeHp: c.hp, heroHp: state.hero.hp, schild: !!(c.eisenhaut && c.eisenhaut.left > 0) };
+}
+
+// =====================================================================
+// Ausbesserung 2 (Nico) · Händler-Wirtschaft, Parade/Ausweichen, Kampf-Endfenster,
+// Kampf-Charakterfenster, Werte-Tooltips, NPC-Schilder ohne Überlappung, Migration v10
+// =====================================================================
+// ---- Händler: eigene Kasse, Wochen-Sortiment aus eigenem Pool (state.merchants) ----
+function weekOf(day) { return Math.floor(((day || 1) - 1) / 7); }
+function daysToRestock() { return 7 - (((state.day || 1) - 1) % 7); }
+function shuffled(a) { return a.map((x) => [Math.random(), x]).sort((p, q) => p[0] - q[0]).map((p) => p[1]); }
+function merchBaseCount(npc, id) { const it = D.ITEMS[id]; if (!stackable(it)) return 1; const b = (npc.stock || {})[id]; return typeof b === "number" ? b : rnd(2, 4); }
+function merchRestock(npc, m, wk) {
+  const E = D.MERCHANT_ECON[npc.id];
+  m.week = wk; m.gold = E.gold; m.pool = E.pool.slice();
+  m.stock = {};
+  shuffled(m.pool.filter((id) => D.ITEMS[id])).slice(0, E.size).forEach((id) => { m.stock[id] = merchBaseCount(npc, id); });  // Verkauftes fällt hier heraus
+}
+function merchInit(npc, s, oldStock) {
+  const E = D.MERCHANT_ECON[npc.id];
+  const m = { gold: E.gold, week: weekOf(s.day), pool: E.pool.slice(), stock: {} };
+  (npc.shop || []).forEach((id) => { const o = oldStock && oldStock[id]; m.stock[id] = typeof o === "number" ? o : merchBaseCount(npc, id); });
+  return m;
+}
+function merchState(npc) {
+  if (!state || !npc || npc.stall || !D.MERCHANT_ECON || !D.MERCHANT_ECON[npc.id]) return null;
+  if (!state.merchants) state.merchants = {};
+  let m = state.merchants[npc.id];
+  if (!m) m = state.merchants[npc.id] = merchInit(npc, state);
+  const wk = weekOf(state.day);
+  if (m.week < wk) merchRestock(npc, m, wk);
+  return m;
+}
+const _shopStock = shopStock;
+shopStock = function (npc, id) { const m = merchState(npc); return m ? (m.stock[id] || 0) : _shopStock(npc, id); };
+const _setShopStock = setShopStock;
+setShopStock = function (npc, id, n) { const m = merchState(npc); if (m) { m.stock[id] = Math.max(0, n); if (!m.stock[id]) delete m.stock[id]; return; } _setShopStock(npc, id, n); };
+
+// ---- Parade und Ausweichen (Nachtrag Ausbesserung 2 in grad-zeichen-kampf.md) ----
+function fortuneEff() { return (state.hero.fortune || 0) + perkStat("fortune"); }
+function dodgeChance() {
+  const p = gradState().pfad;
+  return clamp(3 + Math.floor(fortuneEff() / 3) + 2 * (p.dieb || 0) + gearFx("dodgePct") + perkFxNum("dodgePct"), 0, 25);
+}
+function parryChance(c) {
+  const armed = !!(weaponOf("waffeL") || weaponOf("waffeR") || (state.equipped && state.equipped.schild));
+  if (!armed) return 0;
+  const p = gradState().pfad, shield = state.equipped && state.equipped.schild ? 6 : 0;
+  const eh = c && c.eisenhaut && c.eisenhaut.left > 0 ? 5 : 0;
+  return clamp(3 + Math.floor(defEff() / 3) + shield + 2 * (p.krieger || 0) + eh + gearFx("parryPct") + perkFxNum("parryPct"), 0, 30);
+}
+function heroDefense(c) {
+  if (Math.random() * 100 < dodgeChance()) return "dodge";
+  if (Math.random() * 100 < parryChance(c)) return "parry";
+  return "";
+}
+function foeDodge(c) { return typeof c.dodge === "number" ? c.dodge : (c.human ? 4 : /wolf/.test(c.id) ? 6 : 3); }
+function foeParry(c) { return typeof c.parry === "number" ? c.parry : (c.human ? 8 : 0); }
+const _heroHit = heroHit;
+heroHit = function (c, pct, critBonus) {
+  const d = _heroHit(c, pct, critBonus);
+  if (Math.random() * 100 < foeDodge(c)) { c.defNote = c.name + " weicht aus"; c.lastCrit = false; return 0; }
+  if (Math.random() * 100 < foeParry(c)) { c.defNote = c.name + " pariert"; return Math.max(1, Math.floor(d / 2)); }
+  return d;
+};
+const _heroSwing = heroSwing;
+heroSwing = function (c) {
+  c.defNote = "";
+  _heroSwing(c);
+  if (c.defNote && c.log.length) c.log[c.log.length - 1] = c.log[c.log.length - 1].replace(/\.$/, "") + " – " + c.defNote + ".";
+};
+function defenseHtml() {
+  return "<h3>Abwehr</h3><div class='card' data-tip='' data-vtip='ausweichen'><b>Ausweichen</b> <span class='vnum'>" + dodgeChance() + " %</span></div>" +
+    "<div class='card' data-tip='' data-vtip='parade'><b>Parade</b> <span class='vnum'>" + parryChance(null) + " %</span>" + (parryChance(null) ? "" : "<div class='tiny'>Ohne Waffe oder Schild keine Parade.</div>") + "</div>";
+}
+
+// ---- Kampf-Endfenster: bleibt bis „Weiter“, Gespräch zeigt nur Ergebnis und Gewinn ----
+function endSnap(c, result, title, gain) {
+  state.combatEnd = { id: c.id, name: c.name, art: c.art, hp: Math.max(0, result === "sieg" ? 0 : c.hp), hpMax: c.hpMax, log: c.log.slice(-3), result, title, gain: gain || "" };
+}
+const _combatVictory = combatVictory;
+combatVictory = function (c) {
+  const g0 = state.hero.gold, inv0 = state.inventory.length;
+  _combatVictory(c);
+  const loot = state.inventory.slice(inv0).map((id) => D.ITEMS[id] && D.ITEMS[id].name).filter(Boolean);
+  endSnap(c, "sieg", c.name + " fällt", "Gold +" + (state.hero.gold - g0) + (loot.length ? " · Beute: " + loot.join(", ") : ""));
+  renderCombatWin(); renderFightHero();
+};
+const _combatDefeat = combatDefeat;
+combatDefeat = function (c) {
+  _combatDefeat(c);
+  endSnap(c, "niederlage", "Ihr fallt", "Ihr erwacht in " + D.LOCATIONS[state.location].name + ".");
+  renderCombatWin(); renderFightHero();
+};
+const _sysFlee = sysFlee;
+sysFlee = function () {
+  const c = state.combat;
+  _sysFlee();
+  if (c && !state.inCombat && !state.combatEnd) { endSnap(c, "flucht", "Ihr entgleitet", ""); renderCombatWin(); renderFightHero(); }
+};
+
+// ---- Charakterfenster im Kampf: Name, Grad, Verbrauchsgüter als Kacheln ----
+function useCombatItem(id) {
+  const c = state.inCombat && state.combat, it = D.ITEMS[id];
+  if (!c || !it || it.type !== "verbrauch" || !state.inventory.includes(id)) return;
+  useItem(id);
+  if (it.ap) c.ap = (c.ap || 0) + it.ap;
+  combatLine(c, "Ihr nutzt " + it.name + (it.heal ? " (+" + it.heal + " Leben)" : "") + ".");
+  if (c.engaged) c.nextHero += heroSpeed();  // kostet den nächsten Schlag
+  persist(); render();
+}
+function renderFightHero() {
+  const pane = document.getElementById("pane-hero"), box = document.getElementById("fight-items");
+  if (!pane || !box) return;
+  const on = !!(state && (state.inCombat || state.combatEnd));
+  pane.classList.toggle("fight", on); box.hidden = !on;
+  if (!on) { box.innerHTML = ""; return; }
+  const items = groupItems(state.inventory).filter(({ it }) => it.type === "verbrauch");
+  const key = items.map(({ it, n }) => it.id + n).join() + "|" + !!state.inCombat;
+  if (box.dataset.key === key) return;
+  box.dataset.key = key;
+  box.innerHTML = "<div class='fi-h'>Verbrauch</div>" + (items.length ? "" : "<p class='tiny'>Nichts zur Hand.</p>");
+  const grid = document.createElement("div"); grid.className = "fi-grid"; box.appendChild(grid);
+  items.forEach(({ it, n }) => {
+    const d = document.createElement("button");
+    d.className = "fi-tile"; d.dataset.item = it.id; d.dataset.tip = it.id; d.dataset.tipMode = "bag"; d.disabled = !state.inCombat;
+    d.innerHTML = "<span class='tile-art'><img alt=''></span><b>" + esc(stackName(it, n)) + "</b>";
+    const im = d.querySelector("img"); if (it.img) onImg(im, it.img); else im.hidden = true;
+    d.onclick = () => useCombatItem(it.id);
+    grid.appendChild(d);
+  });
+}
+
+// ---- Bitten/Werte/Zeichen im Beutel-Stil (Beutel selbst unverändert) ----
+function styleSheetKind(body, kind) {
+  const fancy = kind === "stats" || kind === "quests" || kind === "zeichen";
+  body.classList.toggle("fancy", fancy);
+  if (!fancy) return;
+  const bgRel = "ui/avatar_bg_" + heroGender() + ".jpg";
+  if (hasArt(bgRel)) body.style.backgroundImage = "linear-gradient(rgba(7,4,5,.78),rgba(7,4,5,.88)),url('" + art(bgRel) + "')";
+}
+const VALUE_TIPS = {
+  hp: "Leben. Fällt es auf 0, verliert ihr den Kampf. Rast beim Gastwirt füllt es auf.",
+  grad: "Grad. Steigt mit dem Wachstum aller Grundwerte und öffnet Wahl, Zeichen-Plätze und Atem.",
+  atk: "Angriff. Mehr Schaden je Schlag (Angriff − Panzer des Gegners, mindestens 20 %).",
+  def: "Panzer. Weniger Schaden je gegnerischem Treffer und bessere Parade (+1 % je 3 Panzer).",
+  will: "Wille. Stärkt Zauber-Zeichen und Willenskraft, hilft bei Proben und bei der Flucht.",
+  fortune: "Glück. Mehr harte Treffer (+1 % je 10) und Ausweichen (+1 % je 3).",
+  ansehen: "Ansehen. Wie man in der Stadt über euch spricht; wächst durch Arbeit und Bitten.",
+  titel: "Titel. Ergibt sich aus Haltung und Korruption.",
+  wille: "Wille (wirksam). Grundwert plus Segen und Ausrüstung, höchstens 18 aus dem Grundwert.",
+  wk: "Willenskraft. Wird durch Arbeit und Training verbraucht, durch Beten, Ruhe und Einkehr aufgefüllt. Wenig Willenskraft schwächt euch.",
+  korr: "Korruption. Wächst durch harte Entscheidungen. Höhere Stufen senken die Willenskraft und verändern, wie man euch begegnet.",
+  haltung: "Haltung. Ob ihr nachgebt oder standhaltet; färbt euren Titel.",
+  ausweichen: "Ausweichen. Chance, einem gegnerischen Treffer ganz zu entgehen: 3 % + Glück/3 + 2 je Dieb-Stufe, höchstens 25 %.",
+  parade: "Parade. Chance, einen Treffer zu halbieren (mindestens 1): 3 % + Panzer/3 + 6 mit Schild + 2 je Krieger-Stufe + 5 unter Eisenhaut, höchstens 30 %. Braucht Waffe oder Schild."
+};
+function valueTip(k) { return "<div class='tip-fx'>" + esc(VALUE_TIPS[k] || "") + "</div>"; }
+
+// ---- NPC-Schilder: dürfen sich nicht überdecken (Standhöhe/y bleibt, nur seitlich verschoben, notfalls kleiner) ----
+function spreadSpots(scene) {
+  if (!scene) return;
+  const W = scene.clientWidth; if (!W) return;
+  const spots = Array.from(scene.querySelectorAll(".spot"));
+  spots.forEach((b) => { b.style.removeProperty("--spot-scale"); b.classList.remove("crowded"); });
+  if (spots.length < 2) return;
+  const base = 152, gap = 8;
+  const scale = Math.min(1, (W * 0.96) / (spots.length * (base + gap)));
+  const w = base * scale + gap;
+  if (scale < 1) spots.forEach((b) => { b.style.setProperty("--spot-scale", scale.toFixed(3)); b.classList.add("crowded"); });
+  const xs = spots.map((b) => ({ b, x: parseFloat(b.style.left) / 100 * W })).sort((p, q) => p.x - q.x);
+  for (let i = 1; i < xs.length; i++) if (xs[i].x - xs[i - 1].x < w) xs[i].x = xs[i - 1].x + w;
+  const over = xs[xs.length - 1].x - (W - w / 2); if (over > 0) xs.forEach((p) => { p.x -= over; });
+  for (let i = xs.length - 2; i >= 0; i--) if (xs[i + 1].x - xs[i].x < w) xs[i].x = xs[i + 1].x - w;
+  const under = w / 2 - xs[0].x; if (under > 0) xs.forEach((p) => { p.x += under; });
+  xs.forEach((p) => { p.b.style.left = (p.x / W * 100).toFixed(2) + "%"; });
+}
+
+// ---- Migration v9 -> v10 ----
+function migV10(s) {
+  if (!s.merchants || typeof s.merchants !== "object") {
+    s.merchants = {};
+    Object.keys(D.MERCHANT_ECON || {}).forEach((id) => { const npc = D.NPCs[id]; if (npc) s.merchants[id] = merchInit(npc, s, s.stock && s.stock[id]); });
+  }
+  if (s.stock) Object.keys(D.MERCHANT_ECON || {}).forEach((id) => { delete s.stock[id]; });
+  if (s.combat && s.combat.surrendered) { s.combat.surrendered = false; s.combat.engaged = false; s.combat.note = "Der Gegner rafft sich noch einmal auf."; }
+  s.combatEnd = null;
+  return s;
 }

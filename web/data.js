@@ -82,6 +82,7 @@ const FLUECHE = {
 const EXT_ART = [
   "ui/siluette_mann.jpg",
   "ui/siluette_frau.jpg",
+  "ui/handel_bg.jpg",
   "ui/avatar_bg_m.jpg",
   "ui/avatar_bg_w.jpg",
   "ui/kampf_bg.jpg",
@@ -169,7 +170,7 @@ const MONSTER = {
   russwolf_wild: { id: "russwolf_wild", name: "Rußwolf (Rudel)", hp: 28, atk: 7, def: 1, speed: 2.2, crit: 5, gold: [6, 14], loot: ["glutphiole"], art: "monsters/russwolf.jpg", text: "Ein Wolf aus dem Rudel. Er hat Hunger, keinen Auftrag.", wild: true, tags: ["wild", "wolf"] },
   russwolf_jung: { id: "russwolf_jung", name: "Junger Rußwolf", hp: 21, atk: 5, def: 1, speed: 2.2, crit: 5, gold: [3, 8], loot: ["glutphiole"], art: "monsters/russwolf.jpg", text: "Jung und mager. Er prüft, ob ihr weglauft.", wild: true, tags: ["wild", "wolf"] },
   glashexe: { id: "glashexe", name: "Glashexe", hp: 38, atk: 10, def: 3, speed: 2.2, crit: 5, reflect: 10, gold: [10, 22], loot: ["glasdolch"], art: "monsters/glashexe.jpg", text: "Sie steht zwischen den Bäumen, als gehöre der Weg ihr.", wild: false, unique: true },
-  raeuber: { id: "raeuber", name: "Räuber", hp: 22, atk: 5, def: 1, speed: 2.0, crit: 5, gold: [8, 16], loot: ["glutphiole"], lootChance: { leder_hose: 20 }, art: "monsters/raeuber.jpg", human: true, surrender: true, text: "Ein Mann mit Tuch vor dem Mund. Er will den Beutel, nicht ein Gespräch.", tags: ["mensch"] },
+  raeuber: { id: "raeuber", name: "Räuber", hp: 22, atk: 5, def: 1, speed: 2.0, crit: 5, gold: [8, 16], loot: ["glutphiole"], lootChance: { leder_hose: 20 }, art: "monsters/raeuber.jpg", human: true, text: "Ein Mann mit Tuch vor dem Mund. Er will den Beutel, nicht ein Gespräch.", tags: ["mensch"] },
   nebelkind: { id: "nebelkind", name: "Nebelkind", hp: 26, atk: 8, def: 3, speed: 1.8, crit: 0, weaponHalf: true, gold: [0, 6], loot: ["nebeltrank"], art: "monsters/nebelkind.jpg", text: "Ein Umriss aus Nebel, kaum größer als ein Kind. Klingen gehen halb durch ihn hindurch.", wild: true, tags: ["wild"] },
   thronassel: { id: "thronassel", name: "Thronassel", hp: 70, atk: 12, def: 7, speed: 3.0, crit: 0, armored: true, gold: [30, 50], loot: [], art: "monsters/thronassel.jpg", text: "Ein gepanzertes Ding, so groß wie ein Thronsessel. Es kriecht, und der Boden knirscht.", unique: true },
   kronenbruch: { id: "kronenbruch", name: "Kronenbruch", hp: 90, atk: 13, def: 8, speed: 2.6, speed2: 2.0, crit: 10, gold: [60, 90], loot: [], art: "monsters/kronenbruch.jpg", text: "Ein Ritter ohne Herrn. Auf dem Helm sitzt ein gesprungener Reif.", unique: true }
@@ -645,6 +646,18 @@ window.D.PERKS = {
   segen_brot_und_dach: { art: "segen", name: "Brot und Dach", sichtbar: "offen", geber: "rat", text: "Unterorten gibt euch Brot und ein Dach.", wirkung: "Ruhe im Dorfzentrum bringt mehr Kraft", stufen: [{ wkAktion: { ruhe: 1 } }, { wkAktion: { ruhe: 2 } }] },
   segen_zweiter_atem: { art: "segen", name: "Zweiter Atem", sichtbar: "offen", grad: true, ortSegen: true, text: "Wenn ihr fallt, steht ihr noch einmal auf.", wirkung: "einmal am Tag im Kampf, kurz vor dem Fall, etwas Leben zurück", stufen: [{ zweiterAtem: 20 }, { zweiterAtem: 25 }] },
   segen_des_zuhoerens: { art: "segen", name: "Gabe des Zuhörens", sichtbar: "spuerbar", grad: true, ortSegen: true, text: "Ihr hört, was geredet wird.", wirkung: "ihr merkt, wenn man über euch spricht", stufen: [{}, {}] }
+};
+// ---- Händler-Wirtschaft (Ausbesserung 2): eigenes Gold, Wochen-Sortiment aus eigenem Pool ----
+// gold = Kasse je Woche (7 Tage), size = Anzahl Waren je Wochen-Auswahl, pool = mögliche Waren.
+window.D.MERCHANT_ECON = {
+  marktfrau: { gold: 120, size: 5, pool: ["glutphiole","nebeltrank","aschesalbe","wein_der_stunde","teichbluete","waldphiole","kussphiole"] },
+  hella: { gold: 90, size: 3, pool: ["waldphiole","nebeltrank","aschesalbe","teichbluete","spiegeltrank","glutphiole"] },
+  branna: { gold: 220, size: 5, pool: ["dorfstahl","aschenklinge","aschenschild","eisen_beinschienen","hohe_panzerstiefel","knochenhandschuh","zweihander","schnallen_lederstiefel","leder_hose"] },
+  vesse: { gold: 100, size: 3, pool: ["wein_der_stunde","kussphiole","spiegeltrank","seidenhand","samtbrust"] },
+  iven: { gold: 200, size: 4, pool: ["glutring","nebelamulett","kronenring","ascheohr","teichbluete"] },
+  jorun: { gold: 80, size: 2, pool: ["wein_der_stunde","teichbluete","aschesalbe","glutphiole"] },
+  kraemerin: { gold: 150, size: 7, pool: ["glutphiole","nebeltrank","aschesalbe","wein_der_stunde","teichbluete","waldphiole","kussphiole","spiegeltrank","ascheohr"] },
+  kassian: { gold: 350, size: 14, pool: ["dorfstahl","aschenklinge","thronnadel","glasdolch","nebelklinge","zweihander","knochenhandschuh","seidenhand","russmantel","samtbrust","pelzmantel","glaspanzer","aschenschild","leder_hose","fangzahn_kampfrock","eisen_beinschienen","wickelstiefel","schnallen_lederstiefel","amethyst_stiefel","hohe_panzerstiefel"] }
 };
 // Alte Fluch-IDs (Erstellung bis Oktober 2026) -> Perk-ID
 window.D.FLUCH_MIGRATION = { glasherz: "fluch_glasherz", kronenbrand: "fluch_kronenbrand", stumme_glocke: "fluch_stumme_glocke", blutmond: "fluch_blutmond" };

@@ -72,7 +72,7 @@ function advance(steps) {
   }
 }
 onNewDay((day) => log("Tag " + day + " beginnt."));
-onNewDay(() => { if (state) state.stock = {}; });  // Händler füllen über Nacht auf Grundbestand auf
+// Händler füllen nicht mehr täglich auf: Wochen-Sortiment und Wochen-Gold (systeme.js, merchState).
 function bondLabel(v) {
   let name = D.BOND_STEPS[0].name;  // Skala unten geschlossen (Todfeind)
   for (const s of D.BOND_STEPS) if (v >= s.min) name = s.name;
@@ -142,7 +142,9 @@ const MIGRATIONS = [
   // v7 -> v8: Harn (Burgvogt) steht auf der Burg statt auf dem Markt; Wolf-Quest bleibt per NPC-Id abgebbar.
   function v7to8(s) { return migV8(s); },
   // v8 -> v9: Korrekturliste Nico: Geschlecht (fehlt -> nach Bild, sonst m), Avatar, Herkunft entfällt, Wolfstöter-Mal nur vom legendären Wolf.
-  function v8to9(s) { return migV9(s); }
+  function v8to9(s) { return migV9(s); },
+  // v9 -> v10: Ausbesserung 2: Händler-Gold/Bestand/Pool im Save (state.merchants), keine Ergebung mehr, Kampf-Endfenster.
+  function v9to10(s) { return migV10(s); }
 ];
 const SAVE_VERSION = MIGRATIONS.length;
 function migrate(s) {
@@ -247,6 +249,7 @@ function bumpBond(id, d, opts) { return bumpBondSys(id, d, opts); }
 // Gesprächs-/Kampfansicht leeren (Person + Gespräch), z. B. nach Kampfende oder beim Reisen.
 function clearInteractionView() {
   lastTalk = null;
+  if (state) state.combatEnd = null;
   showFace(null);
   showLine("", []);
 }
@@ -417,10 +420,10 @@ function wolfDefeat() {
   log("Der Wolf wirft euch nieder. Ihr wacht am Brunnen in Unterorten auf.");
   render();
   const ev = pickEvent("dorfzentrum");
-  if (ev) runEvent(ev, { blows });
+  if (ev) runEvent(ev, { blows: "" });  // Kampfverlauf steht nur im Kampffenster
   else {
     showFace(null);
-    showLine((blows ? blows + "\n" : "") + D.WOLF_LINES.wolf_niederlage, [{ label: "Weiter", go: "clear" }]);
+    showLine(D.WOLF_LINES.wolf_niederlage, [{ label: "Weiter", go: "clear" }]);
   }
   persist();
   autosave();
@@ -459,7 +462,7 @@ function talkChoices() {
 function choose(go) {
   if (go === "spare" || go === "bargain") { resolveWolf(go === "spare" ? "wolf_spared" : "wolf_bargain"); return; }
   if (go === "clear" || go === "leave") {
-    state.dialogue = null; state.trading = false; lastTalk = null; sheet = null;
+    state.dialogue = null; state.trading = false; lastTalk = null; sheet = null; state.combatEnd = null;
     document.getElementById("scene-sheet").hidden = true;
     if (go === "clear" && state.pendingNarrator) {
       state.narrator = state.pendingNarrator;
@@ -649,6 +652,7 @@ function buy(id) {
   const left = shopStock(lastTalk, id);
   if (left !== null && left < 1) return;
   if (left !== null) setShopStock(lastTalk, id, left - 1);
+  const mk = merchState(lastTalk); if (mk) mk.gold += buyPrice(it);
   state.hero.gold -= buyPrice(it);
   state.inventory.push(id);
   persist(); openTrade(); render();
@@ -657,9 +661,12 @@ function sell(id) {
   const it = D.ITEMS[id];
   const i = state.inventory.indexOf(id);
   if (i < 0 || !it || !it.sell || it.type === "quest") return;
+  const mk = merchState(lastTalk);
+  if (mk && mk.gold < sellPrice(it)) return;  // Händlerkasse leer: Verkauf gesperrt (Hinweis im Detailfeld)
   state.inventory.splice(i, 1);
   state.hero.gold += sellPrice(it);
-  if (stackable(it) && lastTalk) setShopStock(lastTalk, id, (shopStock(lastTalk, id) || 0) + 1);
+  if (mk) { mk.gold -= sellPrice(it); mk.stock[id] = (mk.stock[id] || 0) + 1; }  // bleibt bis zum Wochen-Wechsel im Sortiment
+  else if (stackable(it) && lastTalk) setShopStock(lastTalk, id, (shopStock(lastTalk, id) || 0) + 1);
   persist(); openTrade(); render();
 }
 function layoutDoll(doll) {
@@ -733,15 +740,19 @@ function openTrade() {
   document.getElementById("sheet-title").textContent = "Handel · " + npc.name;
   const body = document.getElementById("sheet-body");
   const extra = Object.keys((state.stock || {})[npc.id] || {}).filter((id) => !(npc.shop || []).includes(id));
-  const buyList = (npc.shop || []).concat(extra).map((id) => D.ITEMS[id]).filter(Boolean)
-    .filter((it) => shopStock(npc, it.id) !== 0 || (npc.shop || []).includes(it.id));
+  const mk = merchState(npc);
+  const buyList = (mk ? Object.keys(mk.stock).filter((id) => mk.stock[id] > 0) : (npc.shop || []).concat(extra)).map((id) => D.ITEMS[id]).filter(Boolean)
+    .filter((it) => mk || shopStock(npc, it.id) !== 0 || (npc.shop || []).includes(it.id));
   const gold = state.hero.gold;
   body.classList.remove("scroll");
-  body.innerHTML = '<div class="trade-gold">Euer Gold: <b id="tr-gold">' + gold + '</b></div>' +
-    '<div class="trade-layout"><div class="trade-col trade-ware"><h3>Ware · ' + esc(npc.name) + '</h3><div id="tr-buy" class="tile-grid"></div></div>' +
+  const bgOn = hasArt("ui/handel_bg.jpg");
+  document.getElementById("scene-sheet").classList.toggle("trade-bg", bgOn);
+  if (bgOn) body.style.backgroundImage = "url('" + art("ui/handel_bg.jpg") + "')"; else body.style.backgroundImage = "";
+  body.innerHTML = '<div class="trade-layout"><div class="trade-col trade-ware"><h3>Ware · ' + esc(npc.name) + '</h3>' +
+    (mk ? '<div class="trade-gold trade-mgold">Kasse <b id="tr-mgold">' + mk.gold + '</b>' + (mk.gold < 5 ? ' <span class="tiny">· leer bis zur neuen Woche</span>' : '') + '</div>' : '') +
+    '<div id="tr-buy" class="tile-grid"></div><div id="tr-detail" class="trade-detail"></div></div>' +
     '<div class="trade-sep"><span>◆</span></div>' +
-    '<div class="trade-col trade-bag"><h3>Euer Beutel</h3><div id="tr-sell" class="tile-grid"></div></div></div>' +
-    '<div id="tr-detail" class="trade-detail"></div>';
+    '<div class="trade-col trade-bag"><h3>Euer Beutel</h3><div class="trade-gold">Gold <b id="tr-gold">' + gold + '</b></div><div id="tr-sell" class="tile-grid"></div></div></div>';
   const tile = (it, priceTxt, cls, mode, n) => {
     const d = document.createElement("div");
     d.className = "card tile" + (cls ? " " + cls : "");
@@ -792,7 +803,8 @@ function paintTradeDetail(hover) {
   if (!it) { box.innerHTML = ""; return; }
   let act = "";
   if (pick.mode === "buy") act = '<button id="tr-act" data-act="buy"' + (state.hero.gold < buyPrice(it) ? " disabled" : "") + ">Kaufen (" + buyPrice(it) + " Gold)</button>" + (state.hero.gold < buyPrice(it) ? " <span class='tiny'>Zu wenig Gold.</span>" : "");
-  else if (pick.mode === "sell") act = '<button id="tr-act" data-act="sell">Verkaufen (' + sellPrice(it) + " Gold)</button>";
+  else if (pick.mode === "sell") { const mk = merchState(lastTalk); const broke = mk && mk.gold < sellPrice(it);
+    act = '<button id="tr-act" data-act="sell"' + (broke ? " disabled" : "") + '>Verkaufen (' + sellPrice(it) + " Gold)</button>" + (broke ? " <span class='tiny trade-hint'>" + esc(lastTalk.name) + " hat nicht mehr genug Gold. Neues Gold in " + daysToRestock() + " Tagen.</span>" : ""); }
   else if (pick.mode === "worn") act = "<span class='tiny'>Angelegt. Erst im Beutel ablegen, dann verkaufen.</span>";
   else act = "<span class='tiny'>Nicht verkäuflich.</span>";
   const cnt = pick.mode === "buy" ? (shopStock(lastTalk, it.id) || 1) : (stackable(it) ? invCount(it.id) : 1);
@@ -812,6 +824,9 @@ function paintSheet() {
   const titles = { inventory: "Beutel", quests: "Bitten", stats: "Werte", zeichen: "Zeichen" };
   document.getElementById("sheet-title").textContent = titles[sheet] || "";
   body.classList.toggle("scroll", sheet === "stats" || sheet === "quests" || sheet === "zeichen");
+  document.getElementById("scene-sheet").classList.remove("trade-bg");
+  body.style.backgroundImage = "";
+  if (typeof styleSheetKind === "function") styleSheetKind(body, sheet);
   if (sheet === "zeichen") { body.innerHTML = zeichenSheetHtml(); wireSheet(body); return; }
   if (sheet === "inventory") {
     body.innerHTML = '<div class="bag-layout"><div class="doll-col"><div class="paperdoll" id="paperdoll"><img class="doll-art" id="doll-art" alt=""></div>' + bagZeichenHtml() + '</div>' +
@@ -892,11 +907,11 @@ function paintSheet() {
     const qs = Object.keys(state.quests).map((id) => ({ ...D.QUESTS[id], status: state.quests[id] })).filter((q) => q.id);
     body.innerHTML = qs.length ? qs.map((q) => "<div class='card quest" + (q.status === "done" ? " done" : "") + "'><b>" + q.title + "</b><div><b>Wo:</b> " + q.where + "</div><div><b>Was:</b> " + q.goal + "</div><div class='tiny'>" + (q.status === "done" ? "erledigt" : "offen") + "</div></div>").join("") : "<p>Keine offene Bitte.</p>";
   } else if (sheet === "stats") {
-    body.innerHTML = "<h3>Leben</h3><div class='card'><b>Gesundheit</b> " + state.hero.hp + "/" + maxHp() + "<div class='bar hp'><i style='width:" + Math.round(state.hero.hp / maxHp() * 100) + "%'></i></div></div><h3>Grundwerte</h3>" + D.STAT_KEYS.map((k) => {
+    body.innerHTML = "<h3>Leben</h3><div class='card' data-tip='' data-vtip='hp'><b>Gesundheit</b> " + state.hero.hp + "/" + maxHp() + "<div class='bar hp'><i style='width:" + Math.round(state.hero.hp / maxHp() * 100) + "%'></i></div></div><h3>Grundwerte</h3>" + D.STAT_KEYS.map((k) => {
       const xp = state.statXp[k.id] || { xp: 0, need: 12 };
       const value = k.id === "grad" ? state.hero.level : (state.hero[k.id] || 0);
       const pct = Math.round((xp.xp / xp.need) * 100);
-      return "<div class='card'><b>" + k.name + "</b> " + value + "<div class='bar'><i style='width:" + pct + "%'></i></div><div class='tiny'>" + xp.xp + " / " + xp.need + "</div></div>";
+      return "<div class='card' data-tip='' data-vtip='" + k.id + "'><b>" + k.name + "</b> " + value + "<div class='bar'><i style='width:" + pct + "%'></i></div><div class='tiny'>" + xp.xp + " / " + xp.need + "</div></div>";
     }).join("") + valuesHtml() + relationsHtml() + (typeof sysStatsMore === "function" ? sysStatsMore() : "");
     wireSheet(body);
   }
@@ -1023,16 +1038,16 @@ function render() {
     const foe = state.combat;
     showFace(foe);
     if (!foe.engaged) {
-      const choices = foe.surrendered
-        ? [{ label: "Laufen lassen", go: "ergeben:laufen" }, { label: "Ausrauben", go: "ergeben:rauben" }, { label: "Gnadenstoß", go: "ergeben:gnade" }]
-        : [];  // Rußwolf: kein „Gehen lassen“/„Verhandeln“ mehr (Korrekturliste)
+      const choices = [];  // keine Ergebung mehr (Ausbesserung 2); Rußwolf ohne „Gehen lassen“/„Verhandeln“
       showLine((foe.note ? foe.note + "\n" : "") + (foe.text || ""), choices);
     } else {
-      showLine(foe.log.join("\n") || "Der Kampf beginnt.", []);
+      showLine("Der Kampf läuft. Den Verlauf seht ihr im Kampffenster.", []);  // kein Kampflog im Gesprächsfenster
     }
     document.getElementById("talk-who").textContent = foe.name + " · Leben " + Math.max(0, foe.hp) + "/" + foe.hpMax;
   }
   renderCombatWin();
+  if (typeof renderFightHero === "function") renderFightHero();
+  if (typeof spreadSpots === "function") spreadSpots(scene);
   if (sheet && sheet !== "trade") paintSheet();
 }
 function openPlay() {
@@ -1082,12 +1097,19 @@ function tryEnter() {
   const input = document.getElementById("new-hero-name");
   const name = input.value.trim();
   const hint = document.getElementById("name-hint");
-  if (!name) { hint.hidden = false; input.classList.add("needed"); input.focus(); return false; }
+  if (!name) { crPage(1); hint.hidden = false; input.classList.add("needed"); input.focus(); return false; }
   hint.hidden = true; input.classList.remove("needed");
   newGame({ name, gender: newGender, portraitId, points: newPoints });
   return true;
 }
-document.getElementById("btn-new").onclick = () => { paintNew(); document.getElementById("root-menu").hidden = true; document.getElementById("new-menu").hidden = false; };
+function crPage(n) { document.getElementById("cr-p1").hidden = n !== 1; document.getElementById("cr-p2").hidden = n !== 2; }
+document.getElementById("btn-next").onclick = () => {
+  const input = document.getElementById("new-hero-name");
+  if (!input.value.trim()) { document.getElementById("name-hint").hidden = false; input.classList.add("needed"); input.focus(); return; }
+  crPage(2);
+};
+document.getElementById("btn-back2").onclick = () => crPage(1);
+document.getElementById("btn-new").onclick = () => { paintNew(); crPage(1); document.getElementById("root-menu").hidden = true; document.getElementById("new-menu").hidden = false; };
 document.getElementById("btn-back").onclick = () => { document.getElementById("new-menu").hidden = true; document.getElementById("root-menu").hidden = false; };
 document.getElementById("btn-enter").onclick = tryEnter;
 document.getElementById("new-hero-name").oninput = () => { if (document.getElementById("new-hero-name").value.trim()) { document.getElementById("name-hint").hidden = true; document.getElementById("new-hero-name").classList.remove("needed"); } };
@@ -1136,10 +1158,16 @@ document.getElementById("narr-close").onclick = () => {
 document.getElementById("btn-fight").onclick = engage;
 document.getElementById("btn-flee").onclick = flee;
 document.getElementById("btn-rest").onclick = rest;
-document.getElementById("sheet-close").onclick = () => { sheet = null; document.getElementById("scene-sheet").hidden = true; };
+// Schließen eines Blatts: im Handel zurück zum Handelsfenster (nur „Handel beenden“ beendet den Handel).
+function closeSheet() {
+  sheet = null;
+  if (state && state.trading && lastTalk) { openTrade(); return; }
+  document.getElementById("scene-sheet").hidden = true;
+}
+document.getElementById("sheet-close").onclick = closeSheet;
 document.querySelectorAll("[data-sheet]").forEach((b) => b.onclick = () => {
   const kind = b.getAttribute("data-sheet");
-  if (sheet === kind) { sheet = null; document.getElementById("scene-sheet").hidden = true; return; }
+  if (sheet === kind) { closeSheet(); return; }
   sheet = kind;
   document.getElementById("scene-sheet").hidden = false;
   paintSheet();
@@ -1223,6 +1251,14 @@ function tipHtml(it, mode, count) {
 let tipEl = null;
 let tipTimer = null;
 function showTip(node) {
+  if (node.dataset.vtip && typeof valueTip === "function") {
+    if (!tipEl) { tipEl = document.createElement("div"); tipEl.id = "item-tip"; document.body.appendChild(tipEl); }
+    tipEl.innerHTML = valueTip(node.dataset.vtip); tipEl.hidden = false;
+    const r = node.getBoundingClientRect(), w = tipEl.offsetWidth, h = tipEl.offsetHeight;
+    tipEl.style.left = clamp(r.left + r.width / 2 - w / 2, 4, window.innerWidth - w - 4) + "px";
+    tipEl.style.top = clamp(r.top - h - 8 < 4 ? r.bottom + 8 : r.top - h - 8, 4, window.innerHeight - h - 4) + "px";
+    return;
+  }
   const it = D.ITEMS[node.dataset.tip];
   if (!it || !state) return hideTip();
   if (!tipEl) { tipEl = document.createElement("div"); tipEl.id = "item-tip"; document.body.appendChild(tipEl); }
