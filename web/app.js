@@ -128,7 +128,9 @@ const MIGRATIONS = [
     if (!s.stock || typeof s.stock !== "object" || Array.isArray(s.stock)) s.stock = {};
     s.inventory = (s.inventory || []).filter((id) => typeof id === "string");
     return s;
-  }
+  },
+  // v2 -> v3: Werte (werte.md): state.values, state.daily, state.buffs, Flag-Spiegel.
+  function v2to3(s) { return migV3(s); }
 ];
 const SAVE_VERSION = MIGRATIONS.length;
 function migrate(s) {
@@ -190,6 +192,7 @@ function newGame(payload) {
     narrator: { ...D.NARRATOR.intro }, statXp: {}, stock: {}
   };
   D.STAT_KEYS.forEach((k) => { state.statXp[k.id] = { xp: 0, need: k.id === "grad" ? 40 : 12 }; });
+  sysNewGame(state);  // neue Systeme (systeme.js) wie bei der Migration anlegen
   state.v = SAVE_VERSION;
   if (DEBUG) state.hero.gold += 500;
   activeSlot = AUTO_SLOT;  // Neues Spiel schreibt nur den Autosave, Slots 1–3 bleiben unberührt
@@ -202,8 +205,11 @@ function log(line) {
 }
 function gain(key, amount) {
   const row = state.statXp[key] || { xp: 0, need: 12 };
+  if (amount > 0) noteTrain(key);
   row.xp += amount;
-  while (row.xp >= row.need) {
+  // Grundwert-Deckel (werte §3.2): am Deckel kein Aufstieg, xp bleibt knapp darunter.
+  if (key !== "grad" && statCapped(key) && row.xp >= row.need) row.xp = row.need - 1;
+  while (row.xp >= row.need && (key === "grad" || !statCapped(key))) {
     row.xp -= row.need;
     row.need = Math.round(row.need * 1.25);
     if (key === "grad") { state.hero.level += 1; state.hero.hpMax += 4; state.hero.hp = Math.min(maxHp(), state.hero.hp + 4); log("Grad steigt auf " + state.hero.level + "."); }
@@ -270,7 +276,7 @@ function eventMatches(ev) {
   if (w.quest) {
     for (const q of Object.keys(w.quest)) if ((state.quests[q] || null) !== w.quest[q]) return false;
   }
-  return true;
+  return sysWhen(w);
 }
 function pickEvent(locId) {
   const loc = D.LOCATIONS[locId];
@@ -341,7 +347,7 @@ function tick() {
 function flee() {
   if (!state.inCombat) return;
   const fleeFx = clamp(gearFx("fleePct"), -15, 15) / 100;
-  if (Math.random() < clamp(0.45 + ((state.hero.will || 0) + gearBonus("will")) * 0.03 + fleeFx, 0.1, 0.9)) {
+  if (Math.random() < clamp(0.45 + willEff() * 0.03 + fleeFx, 0.1, 0.9)) {  // willEff: Gear-Wille höchstens +3
     clearInterval(battleTimer); battleTimer = null;
     state.inCombat = false; state.combat = null;
     log("Ihr entgleitet.");
@@ -506,6 +512,7 @@ function rest() {
   const loc = D.LOCATIONS[state.location];
   if (!loc || !loc.rest) return;
   state.hero.hp = maxHp();
+  onRest();
   advance(Math.max(1, TIME_COST.rest - gearFx("restSteps")));
   log("Ihr ruht und kommt wieder zu Kräften.");
   persist(); render();
@@ -671,6 +678,7 @@ function useItem(id) {
   const i = state.inventory.indexOf(id);
   if (i < 0 || !it || it.type !== "verbrauch") return;
   if (it.heal) state.hero.hp = Math.min(maxHp(), state.hero.hp + it.heal + gearFx("potionHeal"));
+  if (it.wk) bumpWk(it.wk);  // Waldphiole: Willenskraft, nie Wille
   state.inventory.splice(i, 1);
   persist(); paintSheet(); render();
 }
@@ -748,6 +756,7 @@ function paintSheet() {
   const body = document.getElementById("sheet-body");
   const titles = { inventory: "Beutel", quests: "Bitten", stats: "Werte" };
   document.getElementById("sheet-title").textContent = titles[sheet] || "";
+  body.classList.toggle("scroll", sheet === "stats" || sheet === "quests");
   if (sheet === "inventory") {
     body.innerHTML = '<div class="bag-layout"><div class="paperdoll" id="paperdoll"><img class="doll-art" id="doll-art" alt=""></div><div id="bag-list"></div></div>';
     const doll = document.getElementById("paperdoll");
@@ -827,7 +836,7 @@ function paintSheet() {
       const value = k.id === "grad" ? state.hero.level : (state.hero[k.id] || 0);
       const pct = Math.round((xp.xp / xp.need) * 100);
       return "<div class='card'><b>" + k.name + "</b> " + value + "<div class='bar'><i style='width:" + pct + "%'></i></div><div class='tiny'>" + xp.xp + " / " + xp.need + "</div></div>";
-    }).join("") + "<h3>Nähe</h3>" + Object.keys(state.bonds).map((id) => "<div class='tiny'>" + (D.NPCs[id] ? D.NPCs[id].name : id) + ": " + bondLabel(state.bonds[id]) + " (" + state.bonds[id] + ")</div>").join("");
+    }).join("") + valuesHtml() + "<h3>Nähe</h3>" + Object.keys(state.bonds).map((id) => "<div class='tiny'>" + (D.NPCs[id] ? D.NPCs[id].name : id) + ": " + bondLabel(state.bonds[id]) + " (" + state.bonds[id] + ")</div>").join("");
   }
 }
 function render() {
@@ -843,6 +852,7 @@ function render() {
     const n = document.getElementById(id);
     const g = gearBonus(k);
     if (n) n.textContent = ((state.hero[k] || base) + g) + (g ? " (+" + g + ")" : "");
+    if (n && k === "will" && g > 3) n.textContent = (state.hero.will || 0) + " (+" + g + " Ausr., wirksam +3)";
   });
   document.getElementById("loc").textContent = loc.name;
   document.getElementById("phase").textContent = phaseInfo(state.phase).name;
@@ -869,6 +879,7 @@ function render() {
   document.getElementById("place-name").textContent = loc.name;
   document.getElementById("place-blurb").textContent = loc.blurb || "";
   document.getElementById("btn-rest").hidden = !loc.rest;
+  renderDaily(scene);
   scene.querySelectorAll(".spot,.arch").forEach((n) => n.remove());
   // Rückweg zum Zentralort des Gebiets liegt im Kartenfenster, nicht auf dem Ortsbild.
   const hubLoc = !loc.parent && region.hub && region.hub !== loc.id ? D.LOCATIONS[region.hub] : null;
