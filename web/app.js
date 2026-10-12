@@ -937,7 +937,10 @@ function render() {
   Object.keys(top).forEach((id) => { const n = document.getElementById(id); if (n) n.textContent = top[id]; });
   const pa = avatarOf(state.hero); onImg(document.getElementById("portrait"), pa[0], pa.slice(1));
   const lines = state.log.length ? state.log : ["Noch keine Spuren."];
-  document.getElementById("hero-log").innerHTML = lines.map((l) => "<div>" + esc(l) + "</div>").join("");
+  const logEl = document.getElementById("hero-log");
+  // Protokoll: älteste oben, neueste unten; danach an die neueste Zeile scrollen
+  logEl.innerHTML = lines.slice().reverse().map((l) => "<div>" + esc(l) + "</div>").join("");
+  logEl.scrollTop = logEl.scrollHeight;
   const scene = document.getElementById("scene");
   let sceneArt = document.getElementById("scene-art");
   if (!sceneArt && scene) {
