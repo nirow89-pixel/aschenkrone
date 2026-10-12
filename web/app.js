@@ -140,7 +140,9 @@ const MIGRATIONS = [
   // v6 -> v7: Perks (Male/Flüche/Segen); alter Fluch -> perks.flueche fluch_<alt> (Stufe 3, baked, migriert).
   function v6to7(s) { return migV7(s); },
   // v7 -> v8: Harn (Burgvogt) steht auf der Burg statt auf dem Markt; Wolf-Quest bleibt per NPC-Id abgebbar.
-  function v7to8(s) { return migV8(s); }
+  function v7to8(s) { return migV8(s); },
+  // v8 -> v9: Korrekturliste Nico: Geschlecht (fehlt -> nach Bild, sonst m), Avatar, Herkunft entfällt, Wolfstöter-Mal nur vom legendären Wolf.
+  function v8to9(s) { return migV9(s); }
 ];
 const SAVE_VERSION = MIGRATIONS.length;
 function migrate(s) {
@@ -178,12 +180,19 @@ function load(n) {
   return true;
 }
 
-// Fluchwahl bei der Erstellung entfällt (Entscheid Nico); Flüche kommen als Perks im Spiel.
-function createHero(name, herkunftId, fluchId, portraitId) {
-  const h = D.HERKUENFTE[herkunftId] || D.HERKUENFTE.gossenschatten;
+// Fluchwahl und Herkunft entfallen (Entscheid Nico): Geschlecht, Avatar und frei verteilte Startpunkte.
+function cleanPoints(pts) {
+  const P = D.START_POOL, out = {}; let left = P.punkte;
+  P.keys.forEach((k) => { const n = Math.max(0, Math.min(P.max, Math.floor(Number((pts || {})[k.id]) || 0), left)); if (n) { out[k.id] = n; left -= n; } });
+  return out;
+}
+function createHero(name, gender, portraitId, points) {
+  gender = gender === "w" ? "w" : "m";
+  const av = D.AVATARE[portraitId] && D.AVATARE[portraitId].g === gender ? D.AVATARE[portraitId] : D.AVATARE["avatar_" + gender + "1"];
+  const pts = cleanPoints(points);
   const f = { id: null, name: "", mods: {} };
-  const portrait = D.PORTRAITS[portraitId] || D.PORTRAITS[herkunftId];
-  const hero = { name: (name || "Namenlos").slice(0, 18), herkunftId: h.id, fluchId: f.id, portraitId: portrait.id, herkunft: h.name, fluch: f.name, ...D.BASE_HERO };
+  const h = { mods: { ...pts, gold: D.START_POOL.gold - D.BASE_HERO.gold, hp: D.START_POOL.hp } };
+  const hero = { name: (name || "Namenlos").slice(0, 18), gender, portraitId: av.id, startMods: pts, fluchId: null, fluch: "", ...D.BASE_HERO };
   const apply = (mods = {}) => {
     if (mods.hp) { hero.hp += mods.hp; hero.hpMax += mods.hp; }
     ["atk", "def", "will", "gold", "fortune", "crit"].forEach((k) => { if (mods[k]) hero[k] = (hero[k] || 0) + mods[k]; });
@@ -194,12 +203,14 @@ function createHero(name, herkunftId, fluchId, portraitId) {
   hero.hpMax = clamp(hero.hpMax, 8, 99);
   return hero;
 }
+// Alle beginnen in Unterorten (Dorfzentrum); der erste Wolf wartet beim Verlassen auf dem Nebelpfad.
+const START_LOCATION = "dorfzentrum";
 function newGame(payload) {
   state = {
-    hero: createHero(payload.name, payload.herkunftId, payload.fluchId, payload.portraitId),
-    v: 0, location: "platz", phase: "vormittag", day: 1,
+    hero: createHero(payload.name, payload.gender, payload.portraitId, payload.points),
+    v: 0, location: START_LOCATION, phase: "vormittag", day: 1,
     inventory: ["glutphiole"], equipped: {}, flags: {}, log: [],
-    quests: {}, bonds: {}, factions: {}, seenNarrator: { intro: true, stadt: true },
+    quests: {}, bonds: {}, factions: {}, seenNarrator: { intro: true, unterorten: true },
     dialogue: null, trading: false, inCombat: false, combat: null,
     narrator: { ...D.NARRATOR.intro }, statXp: {}, stock: {}
   };
@@ -502,8 +513,12 @@ function showFace(p) {
   talkPane.classList.add("interacting");
   document.getElementById("face-title").textContent = p.title || "";
   document.getElementById("face-name").textContent = p.name || "";
-  document.getElementById("face-bond").textContent = "Nähe · " + bondLabel(state.bonds[p.id] || 0);
+  const isNpc = !!(p.id && D.NPCs[p.id]);  // Gegner haben keine Beziehung
+  const bondEl = document.getElementById("face-bond");
+  bondEl.textContent = isNpc ? "Nähe · " + bondLabel(state.bonds[p.id] || 0) : "";
+  bondEl.hidden = !isNpc;
   document.getElementById("face-hint").textContent = p.merchant ? "Händler" : (p.text || "");
+  facePane.classList.toggle("foe", !isNpc);
   onImg(document.getElementById("face-art"), p.art, p.id ? ["npcs/" + p.id + ".jpg", "monsters/" + p.id + ".jpg"] : []);
 }
 function esc(s) {
@@ -650,10 +665,12 @@ function sell(id) {
 function layoutDoll(doll) {
   const layout = doll && doll.parentElement;
   if (!layout) return;
-  const availH = layout.clientHeight;
-  const availW = layout.clientWidth;
+  const z = layout.querySelector("#bag-zeichen");
+  const bagL = layout.closest(".bag-layout");
+  const availH = (bagL ? bagL.clientHeight : layout.clientHeight) - (z ? z.offsetHeight + 8 : 0);
+  const availW = bagL ? Math.floor(bagL.clientWidth * 0.5) : layout.clientWidth;
   if (!availH || !availW) return;
-  const maxW = Math.max(96, Math.floor(availW * 0.5));
+  const maxW = Math.max(96, availW);
   let h = availH;
   let w = Math.floor(h * 604 / 900);
   if (w > maxW) { w = maxW; h = Math.floor(w * 900 / 604); }
@@ -710,6 +727,7 @@ let tradePick = null;
 function openTrade() {
   sheet = "trade";
   document.getElementById("scene-sheet").hidden = false;
+  document.getElementById("scene-sheet").classList.add("trade");  // nur „Handel beenden“ schließt
   const npc = lastTalk;
   if (!npc) return;
   document.getElementById("sheet-title").textContent = "Handel · " + npc.name;
@@ -718,9 +736,11 @@ function openTrade() {
   const buyList = (npc.shop || []).concat(extra).map((id) => D.ITEMS[id]).filter(Boolean)
     .filter((it) => shopStock(npc, it.id) !== 0 || (npc.shop || []).includes(it.id));
   const gold = state.hero.gold;
+  body.classList.remove("scroll");
   body.innerHTML = '<div class="trade-gold">Euer Gold: <b id="tr-gold">' + gold + '</b></div>' +
-    '<div class="trade-layout"><div class="trade-col"><h3>Ware</h3><div id="tr-buy" class="tile-grid"></div></div>' +
-    '<div class="trade-col"><h3>Euer Beutel</h3><div id="tr-sell" class="tile-grid"></div></div></div>' +
+    '<div class="trade-layout"><div class="trade-col trade-ware"><h3>Ware · ' + esc(npc.name) + '</h3><div id="tr-buy" class="tile-grid"></div></div>' +
+    '<div class="trade-sep"><span>◆</span></div>' +
+    '<div class="trade-col trade-bag"><h3>Euer Beutel</h3><div id="tr-sell" class="tile-grid"></div></div></div>' +
     '<div id="tr-detail" class="trade-detail"></div>';
   const tile = (it, priceTxt, cls, mode, n) => {
     const d = document.createElement("div");
@@ -732,7 +752,13 @@ function openTrade() {
     d.innerHTML = '<span class="tile-art"><img alt=""></span><b>' + esc(stackName(it, n)) + "</b><div class='tiny'>" + priceTxt + "</div>";
     const im = d.querySelector("img");
     if (it.img) onImg(im, it.img); else im.hidden = true;
-    const pick = () => { tradePick = { id: it.id, mode }; paintTradeDetail(); };
+    if (tradePick && tradePick.id === it.id && tradePick.mode === mode) d.classList.add("picked");
+    const pick = () => {
+      tradePick = { id: it.id, mode };
+      document.querySelectorAll("#sheet-body .tile.picked").forEach((n) => n.classList.remove("picked"));
+      d.classList.add("picked");
+      paintTradeDetail();
+    };
     d.onmouseenter = () => paintTradeDetail({ id: it.id, mode });
     d.onmouseleave = () => paintTradeDetail();
     d.onclick = pick;
@@ -776,16 +802,26 @@ function paintTradeDetail(hover) {
   if (btn && !hover) btn.onclick = () => (btn.dataset.act === "buy" ? buy(it.id) : sell(it.id));
   else if (btn) btn.onclick = () => { tradePick = pick; btn.dataset.act === "buy" ? buy(it.id) : sell(it.id); };
 }
+function heroGender() { return state && state.hero && state.hero.gender === "w" ? "w" : "m"; }
+function hasArt(rel) { return (D.EXT_ART || []).includes(rel); }
+function avatarOf(hero) { const a = D.AVATARE[hero && hero.portraitId]; return a ? (hasArt(a.art) ? [a.art, a.fb] : [a.fb]) : ["portraits/" + ((hero && hero.portraitId) || "gossenschatten") + ".jpg"]; }
 function paintSheet() {
   const body = document.getElementById("sheet-body");
+  document.getElementById("scene-sheet").classList.remove("trade");
+  document.getElementById("scene-sheet").dataset.kind = sheet || "";
   const titles = { inventory: "Beutel", quests: "Bitten", stats: "Werte", zeichen: "Zeichen" };
   document.getElementById("sheet-title").textContent = titles[sheet] || "";
   body.classList.toggle("scroll", sheet === "stats" || sheet === "quests" || sheet === "zeichen");
   if (sheet === "zeichen") { body.innerHTML = zeichenSheetHtml(); wireSheet(body); return; }
   if (sheet === "inventory") {
-    body.innerHTML = '<div class="bag-layout"><div class="paperdoll" id="paperdoll"><img class="doll-art" id="doll-art" alt=""></div><div id="bag-list"></div></div>' + bagZeichenHtml();
+    body.innerHTML = '<div class="bag-layout"><div class="doll-col"><div class="paperdoll" id="paperdoll"><img class="doll-art" id="doll-art" alt=""></div>' + bagZeichenHtml() + '</div>' +
+      '<div class="bag-side"><div class="bag-gold">Gold <b>' + state.hero.gold + '</b></div><div id="bag-list"></div></div></div>';
+    const layoutEl = body.querySelector(".bag-layout");
+    // Hintergrund nach Geschlecht (Ext Art ui/avatar_bg_m|w), sonst bleibt der bisherige.
+    const bgRel = "ui/avatar_bg_" + heroGender() + ".jpg";
+    if (hasArt(bgRel)) { layoutEl.style.backgroundImage = "linear-gradient(rgba(7,4,5,.35),rgba(7,4,5,.55)),url('" + art(bgRel) + "')"; layoutEl.classList.add("has-bg"); }
     const doll = document.getElementById("paperdoll");
-    const figure = art("ui/siluette.jpg");
+    const figure = null;
     let dollArt = document.getElementById("doll-art");
     if (!dollArt && doll) {
       dollArt = document.createElement("img");
@@ -794,7 +830,7 @@ function paintSheet() {
       dollArt.alt = "";
       doll.insertBefore(dollArt, doll.firstChild);
     }
-    if (dollArt) dollArt.src = figure;
+    if (dollArt) { const sil = "ui/siluette_" + (heroGender() === "w" ? "frau" : "mann") + ".jpg"; onImg(dollArt, hasArt(sil) ? sil : "ui/siluette.jpg", ["ui/siluette.jpg"]); }
     if (doll) doll.style.backgroundImage = "none";
     if (doll) layoutDoll(doll);
     if (doll) {
@@ -854,9 +890,9 @@ function paintSheet() {
     }
   } else if (sheet === "quests") {
     const qs = Object.keys(state.quests).map((id) => ({ ...D.QUESTS[id], status: state.quests[id] })).filter((q) => q.id);
-    body.innerHTML = qs.length ? qs.map((q) => "<div class='card'><b>" + q.title + "</b><div><b>Wo:</b> " + q.where + "</div><div><b>Was:</b> " + q.goal + "</div><div class='tiny'>" + (q.status === "done" ? "erledigt" : "offen") + "</div></div>").join("") : "<p>Keine offene Bitte.</p>";
+    body.innerHTML = qs.length ? qs.map((q) => "<div class='card quest" + (q.status === "done" ? " done" : "") + "'><b>" + q.title + "</b><div><b>Wo:</b> " + q.where + "</div><div><b>Was:</b> " + q.goal + "</div><div class='tiny'>" + (q.status === "done" ? "erledigt" : "offen") + "</div></div>").join("") : "<p>Keine offene Bitte.</p>";
   } else if (sheet === "stats") {
-    body.innerHTML = D.STAT_KEYS.map((k) => {
+    body.innerHTML = "<h3>Leben</h3><div class='card'><b>Gesundheit</b> " + state.hero.hp + "/" + maxHp() + "<div class='bar hp'><i style='width:" + Math.round(state.hero.hp / maxHp() * 100) + "%'></i></div></div><h3>Grundwerte</h3>" + D.STAT_KEYS.map((k) => {
       const xp = state.statXp[k.id] || { xp: 0, need: 12 };
       const value = k.id === "grad" ? state.hero.level : (state.hero[k.id] || 0);
       const pct = Math.round((xp.xp / xp.need) * 100);
@@ -870,22 +906,21 @@ function render() {
   const loc = D.LOCATIONS[state.location];
   const region = regionOf(loc);
   document.getElementById("hero-name").textContent = state.hero.name;
-  document.getElementById("hero-meta").textContent = state.hero.herkunft + " · Grad " + state.hero.level + " · " + gradName(state.hero.level);
+  document.getElementById("hero-meta").textContent = "Grad " + state.hero.level + " · " + gradName(state.hero.level);
   document.getElementById("hp").textContent = state.hero.hp + "/" + maxHp();
   document.getElementById("hpbar").innerHTML = "<div class='bar'><i style='width:" + Math.round(state.hero.hp / maxHp() * 100) + "%'></i></div>";
-  document.getElementById("gold").textContent = state.hero.gold;
+  const setTxt = (id, t) => { const n = document.getElementById(id); if (n) n.textContent = t; };
+  setTxt("gold", state.hero.gold);
   [["atk", "atk-val", 4], ["def", "def-val", 0], ["will", "will-val", 0]].forEach(([k, id, base]) => {
     const n = document.getElementById(id);
     const g = gearBonus(k);
     if (n) n.textContent = ((state.hero[k] || base) + g) + (g ? " (+" + g + ")" : "");
     if (n && k === "will" && g > 3) n.textContent = (state.hero.will || 0) + " (+" + g + " Ausr., wirksam +3)";
   });
-  document.getElementById("loc").textContent = loc.name;
-  document.getElementById("phase").textContent = phaseInfo(state.phase).name;
-  document.getElementById("day").textContent = state.day;
+  setTxt("loc", loc.name); setTxt("phase", phaseInfo(state.phase).name); setTxt("day", state.day);
   const top = { "top-day": state.day, "top-phase": phaseInfo(state.phase).name, "top-gold": state.hero.gold, "top-hp": state.hero.hp + "/" + maxHp() };
   Object.keys(top).forEach((id) => { const n = document.getElementById(id); if (n) n.textContent = top[id]; });
-  onImg(document.getElementById("portrait"), "portraits/" + state.hero.portraitId + ".jpg");
+  const pa = avatarOf(state.hero); onImg(document.getElementById("portrait"), pa[0], pa.slice(1));
   const lines = state.log.length ? state.log : ["Noch keine Spuren."];
   document.getElementById("hero-log").innerHTML = lines.map((l) => "<div>" + esc(l) + "</div>").join("");
   const scene = document.getElementById("scene");
@@ -904,7 +939,7 @@ function render() {
   areaBg(document.querySelector("#pane-talk .pane-body"), region.wait || loc.art, "linear-gradient(rgba(7,4,5,.45), rgba(12,7,8,.55))");
   document.getElementById("place-name").textContent = loc.name;
   document.getElementById("place-blurb").textContent = loc.blurb || "";
-  document.getElementById("btn-rest").hidden = !loc.rest;
+  document.getElementById("btn-rest").hidden = true;  // Rasten nur noch beim Gastwirt (Einkehren)
   renderDaily(scene);
   scene.querySelectorAll(".spot,.arch").forEach((n) => n.remove());
   // Rückweg zum Zentralort des Gebiets liegt im Kartenfenster, nicht auf dem Ortsbild.
@@ -990,15 +1025,14 @@ function render() {
     if (!foe.engaged) {
       const choices = foe.surrendered
         ? [{ label: "Laufen lassen", go: "ergeben:laufen" }, { label: "Ausrauben", go: "ergeben:rauben" }, { label: "Gnadenstoß", go: "ergeben:gnade" }]
-        : foe.id === "russwolf" && !state.flags.wolf_dealt
-        ? [{ label: "Gehen lassen", go: "spare" }, { label: "Verhandeln", go: "bargain" }]
-        : [];
+        : [];  // Rußwolf: kein „Gehen lassen“/„Verhandeln“ mehr (Korrekturliste)
       showLine((foe.note ? foe.note + "\n" : "") + (foe.text || ""), choices);
     } else {
       showLine(foe.log.join("\n") || "Der Kampf beginnt.", []);
     }
     document.getElementById("talk-who").textContent = foe.name + " · Leben " + Math.max(0, foe.hp) + "/" + foe.hpMax;
   }
+  renderCombatWin();
   if (sheet && sheet !== "trade") paintSheet();
 }
 function openPlay() {
@@ -1016,23 +1050,47 @@ function cards(el, data, cur, fn) {
     el.appendChild(d);
   });
 }
-let herkunftId = "gossenschatten", fluchId = "kronenbrand", portraitId = "gossenschatten";
+let newGender = "m", portraitId = "avatar_m1", newPoints = {};
+function pointsLeft() { return D.START_POOL.punkte - Object.values(newPoints).reduce((a, b) => a + b, 0); }
 function paintNew() {
-  cards(document.getElementById("herkunft-grid"), D.HERKUENFTE, herkunftId, (id) => { herkunftId = id; paintNew(); });
+  document.querySelectorAll("#gender-pick button").forEach((b) => { b.classList.toggle("active", b.dataset.g === newGender); b.onclick = () => { newGender = b.dataset.g; portraitId = "avatar_" + newGender + "1"; paintNew(); }; });
   const faces = document.getElementById("portrait-grid");
   faces.innerHTML = "";
-  Object.values(D.PORTRAITS).forEach((p) => {
+  Object.values(D.AVATARE).filter((p) => p.g === newGender).forEach((p) => {
     const d = document.createElement("div");
-    d.className = "card" + (p.id === portraitId ? " active" : "");
-    d.innerHTML = '<img alt=""><b>' + p.name + "</b>";
-    onImg(d.querySelector("img"), p.art, ["portraits/" + p.id + ".jpg"]);
+    d.className = "card face" + (p.id === portraitId ? " active" : "");
+    d.dataset.avatar = p.id;
+    d.innerHTML = '<img alt="">';
+    onImg(d.querySelector("img"), hasArt(p.art) ? p.art : p.fb, [p.fb]);
     d.onclick = () => { portraitId = p.id; paintNew(); };
     faces.appendChild(d);
   });
+  const box = document.getElementById("points-grid");
+  box.innerHTML = "";
+  D.START_POOL.keys.forEach((k) => {
+    const n = newPoints[k.id] || 0, base = D.BASE_HERO[k.id] || 0;
+    const row = document.createElement("div");
+    row.className = "pt-row"; row.dataset.stat = k.id;
+    row.innerHTML = "<span class='pt-name'>" + k.name + "</span><button class='pt-minus'" + (n <= 0 ? " disabled" : "") + ">−</button><b class='pt-val'>" + (base + n) + "</b><button class='pt-plus'" + (n >= D.START_POOL.max || pointsLeft() <= 0 ? " disabled" : "") + ">+</button>";
+    row.querySelector(".pt-minus").onclick = () => { newPoints[k.id] = Math.max(0, n - 1); paintNew(); };
+    row.querySelector(".pt-plus").onclick = () => { if (pointsLeft() > 0 && n < D.START_POOL.max) { newPoints[k.id] = n + 1; paintNew(); } };
+    box.appendChild(row);
+  });
+  document.getElementById("points-left").textContent = pointsLeft();
+}
+function tryEnter() {
+  const input = document.getElementById("new-hero-name");
+  const name = input.value.trim();
+  const hint = document.getElementById("name-hint");
+  if (!name) { hint.hidden = false; input.classList.add("needed"); input.focus(); return false; }
+  hint.hidden = true; input.classList.remove("needed");
+  newGame({ name, gender: newGender, portraitId, points: newPoints });
+  return true;
 }
 document.getElementById("btn-new").onclick = () => { paintNew(); document.getElementById("root-menu").hidden = true; document.getElementById("new-menu").hidden = false; };
 document.getElementById("btn-back").onclick = () => { document.getElementById("new-menu").hidden = true; document.getElementById("root-menu").hidden = false; };
-document.getElementById("btn-enter").onclick = () => newGame({ name: document.getElementById("new-hero-name").value.trim(), herkunftId, portraitId });
+document.getElementById("btn-enter").onclick = tryEnter;
+document.getElementById("new-hero-name").oninput = () => { if (document.getElementById("new-hero-name").value.trim()) { document.getElementById("name-hint").hidden = true; document.getElementById("new-hero-name").classList.remove("needed"); } };
 document.getElementById("btn-load").onclick = () => {
   const box = document.getElementById("slots");
   box.innerHTML = "";
@@ -1044,9 +1102,9 @@ document.getElementById("btn-load").onclick = () => {
     d.className = "card slot-card";
     d.dataset.slot = n;
     if (s && s.hero) {
-      d.innerHTML = "<b>" + esc(name + " · " + s.hero.name) + "</b><div class='tiny'>" + esc(slotLabel(s)) + "</div>";
+      d.innerHTML = "<b>" + esc(name) + "</b><span class='slot-hero'>" + esc(s.hero.name) + "</span><div class='tiny'>" + esc(slotLabel(s)) + "</div>";
       d.onclick = () => { if (load(n)) openPlay(); };
-    } else d.textContent = name + " leer";
+    } else { d.classList.add("empty"); d.innerHTML = "<b>" + esc(name) + "</b><div class='tiny'>leer</div>"; }
     box.appendChild(d);
   });
   document.getElementById("root-menu").hidden = true;
@@ -1093,7 +1151,7 @@ document.getElementById("btn-esc").onclick = () => {
 function paintOptions(note) {
   const body = document.getElementById("overlay-body");
   const all = slots();
-  body.innerHTML = '<div class="tiny">Speichern in</div><div id="save-slots"></div><button id="opt-menu">Zum Start</button>' + (note ? "<p>" + esc(note) + "</p>" : "");
+  body.innerHTML = '<div class="opt-h">Speichern in</div><div id="save-slots"></div>' + (note ? "<p class='opt-note'>" + esc(note) + "</p>" : "") + '<div class="opt-foot"><button id="opt-menu" class="menu-btn">Zum Start</button></div>';
   const box = document.getElementById("save-slots");
   [1, 2, 3].forEach((n) => {
     const s = all[n];
@@ -1146,6 +1204,10 @@ function tipCompare(it) {
   return "<div class='tip-cmp'>Gegen " + esc(cur.name) + ": " + (rows.length ? rows.join(", ") : "gleichwertig") + "</div>";
 }
 function tipHtml(it, mode, count) {
+  if (mode === "buy" || mode === "sell" || mode === "worn" || mode === "none") {  // Handel: nur Name und Wirkung
+    const eff = [statText(it)].concat(fxLines(it)).filter(Boolean);
+    return "<b>" + esc(it.name) + "</b>" + (eff.length ? eff.map((l) => "<div class='tip-fx'>" + l + "</div>").join("") : (it.text ? "<div class='tiny'>" + esc(it.text) + "</div>" : ""));
+  }
   const worn = Object.values(state.equipped || {}).includes(it.id) && (mode === "slot" || mode === "worn");
   const lines = [];
   lines.push("<b>" + esc(it.name) + "</b>" + (count > 1 ? " ×" + count : "") + (slotWord(it) ? " <span class='tiny'>· " + slotWord(it) + "</span>" : ""));

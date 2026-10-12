@@ -174,21 +174,24 @@ function perkWkBonus(aktion) {
   });
   return pos + neg;
 }
+const TALK_HOOKS_LATE = [];  // Optionen nach den übrigen Haken (Arbeit, Training, Einkehren)
 const DAILY_ACTIONS = [
-  { id: "work", label: "Arbeiten", locs: ["schmied", "markt", "gasthaus"], steps: 2, flag: "work" },
-  { id: "train_atk", label: "Trainieren: Angriff", locs: ["burg", "platz"], steps: 2, flag: "train" },
-  { id: "train_def", label: "Trainieren: Panzer", locs: ["burg", "platz"], steps: 2, flag: "train" },
+  // npcs: nur über diese NPCs (Gesprächsoption), nicht mehr im Ortsfenster (Korrekturliste Nico).
+  { id: "work", label: "Arbeiten", locs: ["schmied", "markt", "gasthaus"], steps: 2, flag: "work", npcs: ["branna", "kraemerin", "jorun"] },
+  { id: "train_atk", label: "Trainieren: Angriff", locs: ["burg", "platz"], steps: 2, flag: "train", npcs: ["burgvogt", "edrik"] },
+  { id: "train_def", label: "Trainieren: Panzer", locs: ["burg", "platz"], steps: 2, flag: "train", npcs: ["burgvogt", "edrik"] },
   { id: "pray", label: "Beten", locs: ["tempel"], steps: 1, flag: "pray" },
   { id: "confess", label: "Beichten", locs: ["tempel"], steps: 1, flag: "pray" },
   { id: "study_will", label: "Lernen: Wille", locs: ["ratshalle", "katakomben"], steps: 2, flag: "study" },
   { id: "study_fortune", label: "Lernen: Glück", locs: ["ratshalle", "katakomben"], steps: 2, flag: "study" },
-  { id: "tavern", label: "Einkehren (2 Gold)", locs: ["schenke", "gasthaus"], steps: 1, flag: "tavern", gold: 2 },
+  { id: "tavern", label: "Einkehren und rasten (6 Gold)", locs: ["schenke", "gasthaus"], steps: 3, flag: "tavern", gold: 6, npcs: ["marktfrau", "jorun"] },
   { id: "redDoor", label: "Hinter die rote Tür (8 Gold)", locs: ["bordell"], steps: 1, flag: "redDoor", gold: 8 },
   { id: "stille", label: "Stille am Baum", locs: ["alter_baum"], steps: 1, flag: "pray" }
 ];
-function dailyActionsHere() { return DAILY_ACTIONS.filter((a) => a.locs.includes(state.location)); }
+function dailyActionsHere() { return DAILY_ACTIONS.filter((a) => a.locs.includes(state.location) && !a.npcs); }
+let dailyViaNpc = false;
 function dailyBlocked(a) {
-  if (state.narrator || state.dialogue || state.inCombat || state.trading) return "Gerade nicht.";
+  if (state.narrator || (state.dialogue && !dailyViaNpc) || state.inCombat || state.trading) return "Gerade nicht.";
   if (state.daily[a.flag]) return "Heute erledigt.";
   if (a.gold && state.hero.gold < a.gold) return "Zu wenig Gold.";
   if (a.id === "confess") { const p = confessionPreview(); if (p.reason) return p.reason; }
@@ -220,7 +223,8 @@ function doDaily(id) {
     line = "Ihr lest und hört zu. Etwas bleibt hängen.";
   } else if (id === "tavern") {
     bumpWk(5 + (state.location === "schenke" ? perkWkBonus("schenke") : 0));
-    line = "Ein Krug, ein warmer Platz. Ihr kommt wieder zu euch.";
+    state.hero.hp = maxHp(); onRest();  // Rasten gibt es nur noch beim Gastwirt
+    line = "Ein Krug, ein Bett, ein warmer Platz. Ihr schlaft und kommt wieder zu Kräften.";
   } else if (id === "redDoor") {
     bumpWk(6);
     if (typeof factionLean === "function") factionLean("gasse", 1);
@@ -234,6 +238,13 @@ function doDaily(id) {
   persist(); render();
   showFace(null); showLine(line, [{ label: "Weiter", go: "clear" }]);
 }
+// Tagesaktionen über NPCs: Gesprächsoption „daily:<id>“; das Gespräch bleibt offen.
+TALK_HOOKS_LATE.push((npc, c) => {
+  DAILY_ACTIONS.filter((a) => a.npcs && a.npcs.includes(npc.id) && a.locs.includes(state.location)).forEach((a) => {
+    dailyViaNpc = true; const why = dailyBlocked(a); dailyViaNpc = false;
+    if (!why) c.push({ label: a.label, go: "daily:" + a.id });
+  });
+});
 function confess() {
   const v = state.values, p = confessionPreview();
   if (typeof setTempelKennt === "function") setTempelKennt("beichte");
@@ -493,7 +504,7 @@ function relationsHtml() {
 // ---- Gesprächs-Haken: weitere Stufen hängen sich hier an ----
 const TALK_HOOKS = [];   // fn(npc, choices) fügt Optionen an (nur im Knoten "start")
 const CHOOSE_HOOKS = {}; // go-Präfix -> fn(go, npc) ; true = erledigt
-function sysTalkChoices(npc, choices) { TALK_HOOKS.forEach((fn) => { try { fn(npc, choices); } catch (e) { console.error(e); } }); }
+function sysTalkChoices(npc, choices) { TALK_HOOKS.concat(TALK_HOOKS_LATE).forEach((fn) => { try { fn(npc, choices); } catch (e) { console.error(e); } }); }
 function sysChoose(go) {
   const key = Object.keys(CHOOSE_HOOKS).find((k) => go === k || go.startsWith(k + ":"));
   if (!key) return false;
@@ -505,6 +516,13 @@ function sysChoose(go) {
   return true;
 }
 TALK_HOOKS.push((npc, c) => { if (hasPendingBond(npc.id)) c.push({ label: "Vom Pfad erzählen", go: "report_wolf" }); });
+CHOOSE_HOOKS.daily = (go, npc) => {
+  const id = go.split(":")[1], a = DAILY_ACTIONS.find((x) => x.id === id);
+  if (!a || !a.npcs || !npc || !a.npcs.includes(npc.id)) return "";
+  const n0 = state.log.length && state.log[0], d0 = state.daily[a.flag];
+  dailyViaNpc = true; try { doDaily(id); } finally { dailyViaNpc = false; }
+  return !d0 && state.daily[a.flag] ? state.log[0] : (n0 && "Heute nicht mehr.");
+};
 CHOOSE_HOOKS.report_wolf = (go, npc) => { reportPending(npc.id, 1); remember(npc.id, "wolf_bericht", 1); return "Ihr erzählt, was am Pfad geschah. " + npc.name + " hört zu und merkt es sich."; };
 
 // =====================================================================
@@ -849,8 +867,9 @@ function heroSwing(c) {
   Object.keys(c.cd).forEach((k) => { if (c.cd[k] > 0) c.cd[k] -= 1; });
   let dmg = 0, line = "";
   const z = pickZeichen(c);
+  c.fxHero = z ? (ZEICHEN_FX[z.id] || "schwert") : weaponFx();
   if (z) { const r = useZeichen(c, z.id, z.cost); dmg = r.dmg; line = r.line + (dmg ? " (" + dmg + ")" : "") + "."; c.lastMagic = !!D.ZEICHEN[z.id].magic; }
-  else { dmg = heroHit(c); line = "Ihr trefft " + c.name + " (" + dmg + ")" + (c.lastCrit ? ", ein harter Treffer" : "") + "."; c.lastMagic = false; }
+  else { dmg = heroHit(c); if (c.lastCrit) c.fxHero = "blitz"; line = "Ihr trefft " + c.name + " (" + dmg + ")" + (c.lastCrit ? ", ein harter Treffer" : "") + "."; c.lastMagic = false; }
   // Schaden über Zeit
   c.dots.forEach((d) => { dmg += d.per; d.left -= 1; });
   c.dots = c.dots.filter((d) => d.left > 0);
@@ -863,6 +882,7 @@ function heroSwing(c) {
 function foeSwing(c, free) {
   if (!free && c.stun > 0) { c.stun -= 1; combatLine(c, c.name + " ringt nach Luft."); return; }
   const dmg = foeHit(c);
+  c.fxFoe = c.human || (c.tags || []).includes("mensch") ? "schwert" : (c.weaponHalf ? "fluch" : "klaue");
   state.hero.hp -= dmg; c.foeHits += 1;
   const rf = perkFxNum("reflect");
   if (rf > 0) c.hp -= Math.min(3, Math.max(1, Math.floor(dmg * rf / 100)));
@@ -915,7 +935,8 @@ function combatVictory(c) {
     state.flags.wolf_tot = true; state.flags.wolf_slain = true; state.flags.cleared_russwolf = true;
     if (!state.flags.wolf_dealt) { state.flags.wolf_dealt = true; state.flags.sim_bonds_wolf_settled = true; }
     state.pendingNarrator = { ...D.NARRATOR.wolf_tot };
-    if (typeof grantPerk === "function") grantPerk("mal", "mal_des_wolfstoeters", { quelle: "story" });
+    // Male sind besonders: nur ein künftiger legendärer Wolf (Flag wolf_legendaer, noch nicht im Spiel) gibt das Wolfstöter-Mal.
+    if (wolfMalErlaubt(c) && typeof grantPerk === "function") grantPerk("mal", "mal_des_wolfstoeters", { quelle: "story" });
   }
   if (c.unique || c.quest) state.flags["cleared_" + c.id] = true;
   const xp = [];
@@ -934,6 +955,7 @@ function combatVictory(c) {
   showFace({ id: c.id, name: c.name, title: "Besiegt", art: "monsters/" + (c.art ? c.art.split("/").pop().replace(".jpg", "") : c.id) + "_tot.jpg" });
   showLine(text, [{ label: "Weiter", go: "clear" }]);
 }
+function wolfMalErlaubt(c) { return !!(c && c.legendary && state.flags.wolf_legendaer); }
 function combatSurrender(c) {
   stopTimer();
   c.engaged = false; c.surrendered = true;
@@ -1031,7 +1053,7 @@ function migV6(s) {
   try {
     const h = s.hero, g = gradState();
     if (!Object.keys(g.statStart).length) {
-      const H = D.HERKUENFTE[h.herkunftId] || {}, F = D.FLUECHE[h.fluchId] || {};
+      const H = h.startMods ? { mods: h.startMods } : (D.HERKUENFTE[h.herkunftId] || {}), F = D.FLUECHE[h.fluchId] || {};
       GROWTH_KEYS.forEach((k) => { g.statStart[k] = (D.BASE_HERO[k] || 0) + ((H.mods || {})[k] || 0) + ((F.mods || {})[k] || 0); g.statPeak[k] = Math.max(g.statStart[k], h[k] || 0); });
       const old = h.level || 1, calc = gradFor(wachstum());
       h.level = Math.max(old, calc);
@@ -1271,7 +1293,7 @@ function migV7(s) {
       if (id) grantPerkById(id, { quelle: "migration", stufe: 3, migriert: true, baked: s.hero.fluch ? true : "unsicher" });
       s.perks.migrated = true;
     }
-    if (s.flags.wolf_slain && !perkEntry("mal_des_wolfstoeters") && !perkEntry("mal_des_wolfspakts")) grantPerkById("mal_des_wolfstoeters", { quelle: "story", herkunftTag: "wolf_slain" });
+    if (false) { /* Wolfstöter-Mal nicht mehr für den gewöhnlichen Wolf (v9) */ }
     else if ((s.flags.wolf_spared || s.flags.wolf_bargain) && !perkEntry("mal_des_wolfspakts") && !perkEntry("mal_des_wolfstoeters")) grantPerkById("mal_des_wolfspakts", { quelle: "story", herkunftTag: s.flags.wolf_bargain ? "wolf_bargain" : "wolf_spared" });
     syncPerkFlags();
   } finally { state = prev; }
@@ -1283,6 +1305,27 @@ function migV8(s) {
   if (!s.flags) s.flags = {};
   // Ort liegt in data.js; Save trägt nur Quest-Status. Nichts an quests.wolfspfad ändern.
   s.flags.sim_harn_burg = true;
+  return s;
+}
+// Migration v8 -> v9 (Korrekturliste Nico)
+function migV9(s) {
+  const h = s.hero || (s.hero = {});
+  if (h.gender !== "m" && h.gender !== "w") h.gender = ({ nebelwanderer: "w" })[h.portraitId] || "m";
+  if (!D.AVATARE[h.portraitId] || D.AVATARE[h.portraitId].g !== h.gender) {
+    const map = { ascheadel: "avatar_m1", gossenschatten: "avatar_m2", tempelkind: h.gender === "w" ? "avatar_w2" : "avatar_m3", nebelwanderer: "avatar_w1" };
+    const id = map[h.portraitId]; h.portraitId = id && D.AVATARE[id].g === h.gender ? id : "avatar_" + h.gender + "1";
+  }
+  delete h.herkunftId; delete h.herkunft;  // Herkunft entfällt; Startwerte stehen in grad.statStart
+  // Wolfstöter-Mal vom gewöhnlichen Wolf entfernen (Male bleiben sonst immer)
+  if (s.perks && Array.isArray(s.perks.male) && !(s.flags && s.flags.wolf_legendaer)) {
+    const n = s.perks.male.length;
+    s.perks.male = s.perks.male.filter((e) => e.id !== "mal_des_wolfstoeters");
+    if (s.perks.male.length !== n) {
+      s.flags.perk_mal_des_wolfstoeters = false; s.flags.mal_wolfstoeter_entfernt_v9 = true;
+      (s.perkLog = s.perkLog || []).push({ day: s.day || 1, art: "mal", id: "mal_des_wolfstoeters", aktion: "verloren", grund: "migration_v9" });
+    }
+  }
+  if (s.location === "markt" && s.dialogue && /^stand_/.test(s.dialogue.npcId || "")) s.dialogue = null;
   return s;
 }
 const ROMAN = ["", "I", "II", "III"];
@@ -1307,3 +1350,77 @@ wireSheet = function (body) {
   _wireSheet(body);
   body.querySelectorAll("[data-ablegen]").forEach((b) => { b.onclick = () => { if (window.confirm(perkName(b.dataset.ablegen) + " wirklich ablegen?")) { removePerk(b.dataset.ablegen, "abgelegt"); persist(); paintSheet(); render(); } }; });
 };
+
+// =====================================================================
+// Korrekturliste Nico · Kampffenster über dem Ortsbild mit Lebensbalken und Effekten
+// =====================================================================
+const ZEICHEN_FX = { schnellschlag: "schwert", eisenhaut: "schild", solarplexus: "faust", feuerball: "feuerball", froststachel: "eis", heilfunke: "heilung", giftklinge: "gift", schattenhieb: "dolch", blutung: "dolch", wundmal: "fluch" };
+const FX_GLYPH = { klaue: "⟋⟋⟋", schwert: "🗡", dolch: "🔪", faust: "✊", feuerball: "🔥", eis: "❄", blitz: "⚡", schild: "🛡", heilung: "✚", gift: "☠", fluch: "✠" };
+function weaponFx() {
+  const w = weaponOf("waffeL") || weaponOf("waffeR");
+  if (!w) return "faust";
+  return /dolch|nadel/i.test(w.id) ? "dolch" : "schwert";
+}
+let combatSeen = null;  // { id, foeHp, heroHp } für Treffer-Effekte zwischen zwei Renders
+function hpPct(a, b) { return Math.max(0, Math.min(100, Math.round(a / Math.max(1, b) * 100))); }
+function fxIcon(win, kind, target) {
+  const bar = win.querySelector(target === "foe" ? ".cw-foe .cw-bar" : ".cw-hero .cw-bar");
+  if (!bar) return;
+  const ico = document.createElement("span");
+  ico.className = "cw-fx " + (target === "foe" ? "to-foe" : "to-hero") + " fx-" + kind;
+  ico.dataset.fx = kind;
+  if (hasArt("fx/fx_" + kind + ".png")) { const img = document.createElement("img"); img.alt = ""; img.src = art("fx/fx_" + kind + ".png"); ico.appendChild(img); ico.classList.add("has-img"); }
+  else ico.textContent = FX_GLYPH[kind] || "✦";
+  bar.parentElement.appendChild(ico);
+  setTimeout(() => ico.remove(), 900);
+  const panel = bar.closest(".cw-side");
+  panel.classList.remove("hit"); void panel.offsetWidth; panel.classList.add("hit");
+  if (kind === "heilung") { panel.classList.remove("heal"); void panel.offsetWidth; panel.classList.add("heal"); }
+  win.classList.remove("shake"); void win.offsetWidth; win.classList.add("shake");
+}
+function renderCombatWin() {
+  const win = document.getElementById("combat-win");
+  const shell = document.getElementById("shell");
+  if (!win) return;
+  const c = state && state.inCombat && state.combat;
+  shell.classList.toggle("fighting", !!c);
+  if (!c) { win.hidden = true; combatSeen = null; return; }
+  const loc = D.LOCATIONS[state.location] || {};
+  if (win.hidden || win.dataset.loc !== state.location) {
+    win.dataset.loc = state.location;
+    if (hasArt("ui/kampf_bg.jpg")) { win.style.backgroundImage = "radial-gradient(ellipse at center,rgba(7,4,5,.15),rgba(7,4,5,.75)),url('" + art("ui/kampf_bg.jpg") + "')"; win.dataset.bg = "kampf_bg"; }
+    else { win.style.backgroundImage = "linear-gradient(rgba(7,4,5,.72),rgba(7,4,5,.86)),url('" + art(loc.art) + "')"; win.dataset.bg = "ort"; }
+  }
+  win.hidden = false;
+  if (!win.querySelector(".cw-foe")) {
+    win.innerHTML = "<div class='cw-title'>Kampf</div><div class='cw-arena'>" +
+      "<div class='cw-side cw-hero'><div class='cw-frame'><img class='cw-art' alt=''></div><div class='cw-name'></div><div class='cw-bar'><i></i></div><div class='cw-hp'></div></div>" +
+      "<div class='cw-vs'>◆</div>" +
+      "<div class='cw-side cw-foe'><div class='cw-frame'><img class='cw-art' alt=''></div><div class='cw-name'></div><div class='cw-bar'><i></i></div><div class='cw-hp'></div></div></div>" +
+      "<div class='cw-log'></div><div class='cw-acts'><button class='cw-fight menu-btn'>Kämpfen</button><button class='cw-flee menu-btn'>Entgleiten</button></div>";
+    win.querySelector(".cw-fight").onclick = engage;
+    win.querySelector(".cw-flee").onclick = flee;
+  }
+  const hero = win.querySelector(".cw-hero"), foe = win.querySelector(".cw-foe");
+  const pa = avatarOf(state.hero);
+  if (hero.dataset.p !== state.hero.portraitId) { hero.dataset.p = state.hero.portraitId; onImg(hero.querySelector("img"), pa[0], pa.slice(1)); }
+  if (foe.dataset.p !== c.id) { foe.dataset.p = c.id; onImg(foe.querySelector("img"), c.art, ["monsters/" + c.id + ".jpg"]); }
+  hero.querySelector(".cw-name").textContent = state.hero.name;
+  foe.querySelector(".cw-name").textContent = c.name;
+  hero.querySelector(".cw-bar i").style.width = hpPct(state.hero.hp, maxHp()) + "%";
+  foe.querySelector(".cw-bar i").style.width = hpPct(c.hp, c.hpMax) + "%";
+  hero.querySelector(".cw-hp").textContent = Math.max(0, state.hero.hp) + " / " + maxHp();
+  foe.querySelector(".cw-hp").textContent = Math.max(0, c.hp) + " / " + c.hpMax;
+  const lines = c.log.slice(-4);
+  win.querySelector(".cw-log").innerHTML = (lines.length ? lines : [c.note || c.text || ""]).map((l) => "<div>" + esc(l) + "</div>").join("");
+  const acts = win.querySelector(".cw-acts");
+  acts.hidden = !!(c.engaged || c.surrendered);
+  // Effekte nur bei echter Änderung desselben Kampfes
+  if (combatSeen && combatSeen.seed === c.seed) {
+    if (c.hp < combatSeen.foeHp) fxIcon(win, c.fxHero || "schwert", "foe");
+    if (state.hero.hp < combatSeen.heroHp) fxIcon(win, c.fxFoe || "klaue", "hero");
+    else if (state.hero.hp > combatSeen.heroHp) fxIcon(win, "heilung", "hero");
+    if (c.fxHero === "schild" && c.eisenhaut && c.eisenhaut.left > 0 && !combatSeen.schild) fxIcon(win, "schild", "hero");
+  }
+  combatSeen = { seed: c.seed, foeHp: c.hp, heroHp: state.hero.hp, schild: !!(c.eisenhaut && c.eisenhaut.left > 0) };
+}

@@ -77,6 +77,43 @@ const FLUECHE = {
   blutmond: { id: "blutmond", name: "Blutmond", text: "Wunden an anderen wärmen dich. Der Preis bleibt an dir haften.", mods: { lifesteal: 20, hp: -2 } }
 };
 
+// Ext-Art-Dateien, die schon im Repo liegen (assets/…). Optionale Bilder werden nur geladen, wenn sie hier stehen,
+// sonst greift der Ersatz (keine 404). Neue Lieferungen aus Drive hier eintragen.
+const EXT_ART = [
+  "ui/siluette_mann.jpg",
+  "ui/siluette_frau.jpg",
+  "ui/avatar_bg_m.jpg",
+  "ui/avatar_bg_w.jpg",
+  "ui/kampf_bg.jpg",
+  "avatars/avatar_m1.jpg",
+  "avatars/avatar_m2.jpg",
+  "avatars/avatar_m3.jpg",
+  "avatars/avatar_w1.jpg",
+  "avatars/avatar_w2.jpg",
+  "avatars/avatar_w3.jpg",
+  "fx/fx_klaue.png",
+  "fx/fx_schwert.png",
+  "fx/fx_dolch.png",
+  "fx/fx_faust.png",
+  "fx/fx_feuerball.png",
+  "fx/fx_eis.png",
+  "fx/fx_blitz.png",
+  "fx/fx_schild.png",
+  "fx/fx_heilung.png",
+  "fx/fx_gift.png",
+  "fx/fx_fluch.png"
+];
+// Avatare nach Geschlecht (Ext Art: avatars/avatar_m1–m3, avatar_w1–w3). fb = Übergangsbild, solange die Datei fehlt.
+const AVATARE = {
+  avatar_m1: { id: "avatar_m1", g: "m", name: "I", art: "avatars/avatar_m1.jpg", fb: "portraits/ascheadel.jpg" },
+  avatar_m2: { id: "avatar_m2", g: "m", name: "II", art: "avatars/avatar_m2.jpg", fb: "portraits/gossenschatten.jpg" },
+  avatar_m3: { id: "avatar_m3", g: "m", name: "III", art: "avatars/avatar_m3.jpg", fb: "portraits/tempelkind.jpg" },
+  avatar_w1: { id: "avatar_w1", g: "w", name: "I", art: "avatars/avatar_w1.jpg", fb: "portraits/nebelwanderer.jpg" },
+  avatar_w2: { id: "avatar_w2", g: "w", name: "II", art: "avatars/avatar_w2.jpg", fb: "portraits/tempelkind.jpg" },
+  avatar_w3: { id: "avatar_w3", g: "w", name: "III", art: "avatars/avatar_w3.jpg", fb: "portraits/nebelwanderer.jpg" }
+};
+// Startpunkte (werte.md: Wille-Start 3–7, Deckel Angriff/Panzer = Startwert + 14): 4 Punkte, je Wert höchstens +3.
+const START_POOL = { punkte: 4, max: 3, keys: [{ id: "atk", name: "Angriff" }, { id: "def", name: "Panzer" }, { id: "will", name: "Wille" }], gold: 20, hp: 4 };
 const PORTRAITS = {
   ascheadel: { id: "ascheadel", name: "Ascheadel", art: "portraits/ascheadel.jpg" },
   gossenschatten: { id: "gossenschatten", name: "Gossenschatten", art: "portraits/gossenschatten.jpg" },
@@ -183,8 +220,8 @@ const NPCs = {
   },
   marktfrau: {
     id: "marktfrau", name: "Maera", title: "Gastwirtin", location: "schenke",
-    text: "Maera steht hinter der Bude, als gehöre der Tisch fest zu ihr.",
-    art: "npcs/marktfrau.jpg", merchant: true, buys: true,
+    text: "Maera steht hinter dem Schanktisch, als gehöre er fest zu ihr.",
+    art: "npcs/maera.jpg", merchant: true, buys: true,
     shop: ["glutphiole","nebeltrank","aschesalbe","wein_der_stunde","teichbluete"],
     stock: { glutphiole: 4, nebeltrank: 3, aschesalbe: 3, wein_der_stunde: 5, teichbluete: 4 },
     hours: ["morgen","vormittag","mittag","nachmittag"], pin: { x: 76, y: 64 }, faction: "gasse",
@@ -355,7 +392,7 @@ const NPCs = {
     id: "kraemerin", name: "Krämerin", title: "Händlerin", location: "markt",
     text: "Die Krämerin steht hinter der Bude, als gehöre der Tisch fest zu ihr.",
     art: "npcs/kraemerin.jpg",
-    shop: ["glutphiole","nebeltrank","aschesalbe","wein_der_stunde","teichbluete"], stock: { glutphiole: 4, nebeltrank: 3, aschesalbe: 3, wein_der_stunde: 5, teichbluete: 4 },
+    shop: ["glutphiole","nebeltrank","aschesalbe","wein_der_stunde","teichbluete","waldphiole","kussphiole","spiegeltrank"], stock: { glutphiole: 5, nebeltrank: 3, aschesalbe: 3, wein_der_stunde: 5, teichbluete: 4, waldphiole: 4, kussphiole: 4, spiegeltrank: 3 },
     merchant: true, buys: true, hours: ["morgen","vormittag","mittag","nachmittag","abend"], pin: { x: 50, y: 79 }, faction: "gasse",
     lines: ["Salbe, Trank, Nadel. Sagt, was ihr braucht."],
     talk: { start: "Guten Tag. Die Ware ist frisch genug für den Preis, den ich nenne." }
@@ -484,12 +521,6 @@ const LOCATIONS = {
   burg: { id: "burg", name: "Burg", region: "stadt", blurb: "Mauern über dem Platz. Harn hält hier Ordnung. Von hier sieht man die Dächer, und die Dächer sehen einen nicht zurück.", art: "locations/burg.jpg",
     exits: [ { id: "platz", label: "Zum Platz", x: 50, y: 88, arch: true } ] },
   markt: { id: "markt", name: "Markt", region: "stadt", blurb: "Buden stehen in Reihen. Der Zoll hängt an jeder Plane, und wer bleibt, wird gesehen.", art: "locations/markt.jpg",
-    stalls: [
-      { id: "stand_waffen", label: "Waffen", x: 16, y: 40, shop: ["dorfstahl","aschenklinge","thronnadel","glasdolch","nebelklinge","zweihander"] },
-      { id: "stand_ruestung", label: "Rüstung", x: 34, y: 40, shop: ["knochenhandschuh","seidenhand","russmantel","samtbrust","pelzmantel","glaspanzer","aschenschild","leder_hose","fangzahn_kampfrock","eisen_beinschienen","wickelstiefel","schnallen_lederstiefel","amethyst_stiefel","hohe_panzerstiefel"] },
-      { id: "stand_traenke", label: "Tränke", x: 64, y: 30, shop: ["glutphiole","waldphiole","kussphiole","spiegeltrank","nebeltrank"], stock: { glutphiole: 5, waldphiole: 4, kussphiole: 4, spiegeltrank: 3, nebeltrank: 3 } },
-      { id: "stand_schmuck", label: "Ringe und Amulette", x: 86, y: 30, shop: ["glutring","nebelamulett","kronenring","ascheohr"], stock: { ascheohr: 3 } }
-    ],
     exits: [ { id: "platz", label: "Zum Platz", x: 50, y: 88, arch: true } ] },
   tempel: { id: "tempel", name: "Tempel", region: "stadt", blurb: "Die Glocke hängt schwer. Sie schlägt selten, und wenn sie schlägt, wird der Platz still.", art: "locations/tempel.jpg",
     exits: [ { id: "katakomben", label: "Katakomben", x: 17, y: 86, arch: true },  // Torbogen zwischen den vorderen linken Säulen, über den Tempel-Knöpfen
@@ -534,7 +565,7 @@ const LOCATIONS = {
     exits: [ { id: "nebelpfad", label: "Nebelpfad", x: 50, y: 90, arch: true } ] },
   knochenfeld: { id: "knochenfeld", name: "Knochenfeld", region: "vorstadt", blurb: "Weiße Stücke im Gras. Der Wind kommt vom Pfad und nimmt nichts mit.", art: "locations/knochenfeld.jpg",
     exits: [ { id: "nebelpfad", label: "Nebelpfad", x: 50, y: 90, arch: true } ] },
-  dorfzentrum: { id: "dorfzentrum", name: "Dorfzentrum", region: "unterorten", blurb: "Der Brunnen steht in der Mitte. An Tamsins Tür riecht es nach Brot und nassem Holz.", art: "locations/dorfzentrum.jpg", rest: true,
+  dorfzentrum: { id: "dorfzentrum", name: "Dorfzentrum", region: "unterorten", blurb: "Der Brunnen steht in der Mitte. An Tamsins Tür riecht es nach Brot und nassem Holz.", art: "locations/dorfzentrum.jpg",
     events: [
       { id: "wolf_niederlage_tamsin", when: { flags: { wolf_niederlage: true } }, once: true, priority: 10, run: "wolfDefeatTamsin" }
     ],
@@ -579,7 +610,7 @@ const WOLF_LINES = {
 
 window.D = {
   WORLD, FACTIONS, DAY_PHASES, BOND_STEPS, STAT_KEYS,
-  HERKUENFTE, FLUECHE, PORTRAITS, ITEMS, SKILLS, MONSTER, NPCs, QUESTS,
+  HERKUENFTE, FLUECHE, PORTRAITS, AVATARE, START_POOL, EXT_ART, ITEMS, SKILLS, MONSTER, NPCs, QUESTS,
   NARRATOR, REGIONS, LOCATIONS, BASE_HERO, WOLF_LINES, SPAWN_TABLES, ZEICHEN, PFAD_ZEICHEN, GRAD_STUFEN
 };
 
@@ -591,7 +622,7 @@ window.D.PERKS = {
   mal_des_diebes: { art: "mal", name: "Mal des Diebes", sichtbar: "spuerbar", text: "Ein Fingerzeichen, das Gassenleute kennen.", wirkung: "häufiger harte Treffer, leichtere Flucht, bessere Preise in der Gasse", stufen: [{ crit: 2, fleePct: 3, tradePct: { gasse: 3 } }, { crit: 3, fleePct: 4, tradePct: { gasse: 4 } }, { crit: 5, fleePct: 5, tradePct: { gasse: 5 } }], oeffnet: ["giftklinge", "schattenhieb", "blutung"] },
   mal_des_diplomaten: { art: "mal", name: "Mal des Diplomaten", sichtbar: "offen", text: "Kein Körpermal, sondern ein Siegelwort, das man trägt.", wirkung: "erste Begegnungen wärmer, etwas bessere Preise", stufen: [{ bondErstPlus: 1, tradePct: { alle: 2 } }, { bondErstPlus: 1, tradePct: { alle: 3 } }, { bondErstPlus: 2, tradePct: { alle: 4 } }] },
   mal_der_asche: { art: "mal", name: "Aschemal", sichtbar: "offen", text: "Die Asche kennt euch.", wirkung: "keine Kampfwirkung", stufen: [{}] },
-  mal_des_wolfstoeters: { art: "mal", name: "Wolfstöter", sichtbar: "offen", text: "Ihr habt den Wolf am Pfad erschlagen.", wirkung: "etwas mehr Schaden gegen wilde Tiere", stufen: [{ vsTag: { wild: 1 } }], exklusiv: ["mal_des_wolfspakts", "segen_waldgastrecht"] },
+  mal_des_wolfstoeters: { art: "mal", name: "Wolfstöter", sichtbar: "offen", text: "Ihr habt einen legendären Wolf erschlagen.", wirkung: "etwas mehr Schaden gegen wilde Tiere", stufen: [{ vsTag: { wild: 1 } }], exklusiv: ["mal_des_wolfspakts", "segen_waldgastrecht"] },
   mal_des_wolfspakts: { art: "mal", name: "Paktmal", sichtbar: "spuerbar", text: "Der Wolf hat euch gehen lassen, und ihr ihn.", wirkung: "im Düsterwald seltener überrascht; wilde Wölfe greifen nicht mehr an", stufen: [{ travelSafePct: { duesterwald: 10 } }], exklusiv: ["mal_des_wolfstoeters"] },
   mal_des_verraeters: { art: "mal", name: "Verrätermal", sichtbar: "verborgen", text: "Was ihr verraten habt, haftet an euch.", wirkung: "keine Zahl", stufen: [{}] },
   fluch_glasherz: { art: "fluch", name: "Glasherz", sichtbar: "spuerbar", text: "Was euch trifft, trifft oft auch den, der zuschlägt.", wirkung: "Treffer springen zurück, ihr seid zerbrechlicher", loesen: "Bei Hella abgeben · Im Tempel brechen", stufen: [{ reflect: 15, hp: -4 }, { reflect: 20, hp: -6 }, { reflect: 25, hp: -8 }], migFx: { reflect: 25 } },
