@@ -239,8 +239,8 @@ function travel(toId) {
   if (!dest || !here) return;
   if (!(here.exits || []).some((ex) => ex.id === toId)) return;
   // Nebenorte: hinein nur vom Hauptort, hinaus nur zurück zum Hauptort.
-  if (dest.parent && here.id !== dest.parent) return;
-  if (here.parent && toId !== here.parent) return;
+  if (dest.parent && here.id !== dest.parent && here.parent !== toId) return;
+  if (here.parent && toId !== here.parent && dest.parent !== here.id) return;  // tiefere Nebenorte (Kalte Halle → Spiegelkammer)
   state.location = toId;
   advance(TIME_COST.travel);
   log("Ihr erreicht " + dest.name + ".");
@@ -940,7 +940,7 @@ function render() {
     const b = document.createElement("button");
     b.className = "pin pass-back";
     b.style.left = "50%"; b.style.top = "92%";
-    b.textContent = parentLoc ? "Zurück nach " + backLoc.name : (region.back || "Zurück zum " + backLoc.name);
+    b.textContent = parentLoc ? (loc.back || "Zurück nach " + backLoc.name) : (region.back || "Zurück zum " + backLoc.name);
     b.disabled = !!state.inCombat;
     b.onclick = (ev) => { ev.stopPropagation(); travel(backLoc.id); };
     map.appendChild(b);

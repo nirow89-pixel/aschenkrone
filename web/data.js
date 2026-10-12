@@ -230,7 +230,7 @@ const NPCs = {
   branna: {
     id: "branna", name: "Branna", title: "Schmiedin", location: "schmied",
     text: "Branna wischt die Hände an der Schürze ab, bevor sie redet.",
-    art: "ui/siluette.jpg",  // Platzhalter, eigenes Bild fehlt noch
+    art: "npcs/branna.jpg",
     shop: ["dorfstahl","aschenklinge","aschenschild","eisen_beinschienen","hohe_panzerstiefel"],
     merchant: true, buys: true, hours: ["morgen","vormittag","mittag","nachmittag","abend"], pin: { x: 62, y: 74 }, faction: "rat",
     lines: ["Eisen kostet. Gutes Eisen kostet mehr."],
@@ -239,7 +239,7 @@ const NPCs = {
   vesse: {
     id: "vesse", name: "Vesse", title: "Dirnenwirtin", location: "bordell",
     text: "Vesse sieht zur Tür, bevor sie euch ansieht.",
-    art: "ui/siluette.jpg",  // Platzhalter, eigenes Bild fehlt noch
+    art: "npcs/vessa.jpg",
     shop: ["wein_der_stunde","kussphiole"], stock: { wein_der_stunde: 4, kussphiole: 2 },
     merchant: true, buys: true, hours: ["nachmittag","abend","nacht"], pin: { x: 20, y: 86 }, faction: "gasse",
     lines: ["Wer hier trinkt, zahlt vorher."],
@@ -248,7 +248,7 @@ const NPCs = {
   corin: {
     id: "corin", name: "Corin", title: "", location: "bordell",
     text: "Corin lehnt am Vorhang und zählt die Gäste.",
-    art: "ui/siluette.jpg",  // Platzhalter, eigenes Bild fehlt noch
+    art: "npcs/corin.jpg",
     merchant: false, hours: ["nachmittag","abend","nacht"], pin: { x: 34, y: 87 }, faction: "gasse",
     lines: ["Ich sehe, wer kommt. Das reicht mir."],
     talk: { start: "Ihr seid nicht von hier. Das sieht man an den Schuhen." }
@@ -256,7 +256,7 @@ const NPCs = {
   ila: {
     id: "ila", name: "Ila", title: "", location: "bordell",
     text: "Ila hält ein Glas, aus dem sie nicht trinkt.",
-    art: "ui/siluette.jpg",  // Platzhalter, eigenes Bild fehlt noch
+    art: "npcs/ila.jpg",
     merchant: false, hours: ["nachmittag","abend","nacht"], pin: { x: 47, y: 89 }, faction: "gasse",
     lines: ["Fragt Vesse, nicht mich."],
     talk: { start: "Setzt euch, wenn ihr wollt. Reden kostet hier nichts. Noch nicht." }
@@ -264,7 +264,7 @@ const NPCs = {
   kes: {
     id: "kes", name: "Kes", title: "", location: "bordell",
     text: "Kes spielt mit einem Ring, der nicht ihr gehört.",
-    art: "ui/siluette.jpg",  // Platzhalter, eigenes Bild fehlt noch
+    art: "npcs/kes.jpg",
     merchant: false, hours: ["nachmittag","abend","nacht"], pin: { x: 60, y: 97 }, faction: "gasse",
     lines: ["Gold redet lauter als ihr."],
     talk: { start: "Ihr sucht jemanden? Dann sucht leiser." }
@@ -272,7 +272,7 @@ const NPCs = {
   nim: {
     id: "nim", name: "Nim", title: "", location: "bordell",
     text: "Nim lächelt, aber die Augen bleiben bei der Tür.",
-    art: "ui/siluette.jpg",  // Platzhalter, eigenes Bild fehlt noch
+    art: "npcs/nim.jpg",
     merchant: false, hours: ["nachmittag","abend","nacht"], pin: { x: 74, y: 96 }, faction: "gasse",
     lines: ["Die Nacht ist lang genug für alle."],
     talk: { start: "Guten Abend. Bleibt oder geht, aber steht nicht im Licht." }
@@ -280,7 +280,7 @@ const NPCs = {
   saffi: {
     id: "saffi", name: "Saffi", title: "", location: "bordell",
     text: "Saffi summt ein Lied aus den Gassen.",
-    art: "ui/siluette.jpg",  // Platzhalter, eigenes Bild fehlt noch
+    art: "npcs/saffi.jpg",
     merchant: false, hours: ["nachmittag","abend","nacht"], pin: { x: 88, y: 97 }, faction: "gasse",
     lines: ["Hier hört jeder alles. Sagt also nichts Dummes."],
     talk: { start: "Ihr seht müde aus. Hier wird man das nicht los, nur leichter." }
@@ -288,7 +288,7 @@ const NPCs = {
   edrik: {
     id: "edrik", name: "Edrik", title: "Hauptmann der königlichen Garde", location: "platz",
     text: "Edrik steht, als gehöre ihm der Platz. Die Garde nickt, wenn er vorbeigeht.",
-    art: "ui/siluette.jpg",  // Platzhalter, eigenes Bild fehlt noch
+    art: "npcs/edrik.jpg",
     merchant: false, hours: ["morgen","vormittag","mittag","nachmittag","abend"], pin: { x: 30, y: 82 }, faction: "krone",
     lines: ["Haltet Ordnung, dann halte ich euch nicht auf."],
     talk: { start: "Ihr steht auf dem Platz des Königs. Sprecht klar und kurz." }
@@ -296,7 +296,7 @@ const NPCs = {
   lira: {
     id: "lira", name: "Lira", title: "", location: "platz",
     text: "Lira sitzt nicht still. Sie sieht jeden, der durchs Tor kommt.",
-    art: "ui/siluette.jpg",  // Platzhalter, eigenes Bild fehlt noch
+    art: "npcs/lira_goldkehle.jpg",
     merchant: false, hours: ["morgen","vormittag","mittag","nachmittag","abend"], pin: { x: 72, y: 86 }, faction: "gasse",
     lines: ["Neue Gesichter fallen auf. Eures auch."],
     talk: { start: "Ihr seid neu. Ich merke mir Gesichter, nicht Namen." }
@@ -304,7 +304,7 @@ const NPCs = {
   elfira: {
     id: "elfira", name: "Elfira", title: "", location: "knochenfeld",
     text: "Elfira geht zwischen den Knochen, als kenne sie jeden Bogen.",
-    art: "ui/siluette.jpg",  // Platzhalter, eigenes Bild fehlt noch
+    art: "npcs/elfira.jpg",
     merchant: false, hours: ["morgen","vormittag","mittag","nachmittag","abend"], pin: { x: 30, y: 85 }, faction: "nebel",
     lines: ["Der Wind hier vergisst nichts."],
     talk: { start: "Ihr seid weit vom Pfad. Was sucht ihr zwischen den Toten?" }
@@ -312,7 +312,7 @@ const NPCs = {
   hart: {
     id: "hart", name: "Hart", title: "", location: "dorfzentrum",
     text: "Hart lehnt am Zaun und sieht den Brunnen an.",
-    art: "ui/siluette.jpg",  // Platzhalter, eigenes Bild fehlt noch
+    art: "npcs/hart.jpg",
     merchant: false, hours: ["morgen","vormittag","mittag","nachmittag","abend"], pin: { x: 72, y: 80 }, faction: "rat",
     lines: ["Unterorten wartet. Das kann es gut."],
     talk: { start: "Guten Tag. Wer in Unterorten bleibt, lernt Geduld oder geht." }
@@ -320,7 +320,7 @@ const NPCs = {
   iven: {
     id: "iven", name: "Iven", title: "Händler für Amulette und Ringe", location: "markt",
     text: "Iven poliert einen Ring und sieht euch dabei nicht an.",
-    art: "ui/siluette.jpg",  // Platzhalter, eigenes Bild fehlt noch
+    art: "npcs/iven.jpg",
     shop: ["glutring","nebelamulett","kronenring","ascheohr"], stock: { ascheohr: 3 },
     merchant: true, buys: true, hours: ["morgen","vormittag","mittag","nachmittag","abend"], pin: { x: 68, y: 89 }, faction: "gasse",
     lines: ["Ein Ring sagt mehr als ein Titel."],
@@ -329,24 +329,32 @@ const NPCs = {
   jorina: {
     id: "jorina", name: "Jorina", title: "", location: "nebelpfad",
     text: "Jorina geht am Rand des Pfades, wo der Boden fester ist.",
-    art: "ui/siluette.jpg",  // Platzhalter, eigenes Bild fehlt noch
+    art: "npcs/jorina_nebelreiterin.jpg",
     merchant: false, hours: ["morgen","vormittag","mittag","nachmittag","abend"], pin: { x: 48, y: 82 }, faction: "nebel",
     lines: ["Der Nebel trägt Stimmen weit."],
     talk: { start: "Bleibt auf dem Weg. Was daneben liegt, gehört dem Nebel." }
   },
+  spiegelnde: {
+    id: "spiegelnde", name: "Spiegelnde", title: "", location: "spiegelkammer",
+    text: "Eine Frau steht vor den Spiegeln. Ihr Bild in den Scherben bewegt sich einen Atemzug später als sie.",
+    art: "npcs/spiegelnde.jpg",
+    merchant: false, hours: ["morgen","vormittag","mittag","nachmittag","abend","nacht"], pin: { x: 58, y: 84 },
+    lines: ["Jeder Spiegel hier hat jemanden behalten."],
+    talk: { start: "Ihr seid weit unten. Schaut nicht zu lange hinein. Die Spiegel geben nicht alles zurück." }
+  },
   jorun: {
     id: "jorun", name: "Jorun", title: "Gastwirt", location: "gasthaus",
     text: "Jorun stellt Krüge ab, ohne zu fragen, wer sie bestellt hat.",
-    art: "ui/siluette.jpg",  // Platzhalter, eigenes Bild fehlt noch
+    art: "npcs/jorun.jpg",
     shop: ["wein_der_stunde","teichbluete"], stock: { wein_der_stunde: 5, teichbluete: 4 },
-    merchant: true, buys: true, hours: ['mittag', 'nachmittag', 'abend', 'nacht'], pin: { x: 42, y: 72 }, faction: "krone",
+    merchant: true, buys: true, hours: ['mittag', 'nachmittag', 'abend', 'nacht'], pin: { x: 46, y: 58 }, faction: "krone",
     lines: ["Ein Platz kostet. Ein guter Platz kostet mehr."],
     talk: { start: "Setzt euch. Wer zahlt, bekommt Wärme und keine Fragen." }
   },
   kraemerin: {
     id: "kraemerin", name: "Krämerin", title: "Händlerin", location: "markt",
     text: "Die Krämerin steht hinter der Bude, als gehöre der Tisch fest zu ihr.",
-    art: "ui/siluette.jpg",  // Platzhalter, eigenes Bild fehlt noch
+    art: "npcs/kraemerin.jpg",
     shop: ["glutphiole","nebeltrank","aschesalbe","wein_der_stunde","teichbluete"], stock: { glutphiole: 4, nebeltrank: 3, aschesalbe: 3, wein_der_stunde: 5, teichbluete: 4 },
     merchant: true, buys: true, hours: ["morgen","vormittag","mittag","nachmittag","abend"], pin: { x: 50, y: 79 }, faction: "gasse",
     lines: ["Salbe, Trank, Nadel. Sagt, was ihr braucht."],
@@ -355,7 +363,7 @@ const NPCs = {
   rorik: {
     id: "rorik", name: "Rorik", title: "Oberster Rat von Unterorten", location: "ratshalle",
     text: "Rorik sitzt nicht am Kopf des Tisches. Er braucht ihn nicht.",
-    art: "ui/siluette.jpg",  // Platzhalter, eigenes Bild fehlt noch
+    art: "npcs/rorik.jpg",
     merchant: false, hours: ["morgen","vormittag","mittag","nachmittag","abend"], pin: { x: 10, y: 92 }, faction: "rat",
     lines: ["Entscheidungen brauchen Zeit. Unsere besonders."],
     talk: { start: "Ihr steht in der Ratshalle. Sagt, was ihr wollt, und wartet auf die Antwort." }
@@ -363,7 +371,7 @@ const NPCs = {
   selene: {
     id: "selene", name: "Selene", title: "Frau von Rorik", location: "ratshalle",
     text: "Selene hört zu, bevor Rorik antwortet.",
-    art: "ui/siluette.jpg",  // Platzhalter, eigenes Bild fehlt noch
+    art: "npcs/selene.jpg",
     merchant: false, hours: ["morgen","vormittag","mittag","nachmittag","abend"], pin: { x: 88, y: 97 }, faction: "rat",
     lines: ["Rorik redet. Ich höre."],
     talk: { start: "Willkommen. Mein Mann hat viel zu tun. Ich habe Zeit." }
@@ -371,7 +379,7 @@ const NPCs = {
   sarina: {
     id: "sarina", name: "Sarina", title: "", location: "obsidiansee",
     text: "Sarina sieht ins Wasser, als warte sie auf eine Antwort.",
-    art: "ui/siluette.jpg",  // Platzhalter, eigenes Bild fehlt noch
+    art: "npcs/sarina.jpg",
     merchant: false, hours: ['vormittag', 'mittag', 'nachmittag', 'abend', 'nacht'], pin: { x: 15, y: 72 }, faction: "nebel",
     lines: ["Das Wasser zeigt mehr als den Himmel."],
     talk: { start: "Leise. Der See hört zu." }
@@ -379,7 +387,7 @@ const NPCs = {
   kassian: {
     id: "kassian", name: "Kassian", title: "Händler für Waffen und Rüstungen", location: "markt",
     text: "Kassian prüft eine Klinge gegen das Licht.",
-    art: "ui/siluette.jpg",  // Platzhalter, eigenes Bild fehlt noch
+    art: "npcs/kassian.jpg",
     shop: ["dorfstahl","aschenklinge","thronnadel","glasdolch","nebelklinge","zweihander","knochenhandschuh","seidenhand","russmantel","samtbrust","pelzmantel","glaspanzer","aschenschild","leder_hose","fangzahn_kampfrock","eisen_beinschienen","wickelstiefel","schnallen_lederstiefel","amethyst_stiefel","hohe_panzerstiefel"],
     merchant: true, buys: true, hours: ["morgen","vormittag","mittag","nachmittag","abend"], pin: { x: 57, y: 92 }, faction: "krone",
     lines: ["Stahl lügt nicht."],
@@ -446,7 +454,6 @@ const REGIONS = {
     { id: "tempel", label: "Tempel", x: 80, y: 26 },
     { id: "markt", label: "Markt", x: 42, y: 68 },
     { id: "gassen", label: "Gassen", x: 16, y: 46 },
-    { id: "gasthaus", label: "Gasthaus", x: 82, y: 58 },
     { id: "nebelpfad", label: "Vor den Toren", x: 50, y: 90 }
   ]},
   unterorten: { id: "unterorten", name: "Unterorten", hub: "dorfzentrum", map: "maps/unterorten.jpg", wait: "ui/wait_unterorten.jpg", idle: "ui/idle_unterorten.jpg", pins: [
@@ -472,7 +479,6 @@ const LOCATIONS = {
       { id: "tempel", label: "Tempel" },
       { id: "markt", label: "Markt" },
       { id: "gassen", label: "Gassen" },
-      { id: "gasthaus", label: "Gasthaus" },
       { id: "nebelpfad", label: "Vor den Toren" }
     ] },
   burg: { id: "burg", name: "Burg", region: "stadt", blurb: "Mauern über dem Platz. Von hier sieht man die Dächer, und die Dächer sehen einen nicht zurück.", art: "locations/burg.jpg",
@@ -490,7 +496,15 @@ const LOCATIONS = {
       { id: "platz", label: "Zum Platz", x: 50, y: 90, arch: true } ] },
   katakomben: { id: "katakomben", name: "Katakomben", region: "stadt", blurb: "Eine Treppe führt unter den Tempel. Hinter dem Gitter liegen Gänge mit Grabnischen und Kerzen.", art: "locations/katakomben.jpg",
     parent: "tempel", pass: "ui/pass_kata.jpg",
-    exits: [ { id: "tempel", label: "Zurück zum Tempel" } ] },
+    exits: [ { id: "tempel", label: "Zurück zum Tempel" },
+      { id: "kalte_halle", label: "Kalte Halle", x: 82, y: 76, arch: true } ] },  // Torbogen im rechten Gang
+  kalte_halle: { id: "kalte_halle", name: "Kalte Halle", region: "stadt", blurb: "Säulen tragen Eis statt Ruß. Zwischen den Sarkophagen liegt Nebel, und der Boden ist kälter als der Stein darüber.", art: "locations/kalte_halle.jpg",
+    parent: "katakomben", pass: "ui/pass_kaltehalle.jpg",
+    exits: [ { id: "katakomben", label: "Zurück in die Katakomben" },
+      { id: "spiegelkammer", label: "Spiegelkammer", x: 50, y: 52, arch: true } ] },  // tiefer, am Ende der Halle
+  spiegelkammer: { id: "spiegelkammer", name: "Spiegelkammer", region: "stadt", blurb: "Gesprungene Spiegel lehnen an der Felswand. Jeder zeigt den Raum ein wenig anders, als er ist.", art: "locations/spiegelkammer.jpg",
+    parent: "kalte_halle", pass: "ui/pass_spiegelkammer.jpg",
+    exits: [ { id: "kalte_halle", label: "Zurück in die Kalte Halle" } ] },
   gassen: { id: "gassen", name: "Gassen", region: "stadt", blurb: "Die Gassen sind eng. Türen öffnen sich nur, wenn jemand den Preis schon kennt.", art: "locations/gassen.jpg",
     exits: [
       { id: "bordell", label: "Rote Tür", x: 78, y: 70, arch: true },  // Torbogen auf dem Rundbogen rechts
@@ -502,7 +516,9 @@ const LOCATIONS = {
     parent: "gassen", pass: "ui/pass_rotetuer.jpg",
     exits: [ { id: "gassen", label: "Zurück nach Gassen" } ] },
   gasthaus: { id: "gasthaus", name: "Gasthaus", region: "stadt", blurb: "Tische, Rauch, ein Tresen. Wer zahlt, bekommt einen Platz, der nicht der Markt ist.", art: "locations/gasthaus.jpg",
-    exits: [ { id: "platz", label: "Zum Platz", x: 50, y: 88, arch: true } ] },
+    // Nebenort der Gassen: nur über die Tür in den Gassen, keine Schnellreise.
+    parent: "gassen", pass: "ui/pass_gasthaus.jpg", back: "Zurück in die Gassen",
+    exits: [ { id: "gassen", label: "Zurück in die Gassen" } ] },
   nebelpfad: { id: "nebelpfad", name: "Nebelpfad", region: "vorstadt", blurb: "Der Boden ist nass, die Sicht kurz. Der Weg trägt Stadt und Dorf, solange niemand ihn sperrt.", art: "locations/nebelpfad.jpg", wild: true,
     events: [
       { id: "russwolf", when: { flags: { cleared_russwolf: false, wolf_dealt: false } }, once: false, priority: 10, run: "startEncounter", arg: "russwolf" }
