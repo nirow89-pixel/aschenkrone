@@ -72,6 +72,7 @@ function advance(steps) {
   }
 }
 onNewDay((day) => log("Tag " + day + " beginnt."));
+onNewDay(() => { if (state) state.stock = {}; });  // Händler füllen über Nacht auf Grundbestand auf
 function bondLabel(v) {
   let name = "Fremd";
   for (const s of D.BOND_STEPS) if (v >= s.min) name = s.name;
@@ -119,6 +120,13 @@ const MIGRATIONS = [
     if (s.narrator === undefined) s.narrator = null;
     // Niederlage gegen den Wolf schon erlebt -> Tamsins einmalige Zeile gilt als gesehen.
     if (s.flags.wolf_niederlage) s.flags.ev_wolf_niederlage_tamsin = true;
+    return s;
+  },
+  // v1 -> v2: Stapel. Beutel bleibt eine Liste von Ids (Stapel = gleiche Ids, nur gruppiert angezeigt);
+  // neu ist der Händlerbestand state.stock { shopId: { itemId: Anzahl } }, leer = Grundbestand aus data.js.
+  function v1to2(s) {
+    if (!s.stock || typeof s.stock !== "object" || Array.isArray(s.stock)) s.stock = {};
+    s.inventory = (s.inventory || []).filter((id) => typeof id === "string");
     return s;
   }
 ];
@@ -178,7 +186,7 @@ function newGame(payload) {
     inventory: ["glutphiole"], equipped: {}, flags: {}, log: [],
     quests: {}, bonds: {}, factions: {}, seenNarrator: { intro: true, stadt: true },
     dialogue: null, trading: false, inCombat: false, combat: null,
-    narrator: { ...D.NARRATOR.intro }, statXp: {}
+    narrator: { ...D.NARRATOR.intro }, statXp: {}, stock: {}
   };
   D.STAT_KEYS.forEach((k) => { state.statXp[k.id] = { xp: 0, need: k.id === "grad" ? 40 : 12 }; });
   state.v = SAVE_VERSION;
@@ -555,9 +563,42 @@ function openStall(id) {
   openTrade();
   render();
 }
+// --- Stapel: verbrauch/ware/quest stapeln, Ausrüstung bleibt einzeln ---
+const STACK_TYPES = ["verbrauch", "ware", "quest"];
+function stackable(it) { return !!it && STACK_TYPES.includes(it.type); }
+function invCount(id) { return state.inventory.filter((x) => x === id).length; }
+// Gruppiert eine Id-Liste zu [{ it, n }]; Stapelbares einmal mit Anzahl, Ausrüstung je Stück.
+function groupItems(ids) {
+  const out = [], seen = {};
+  ids.forEach((id) => {
+    const it = D.ITEMS[id];
+    if (!it) return;
+    if (stackable(it)) { if (seen[id]) { seen[id].n += 1; return; } seen[id] = { it, n: 1 }; out.push(seen[id]); }
+    else out.push({ it, n: 1 });
+  });
+  return out;
+}
+function stackName(it, n) { return it.name + (n > 1 ? " ×" + n : ""); }
+// Händlerbestand: null = unbegrenzt (Ausrüstung ohne stock-Eintrag, wie bisher).
+function shopStock(npc, id) {
+  if (!npc) return null;
+  const cur = state.stock && state.stock[npc.id];
+  if (cur && typeof cur[id] === "number") return cur[id];
+  const base = npc.stock || {};
+  if (typeof base[id] === "number") return base[id];
+  return stackable(D.ITEMS[id]) && (npc.shop || []).includes(id) ? 1 : (stackable(D.ITEMS[id]) ? 0 : null);
+}
+function setShopStock(npc, id, n) {
+  if (!state.stock) state.stock = {};
+  if (!state.stock[npc.id]) state.stock[npc.id] = {};
+  state.stock[npc.id][id] = Math.max(0, n);
+}
 function buy(id) {
   const it = D.ITEMS[id];
   if (!it || state.hero.gold < buyPrice(it)) return;
+  const left = shopStock(lastTalk, id);
+  if (left !== null && left < 1) return;
+  if (left !== null) setShopStock(lastTalk, id, left - 1);
   state.hero.gold -= buyPrice(it);
   state.inventory.push(id);
   persist(); openTrade(); render();
@@ -568,6 +609,7 @@ function sell(id) {
   if (i < 0 || !it || !it.sell || it.type === "quest") return;
   state.inventory.splice(i, 1);
   state.hero.gold += sellPrice(it);
+  if (stackable(it) && lastTalk) setShopStock(lastTalk, id, (shopStock(lastTalk, id) || 0) + 1);
   persist(); openTrade(); render();
 }
 function layoutDoll(doll) {
@@ -636,19 +678,22 @@ function openTrade() {
   if (!npc) return;
   document.getElementById("sheet-title").textContent = "Handel · " + npc.name;
   const body = document.getElementById("sheet-body");
-  const buyList = (npc.shop || []).map((id) => D.ITEMS[id]).filter(Boolean);
+  const extra = Object.keys((state.stock || {})[npc.id] || {}).filter((id) => !(npc.shop || []).includes(id));
+  const buyList = (npc.shop || []).concat(extra).map((id) => D.ITEMS[id]).filter(Boolean)
+    .filter((it) => shopStock(npc, it.id) !== 0 || (npc.shop || []).includes(it.id));
   const gold = state.hero.gold;
   body.innerHTML = '<div class="trade-gold">Euer Gold: <b id="tr-gold">' + gold + '</b></div>' +
     '<div class="trade-layout"><div class="trade-col"><h3>Ware</h3><div id="tr-buy" class="tile-grid"></div></div>' +
     '<div class="trade-col"><h3>Euer Beutel</h3><div id="tr-sell" class="tile-grid"></div></div></div>' +
     '<div id="tr-detail" class="trade-detail"></div>';
-  const tile = (it, priceTxt, cls, mode, invIndex) => {
+  const tile = (it, priceTxt, cls, mode, n) => {
     const d = document.createElement("div");
     d.className = "card tile" + (cls ? " " + cls : "");
     d.dataset.item = it.id;
     d.dataset.mode = mode;
     d.dataset.tip = it.id; d.dataset.tipMode = mode;
-    d.innerHTML = '<span class="tile-art"><img alt=""></span><b>' + it.name + "</b><div class='tiny'>" + priceTxt + "</div>";
+    if (n > 1) d.dataset.tipCount = n;
+    d.innerHTML = '<span class="tile-art"><img alt=""></span><b>' + esc(stackName(it, n)) + "</b><div class='tiny'>" + priceTxt + "</div>";
     const im = d.querySelector("img");
     if (it.img) onImg(im, it.img); else im.hidden = true;
     const pick = () => { tradePick = { id: it.id, mode }; paintTradeDetail(); };
@@ -658,20 +703,22 @@ function openTrade() {
     return d;
   };
   const b = document.getElementById("tr-buy");
-  buyList.forEach((it) => b.appendChild(tile(it, buyPrice(it) + " Gold", gold < buyPrice(it) ? "poor" : "", "buy")));
+  buyList.forEach((it) => {
+    const n = shopStock(npc, it.id);
+    if (n === 0) b.appendChild(tile(it, "ausverkauft", "locked", "none"));
+    else b.appendChild(tile(it, buyPrice(it) + " Gold", gold < buyPrice(it) ? "poor" : "", "buy", n || 1));
+  });
   const s = document.getElementById("tr-sell");
-  state.inventory.forEach((id) => {
-    const it = D.ITEMS[id];
-    if (!it) return;
+  groupItems(state.inventory).forEach(({ it, n }) => {
     const ok = it.sell && it.type !== "quest";
-    s.appendChild(tile(it, ok ? sellPrice(it) + " Gold" : "unverkäuflich", ok ? "" : "locked", ok ? "sell" : "none"));
+    s.appendChild(tile(it, ok ? sellPrice(it) + " Gold" : "unverkäuflich", ok ? "" : "locked", ok ? "sell" : "none", n));
   });
   Object.keys(state.equipped || {}).forEach((slot) => {
     const it = D.ITEMS[state.equipped[slot]];
     if (it) s.appendChild(tile(it, "angelegt", "locked worn", "worn"));
   });
   if (!s.children.length) s.innerHTML = "<p class='tiny'>Der Beutel ist leer.</p>";
-  if (tradePick && !(tradePick.mode === "buy" ? buyList.some((it) => it.id === tradePick.id) : state.inventory.includes(tradePick.id) || Object.values(state.equipped).includes(tradePick.id))) tradePick = null;
+  if (tradePick && !(tradePick.mode === "buy" ? buyList.some((it) => it.id === tradePick.id) && shopStock(npc, tradePick.id) !== 0 : state.inventory.includes(tradePick.id) || Object.values(state.equipped).includes(tradePick.id))) tradePick = null;
   paintTradeDetail();
 }
 function paintTradeDetail(hover) {
@@ -686,7 +733,8 @@ function paintTradeDetail(hover) {
   else if (pick.mode === "sell") act = '<button id="tr-act" data-act="sell">Verkaufen (' + sellPrice(it) + " Gold)</button>";
   else if (pick.mode === "worn") act = "<span class='tiny'>Angelegt. Erst im Beutel ablegen, dann verkaufen.</span>";
   else act = "<span class='tiny'>Nicht verkäuflich.</span>";
-  box.innerHTML = "<b>" + it.name + "</b>" + (statText(it) ? " · " + statText(it) : "") + "<div class='tiny'>" + (it.text || "") + "</div>" +
+  const cnt = pick.mode === "buy" ? (shopStock(lastTalk, it.id) || 1) : (stackable(it) ? invCount(it.id) : 1);
+  box.innerHTML = "<b>" + esc(stackName(it, cnt)) + "</b>" + (statText(it) ? " · " + statText(it) : "") + "<div class='tiny'>" + (it.text || "") + "</div>" +
     (compareText(it) ? "<div class='tiny'>" + compareText(it) + "</div>" : "") + "<div class='trade-act'>" + act + "</div>";
   const btn = document.getElementById("tr-act");
   if (btn && !hover) btn.onclick = () => (btn.dataset.act === "buy" ? buy(it.id) : sell(it.id));
@@ -749,15 +797,16 @@ function paintSheet() {
     const list = document.getElementById("bag-list");
     if (list) {
       const worn = new Set(Object.values(state.equipped || {}));
-      const items = state.inventory.map((id) => D.ITEMS[id]).filter((it) => it && !worn.has(it.id));
+      const items = groupItems(state.inventory.filter((id) => !worn.has(id)));
       if (!items.length) list.innerHTML = "<p>Der Beutel ist leer.</p>";
-      items.forEach((it) => {
+      items.forEach(({ it, n }) => {
         const d = document.createElement("div");
         d.className = "card tile";
         d.dataset.item = it.id;
         d.dataset.tip = it.id; d.dataset.tipMode = "bag";
+        if (n > 1) d.dataset.tipCount = n;
         const hint = [it.type === "verbrauch" ? "Nutzen" : (it.slot ? "Anlegen" : ""), statText(it)].filter(Boolean).join(" · ");
-        d.innerHTML = '<span class="tile-art"><img alt=""></span><b>' + it.name + "</b>" + (hint ? "<div class='tiny'>" + hint + "</div>" : "");
+        d.innerHTML = '<span class="tile-art"><img alt=""></span><b>' + esc(stackName(it, n)) + "</b>" + (hint ? "<div class='tiny'>" + hint + "</div>" : "");
         const ti = d.querySelector("img");
         if (it.img) onImg(ti, it.img); else ti.hidden = true;
         if (it.type === "verbrauch") d.onclick = () => useItem(it.id);
@@ -1016,15 +1065,16 @@ function tipCompare(it) {
   }).filter(Boolean);
   return "<div class='tip-cmp'>Gegen " + esc(cur.name) + ": " + (rows.length ? rows.join(", ") : "gleichwertig") + "</div>";
 }
-function tipHtml(it, mode) {
+function tipHtml(it, mode, count) {
   const worn = Object.values(state.equipped || {}).includes(it.id) && (mode === "slot" || mode === "worn");
   const lines = [];
-  lines.push("<b>" + esc(it.name) + "</b>" + (slotWord(it) ? " <span class='tiny'>· " + slotWord(it) + "</span>" : ""));
+  lines.push("<b>" + esc(it.name) + "</b>" + (count > 1 ? " ×" + count : "") + (slotWord(it) ? " <span class='tiny'>· " + slotWord(it) + "</span>" : ""));
   if (statText(it)) lines.push("<div>" + statText(it) + "</div>");
   fxLines(it).forEach((l) => lines.push("<div class='tip-fx'>" + l + "</div>"));
   if (mode === "buy") lines.push("<div>Preis: " + buyPrice(it) + " Gold" + (buyPrice(it) !== it.price ? " <span class='tiny'>(statt " + it.price + ")</span>" : "") + "</div>");
   else if (it.price && it.sell && it.type !== "quest") lines.push("<div>Verkauf: " + sellPrice(it) + " Gold" + (worn ? " <span class='tiny'>(erst ablegen)</span>" : "") + "</div>");
   else lines.push("<div class='tiny'>Unverkäuflich</div>");
+  if (count > 1) lines.push("<div class='tiny'>" + (mode === "buy" ? "Vorrat: " : "Im Beutel: ") + count + " Stück</div>");
   if (!worn) lines.push(tipCompare(it));
   return lines.join("");
 }
@@ -1034,7 +1084,7 @@ function showTip(node) {
   const it = D.ITEMS[node.dataset.tip];
   if (!it || !state) return hideTip();
   if (!tipEl) { tipEl = document.createElement("div"); tipEl.id = "item-tip"; document.body.appendChild(tipEl); }
-  tipEl.innerHTML = tipHtml(it, node.dataset.tipMode);
+  tipEl.innerHTML = tipHtml(it, node.dataset.tipMode, Number(node.dataset.tipCount) || 1);
   tipEl.hidden = false;
   const r = node.getBoundingClientRect();
   const w = tipEl.offsetWidth, h = tipEl.offsetHeight;

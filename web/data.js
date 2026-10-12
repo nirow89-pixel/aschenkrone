@@ -141,6 +141,7 @@ const NPCs = {
     text: "Maera steht hinter der Bude, als gehöre der Tisch fest zu ihr.",
     art: "npcs/marktfrau.jpg", merchant: true, buys: true,
     shop: ["glutphiole","nebeltrank","aschesalbe","wein_der_stunde","teichbluete"],
+    stock: { glutphiole: 4, nebeltrank: 3, aschesalbe: 3, wein_der_stunde: 5, teichbluete: 4 },
     hours: ["morgen","vormittag","mittag","nachmittag"], pin: { x: 78, y: 64 }, faction: "gasse",
     lines: ["Salbe, Trank, Nadel. Sagt, was ihr braucht."],
     talk: { start: "Guten Tag. Die Ware ist frisch genug für den Preis, den ich nenne." }
@@ -176,7 +177,7 @@ const NPCs = {
     id: "hella", name: "Hella", title: "Frau im Wald", location: "hexenhuette",
     text: "Hella öffnet die Tür nur, wenn sie den Schritt kennt.",
     art: "npcs/hella.jpg",
-    merchant: true, buys: true, shop: ["waldphiole","nebeltrank","aschesalbe"],
+    merchant: true, buys: true, shop: ["waldphiole","nebeltrank","aschesalbe"], stock: { waldphiole: 4, nebeltrank: 3, aschesalbe: 3 },
     hours: ["morgen","vormittag","nachmittag","abend","nacht"], pin: { x: 18, y: 68 }, faction: "nebel",
     lines: ["Die Hütte ist offen. Der Sumpf nicht. Fragt, bevor ihr pflückt."],
     talk: { start: "Ihr kommt vom Pfad. Setzt euch oder geht. Beides ist eine Entscheidung." }
@@ -279,8 +280,8 @@ const LOCATIONS = {
     stalls: [
       { id: "stand_waffen", label: "Waffen", x: 16, y: 40, shop: ["dorfstahl","aschenklinge","thronnadel","glasdolch","nebelklinge","zweihander"] },
       { id: "stand_ruestung", label: "Rüstung", x: 34, y: 40, shop: ["knochenhandschuh","seidenhand","russmantel","samtbrust","pelzmantel","glaspanzer","aschenschild","leder_hose","fangzahn_kampfrock","eisen_beinschienen","wickelstiefel","schnallen_lederstiefel","amethyst_stiefel","hohe_panzerstiefel"] },
-      { id: "stand_traenke", label: "Tränke", x: 64, y: 30, shop: ["glutphiole","waldphiole","kussphiole","spiegeltrank","nebeltrank"] },
-      { id: "stand_schmuck", label: "Ringe und Amulette", x: 86, y: 30, shop: ["glutring","nebelamulett","kronenring","ascheohr"] }
+      { id: "stand_traenke", label: "Tränke", x: 64, y: 30, shop: ["glutphiole","waldphiole","kussphiole","spiegeltrank","nebeltrank"], stock: { glutphiole: 5, waldphiole: 4, kussphiole: 4, spiegeltrank: 3, nebeltrank: 3 } },
+      { id: "stand_schmuck", label: "Ringe und Amulette", x: 86, y: 30, shop: ["glutring","nebelamulett","kronenring","ascheohr"], stock: { ascheohr: 3 } }
     ],
     exits: [ { id: "platz", label: "Zum Platz", x: 50, y: 88, arch: true } ] },
   tempel: { id: "tempel", name: "Tempel", region: "stadt", blurb: "Die Glocke hängt schwer. Sie schlägt selten, und wenn sie schlägt, wird der Platz still.", art: "locations/tempel.jpg",
