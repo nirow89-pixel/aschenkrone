@@ -112,3 +112,5 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .arch.pass-arch .pass-img{display:block;width:56px;height:72px;border-radius:28px 28px 3px 3px;background:#12090b center/cover no-repeat;border:1px solid #c7a056}
 .arch.pass-arch .tag{font-size:9px}
 .pass-back{transform:translate(-50%,-100%)}
+/* Leere Gesprächsfelder ohne Balken */
+#talk-who:empty,#talk-line:empty{display:none}
