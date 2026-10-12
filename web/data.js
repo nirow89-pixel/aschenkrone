@@ -492,7 +492,7 @@ const LOCATIONS = {
     ],
     exits: [ { id: "platz", label: "Zum Platz", x: 50, y: 88, arch: true } ] },
   tempel: { id: "tempel", name: "Tempel", region: "stadt", blurb: "Die Glocke hängt schwer. Sie schlägt selten, und wenn sie schlägt, wird der Platz still.", art: "locations/tempel.jpg",
-    exits: [ { id: "katakomben", label: "Katakomben", x: 17, y: 96, arch: true },  // Torbogen zwischen den vorderen linken Säulen
+    exits: [ { id: "katakomben", label: "Katakomben", x: 17, y: 86, arch: true },  // Torbogen zwischen den vorderen linken Säulen, über den Tempel-Knöpfen
       { id: "platz", label: "Zum Platz", x: 50, y: 90, arch: true } ] },
   katakomben: { id: "katakomben", name: "Katakomben", region: "stadt", blurb: "Eine Treppe führt unter den Tempel. Hinter dem Gitter liegen Gänge mit Grabnischen und Kerzen.", art: "locations/katakomben.jpg",
     parent: "tempel", pass: "ui/pass_kata.jpg",

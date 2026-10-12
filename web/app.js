@@ -231,6 +231,18 @@ function gain(key, amount) {
 }
 // Nähe: Kurve, Tagesdeckel, bondPlus nur bei Gespräch/Geschenk (beziehungen.md §2), Umsetzung in systeme.js.
 function bumpBond(id, d, opts) { return bumpBondSys(id, d, opts); }
+// Gesprächs-/Kampfansicht leeren (Person + Gespräch), z. B. nach Kampfende oder beim Reisen.
+function clearInteractionView() {
+  lastTalk = null;
+  showFace(null);
+  showLine("", []);
+}
+// Gebiet eines Ortes; Nebenorte ohne eigenes Gebiet erben es vom Elternort.
+function regionOf(loc) {
+  let l = loc, guard = 0;
+  while (l && !(l.region && D.REGIONS[l.region]) && l.parent && guard++ < 8) l = D.LOCATIONS[l.parent];
+  return (l && D.REGIONS[l.region]) || {};
+}
 function travel(toId) {
   if (!toId || !state) return;
   if (state.narrator || state.dialogue || state.inCombat || state.trading) return;
@@ -242,6 +254,7 @@ function travel(toId) {
   if (dest.parent && here.id !== dest.parent && here.parent !== toId) return;
   if (here.parent && toId !== here.parent && dest.parent !== here.id) return;  // tiefere Nebenorte (Kalte Halle → Spiegelkammer)
   state.location = toId;
+  clearInteractionView();  // Reste von Kampf/Siegfenster nicht in den neuen Ort mitnehmen
   advance(TIME_COST.travel);
   log("Ihr erreicht " + dest.name + ".");
   if (!state.seenNarrator[dest.region] && D.NARRATOR[dest.region]) {
@@ -853,7 +866,7 @@ function paintSheet() {
 function render() {
   if (!state) return;
   const loc = D.LOCATIONS[state.location];
-  const region = D.REGIONS[loc.region];
+  const region = regionOf(loc);
   document.getElementById("hero-name").textContent = state.hero.name;
   document.getElementById("hero-meta").textContent = state.hero.herkunft + " · Grad " + state.hero.level + " · " + gradName(state.hero.level);
   document.getElementById("hp").textContent = state.hero.hp + "/" + maxHp();
@@ -929,7 +942,8 @@ function render() {
   });
   const map = document.getElementById("map");
   map.querySelectorAll(".pin").forEach((n) => n.remove());
-  document.getElementById("map-rail").textContent = region.name;
+  // Kartentitel: Gebietsname, im Nebenort der Ortsname.
+  document.getElementById("map-rail").textContent = loc.parent ? loc.name : region.name;
   const locked = !!(state.narrator || state.trading || state.dialogue);
   map.querySelectorAll(".pass-back").forEach((n) => n.remove());
   const parentLoc = loc.parent && D.LOCATIONS[loc.parent];

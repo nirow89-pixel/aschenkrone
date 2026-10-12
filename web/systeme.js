@@ -987,7 +987,7 @@ function sysFlee() {
   if (Math.random() < chance) {
     stopTimer(); state.inCombat = false; state.combat = null;
     if (c.id === "thronassel") state.daily.zufall = (state.daily.zufall || 0) + 1;
-    log("Ihr entgleitet."); showFace(null); showLine("Ihr entgleitet. Der Schlag geht vorbei.", []);
+    log("Ihr entgleitet."); lastTalk = null; showFace(null); showLine("Ihr entgleitet. Der Schlag geht vorbei.", [{ label: "Weiter", go: "clear" }]);
   } else {
     c.note = "Der Weg bleibt versperrt.";
     foeSwing(c, true);  // Erstschlag des Gegners
