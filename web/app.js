@@ -555,7 +555,7 @@ function openStall(id) {
   if (!state || state.narrator || state.inCombat || state.trading) return;
   const st = stallById(id);
   if (!st || !(D.LOCATIONS[state.location].stalls || []).includes(st)) return;
-  lastTalk = { id: st.id, name: st.label, title: "Stand", shop: st.shop, merchant: true, buys: true, stall: true };
+  lastTalk = { id: st.id, name: st.label, title: "Stand", shop: st.shop, stock: st.stock, merchant: true, buys: true, stall: true };
   state.dialogue = { npcId: st.id, node: "shop" };
   state.trading = true;
   showFace(null);
