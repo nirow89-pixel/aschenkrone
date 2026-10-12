@@ -107,3 +107,8 @@ button:disabled{opacity:.45;cursor:not-allowed}
 #item-tip .tip-cmp{margin-top:4px;border-top:1px solid #6a4a22;padding-top:4px}
 #item-tip .tip-up{color:#8fcf6f}
 #item-tip .tip-down{color:#e0705a}
+/* Nebenort: Torbogen mit pass-Bild */
+.arch.pass-arch{padding:3px;display:flex;flex-direction:column;align-items:center;gap:3px}
+.arch.pass-arch .pass-img{display:block;width:56px;height:72px;border-radius:28px 28px 3px 3px;background:#12090b center/cover no-repeat;border:1px solid #c7a056}
+.arch.pass-arch .tag{font-size:9px}
+.pass-back{transform:translate(-50%,-100%)}

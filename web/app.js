@@ -222,6 +222,9 @@ function travel(toId) {
   const here = D.LOCATIONS[state.location];
   if (!dest || !here) return;
   if (!(here.exits || []).some((ex) => ex.id === toId)) return;
+  // Nebenorte: hinein nur vom Hauptort, hinaus nur zurück zum Hauptort.
+  if (dest.parent && here.id !== dest.parent) return;
+  if (here.parent && toId !== here.parent) return;
   state.location = toId;
   advance(TIME_COST.travel);
   log("Ihr erreicht " + dest.name + ".");
@@ -868,9 +871,15 @@ function render() {
   scene.querySelectorAll(".spot,.arch").forEach((n) => n.remove());
   (loc.exits || []).filter((ex) => ex.arch).forEach((ex) => {
     const b = document.createElement("button");
-    b.className = "arch";
+    const sub = D.LOCATIONS[ex.id];
+    b.className = "arch" + (sub && sub.pass ? " pass-arch" : "");
     b.style.left = ex.x + "%"; b.style.top = ex.y + "%";
     b.textContent = ex.label;
+    if (sub && sub.pass) {  // Torbogen zum Nebenort mit dessen pass-Bild
+      b.dataset.sub = sub.id;
+      b.innerHTML = '<span class="pass-img"></span><span class="tag">' + esc(ex.label) + "</span>";
+      bg(b.querySelector(".pass-img"), sub.pass);
+    }
     b.onclick = () => travel(ex.id);
     scene.appendChild(b);
   });
@@ -897,10 +906,20 @@ function render() {
   map.querySelectorAll(".pin").forEach((n) => n.remove());
   document.getElementById("map-rail").textContent = region.name;
   const locked = !!(state.narrator || state.trading || state.dialogue);
-  bg(map, locked ? region.wait : region.map);
-  if (!locked) {
+  map.querySelectorAll(".pass-back").forEach((n) => n.remove());
+  const parentLoc = loc.parent && D.LOCATIONS[loc.parent];
+  bg(map, locked ? region.wait : (parentLoc ? (loc.pass || region.map) : region.map));
+  if (!locked && parentLoc) {  // Nebenort: statt Karte das pass-Bild, nur Rückweg
+    const b = document.createElement("button");
+    b.className = "pin pass-back";
+    b.style.left = "50%"; b.style.top = "92%";
+    b.textContent = "Zurück nach " + parentLoc.name;
+    b.disabled = !!state.inCombat;
+    b.onclick = (ev) => { ev.stopPropagation(); travel(parentLoc.id); };
+    map.appendChild(b);
+  } else if (!locked) {
     const open = new Set((loc.exits || []).map((ex) => ex.id));
-    (region.pins || []).forEach((pin) => {
+    (region.pins || []).filter((pin) => !(D.LOCATIONS[pin.id] || {}).parent).forEach((pin) => {
       const b = document.createElement("button");
       const reachable = open.has(pin.id);
       b.className = "pin" + (pin.id === loc.id ? " here" : "");

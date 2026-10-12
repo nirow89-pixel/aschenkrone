@@ -243,7 +243,6 @@ const REGIONS = {
     { id: "tempel", label: "Tempel", x: 80, y: 26 },
     { id: "markt", label: "Markt", x: 42, y: 68 },
     { id: "gassen", label: "Gassen", x: 16, y: 46 },
-    { id: "bordell", label: "Bordell", x: 18, y: 84 },
     { id: "gasthaus", label: "Gasthaus", x: 82, y: 58 },
     { id: "nebelpfad", label: "Vor den Toren", x: 50, y: 90 }
   ]},
@@ -269,7 +268,6 @@ const LOCATIONS = {
       { id: "burg", label: "Burg" },
       { id: "tempel", label: "Tempel" },
       { id: "markt", label: "Markt" },
-      { id: "bordell", label: "Bordell" },
       { id: "gassen", label: "Gassen" },
       { id: "gasthaus", label: "Gasthaus" },
       { id: "nebelpfad", label: "Vor den Toren" }
@@ -288,11 +286,13 @@ const LOCATIONS = {
     exits: [ { id: "platz", label: "Zum Platz", x: 50, y: 90, arch: true } ] },
   gassen: { id: "gassen", name: "Gassen", region: "stadt", blurb: "Die Gassen sind eng. Türen öffnen sich nur, wenn jemand den Preis schon kennt.", art: "locations/gassen.jpg",
     exits: [
-      { id: "bordell", label: "Rote Tür", x: 72, y: 58, arch: true },
+      { id: "bordell", label: "Rote Tür", x: 78, y: 70, arch: true },  // Torbogen auf dem Rundbogen rechts
       { id: "platz", label: "Zum Platz", x: 28, y: 88, arch: true }
     ] },
   bordell: { id: "bordell", name: "Bordell", region: "stadt", blurb: "Die rote Tür lässt Licht auf die Schwelle. Drinnen redet man leiser als auf dem Platz.", art: "locations/bordell.jpg",
-    exits: [ { id: "platz", label: "Zum Platz", x: 50, y: 88, arch: true } ] },
+    // Nebenort: nicht auf der Karte, nur über parent erreichbar; Kartenfenster zeigt pass.
+    parent: "gassen", pass: "ui/pass_rotetuer.jpg",
+    exits: [ { id: "gassen", label: "Zurück nach Gassen" } ] },
   gasthaus: { id: "gasthaus", name: "Gasthaus", region: "stadt", blurb: "Tische, Rauch, ein Tresen. Wer zahlt, bekommt einen Platz, der nicht der Markt ist.", art: "locations/gasthaus.jpg",
     exits: [ { id: "platz", label: "Zum Platz", x: 50, y: 88, arch: true } ] },
   nebelpfad: { id: "nebelpfad", name: "Nebelpfad", region: "vorstadt", blurb: "Der Boden ist nass, die Sicht kurz. Der Weg trägt Stadt und Dorf, solange niemand ihn sperrt.", art: "locations/nebelpfad.jpg", wild: true,
