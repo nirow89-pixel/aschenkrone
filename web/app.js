@@ -869,7 +869,9 @@ function render() {
   document.getElementById("place-blurb").textContent = loc.blurb || "";
   document.getElementById("btn-rest").hidden = !loc.rest;
   scene.querySelectorAll(".spot,.arch").forEach((n) => n.remove());
-  (loc.exits || []).filter((ex) => ex.arch).forEach((ex) => {
+  // Rückweg zum Zentralort des Gebiets liegt im Kartenfenster, nicht auf dem Ortsbild.
+  const hubLoc = !loc.parent && region.hub && region.hub !== loc.id ? D.LOCATIONS[region.hub] : null;
+  (loc.exits || []).filter((ex) => ex.arch && !(hubLoc && ex.id === hubLoc.id)).forEach((ex) => {
     const b = document.createElement("button");
     const sub = D.LOCATIONS[ex.id];
     b.className = "arch" + (sub && sub.pass ? " pass-arch" : "");
@@ -908,14 +910,16 @@ function render() {
   const locked = !!(state.narrator || state.trading || state.dialogue);
   map.querySelectorAll(".pass-back").forEach((n) => n.remove());
   const parentLoc = loc.parent && D.LOCATIONS[loc.parent];
-  bg(map, locked ? region.wait : (parentLoc ? (loc.pass || region.map) : region.map));
-  if (!locked && parentLoc) {  // Nebenort: statt Karte das pass-Bild, nur Rückweg
+  // Nebenort: pass-Bild; sonstiger Nicht-Zentralort: Ortsbild des Zentralorts; Zentralort: Gebietskarte.
+  const backLoc = parentLoc || hubLoc;
+  bg(map, locked ? region.wait : (parentLoc ? (loc.pass || region.map) : (hubLoc ? hubLoc.art : region.map)));
+  if (!locked && backLoc) {  // nur Rückweg, keine Schnellreise
     const b = document.createElement("button");
     b.className = "pin pass-back";
     b.style.left = "50%"; b.style.top = "92%";
-    b.textContent = "Zurück nach " + parentLoc.name;
+    b.textContent = parentLoc ? "Zurück nach " + backLoc.name : (region.back || "Zurück zum " + backLoc.name);
     b.disabled = !!state.inCombat;
-    b.onclick = (ev) => { ev.stopPropagation(); travel(parentLoc.id); };
+    b.onclick = (ev) => { ev.stopPropagation(); travel(backLoc.id); };
     map.appendChild(b);
   } else if (!locked) {
     const open = new Set((loc.exits || []).map((ex) => ex.id));

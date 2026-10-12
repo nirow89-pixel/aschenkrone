@@ -229,7 +229,7 @@ const NARRATOR = {
 };
 
 const REGIONS = {
-  vorstadt: { id: "vorstadt", name: "Vor den Toren", map: "maps/vorstadt.jpg", wait: "ui/wait_vorstadt.jpg", idle: "ui/idle_vorstadt.jpg", pins: [
+  vorstadt: { id: "vorstadt", name: "Vor den Toren", hub: "nebelpfad", map: "maps/vorstadt.jpg", wait: "ui/wait_vorstadt.jpg", idle: "ui/idle_vorstadt.jpg", pins: [
     { id: "nebelpfad", label: "Nebelpfad", x: 50, y: 48 },
     { id: "obsidiansee", label: "Obsidiansee", x: 16, y: 36 },
     { id: "knochenfeld", label: "Knochenfeld", x: 20, y: 74 },
@@ -237,7 +237,7 @@ const REGIONS = {
     { id: "dorfzentrum", label: "Unterorten", x: 80, y: 22 },
     { id: "alter_baum", label: "Düsterwald", x: 84, y: 60 }
   ]},
-  stadt: { id: "stadt", name: "Aschenstadt", map: "maps/stadt.jpg", wait: "ui/wait_stadt.jpg", idle: "ui/idle_stadt.jpg", pins: [
+  stadt: { id: "stadt", name: "Aschenstadt", hub: "platz", map: "maps/stadt.jpg", wait: "ui/wait_stadt.jpg", idle: "ui/idle_stadt.jpg", pins: [
     { id: "platz", label: "Platz", x: 50, y: 48 },
     { id: "burg", label: "Burg", x: 50, y: 14 },
     { id: "tempel", label: "Tempel", x: 80, y: 26 },
@@ -246,14 +246,14 @@ const REGIONS = {
     { id: "gasthaus", label: "Gasthaus", x: 82, y: 58 },
     { id: "nebelpfad", label: "Vor den Toren", x: 50, y: 90 }
   ]},
-  unterorten: { id: "unterorten", name: "Unterorten", map: "maps/unterorten.jpg", wait: "ui/wait_unterorten.jpg", idle: "ui/idle_unterorten.jpg", pins: [
+  unterorten: { id: "unterorten", name: "Unterorten", hub: "dorfzentrum", map: "maps/unterorten.jpg", wait: "ui/wait_unterorten.jpg", idle: "ui/idle_unterorten.jpg", pins: [
     { id: "dorfzentrum", label: "Dorfzentrum", x: 50, y: 50 },
     { id: "schmied", label: "Schmiede", x: 18, y: 44 },
     { id: "ratshalle", label: "Ratshalle", x: 50, y: 18 },
     { id: "schenke", label: "Schenke", x: 80, y: 56 },
     { id: "nebelpfad", label: "Nebelpfad", x: 50, y: 90 }
   ]},
-  duesterwald: { id: "duesterwald", name: "Düsterwald", map: "maps/duesterwald.jpg", wait: "ui/wait_duesterwald.jpg", idle: "ui/idle_duesterwald.jpg", pins: [
+  duesterwald: { id: "duesterwald", name: "Düsterwald", hub: "alter_baum", back: "Zurück zum Alten Baum", map: "maps/duesterwald.jpg", wait: "ui/wait_duesterwald.jpg", idle: "ui/idle_duesterwald.jpg", pins: [
     { id: "alter_baum", label: "Alter Baum", x: 50, y: 46 },
     { id: "hexenhuette", label: "Hexenhütte", x: 18, y: 32 },
     { id: "blueteich", label: "Blütenteich", x: 80, y: 28 },
