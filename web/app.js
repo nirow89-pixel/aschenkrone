@@ -145,6 +145,7 @@ function slotLabel(s) {
 function save(n) {
   if (!state) return;
   state.v = SAVE_VERSION;
+  state.savedAt = Date.now();  // für „Fortsetzen“: neuester Stand gewinnt
   const all = slots();
   all[n] = state;
   writeSlots(all);
@@ -1012,6 +1013,23 @@ document.getElementById("btn-load").onclick = () => {
   document.getElementById("root-menu").hidden = true;
   document.getElementById("load-menu").hidden = false;
 };
+// Startfenster: Fortsetzen lädt den neuesten Stand (savedAt; bei Gleichstand/ohne Zeit der Autosave).
+function latestSlot() {
+  const all = slots();
+  let best = null, bestT = -1;
+  [AUTO_SLOT, 1, 2, 3].forEach((n) => {
+    const s = all[n];
+    if (!s || !s.hero) return;
+    const t = typeof s.savedAt === "number" ? s.savedAt : 0;
+    if (t > bestT) { best = n; bestT = t; }
+  });
+  return best;
+}
+function paintContinue() { document.getElementById("btn-continue").disabled = latestSlot() === null; }
+document.getElementById("btn-continue").onclick = () => { const n = latestSlot(); if (n !== null && load(n)) openPlay(); };
+document.getElementById("btn-options").onclick = () => { document.getElementById("root-menu").hidden = true; document.getElementById("options-menu").hidden = false; };
+document.getElementById("btn-back-options").onclick = () => { document.getElementById("options-menu").hidden = true; document.getElementById("root-menu").hidden = false; };
+paintContinue();
 document.getElementById("btn-back-load").onclick = () => { document.getElementById("load-menu").hidden = true; document.getElementById("root-menu").hidden = false; };
 document.getElementById("narr-close").onclick = () => {
   state.narrator = null;

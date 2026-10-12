@@ -3,16 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <title>Aschenkrone</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="menu">
     <div class="cardbox">
-      <h1 style="text-align:center">ASCHENKRONE</h1>
-      <p class="tiny" style="text-align:center">König Malrik Vael trägt Reif und Titel. Das Reich steht. Etwas darunter nicht.</p>
+      <img class="menu-logo" src="../assets/ui/logo.jpg" alt="" />
+      <h1 class="menu-title">ASCHENKRONE</h1>
+      <div class="menu-rule"><span>◆</span></div>
       <div id="root-menu">
-        <button id="btn-new">Neues Spiel</button>
-        <button id="btn-load">Laden</button>
+        <button id="btn-continue" class="menu-btn">Fortsetzen</button>
+        <button id="btn-new" class="menu-btn">Neues Spiel</button>
+        <button id="btn-load" class="menu-btn">Laden</button>
+        <button id="btn-options" class="menu-btn">Optionen</button>
+      </div>
+      <div id="options-menu" hidden>
+        <p class="menu-note">Einstellungen folgen.</p>
+        <button id="btn-back-options" class="menu-btn">Zurück</button>
       </div>
       <div id="new-menu" hidden>
         <input id="new-hero-name" maxlength="18" placeholder="Name" />
