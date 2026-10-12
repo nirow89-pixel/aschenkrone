@@ -310,10 +310,13 @@ function valuesHtml() {
     "<div class='card'><b>Korruption</b> " + korrTier().name + dbg(v.korr + ", Höchststand " + v.korrPeak + ", Buße " + v.buss) + "</div>" +
     "<div class='card'><b>Haltung</b> " + haltungTier().name + dbg(v.haltung) + "</div>";
 }
+const SCENE_EXTRAS = [];  // fn() -> [{ label, go, why }]
 function dailyButtonsHtml() {
   const list = dailyActionsHere();
-  if (!list.length) return "";
-  return list.map((a) => { const why = dailyBlocked(a); return "<button class='daily-act' data-daily='" + a.id + "'" + (why ? " disabled title='" + esc(why) + "'" : "") + ">" + esc(a.label) + (why && why !== "Gerade nicht." ? " <small>· " + esc(why) + "</small>" : "") + "</button>"; }).join("");
+  const extra = [].concat(...SCENE_EXTRAS.map((fn) => { try { return fn() || []; } catch (e) { console.error(e); return []; } }));
+  const ex = extra.map((x) => "<button class='daily-act' data-extra='" + esc(x.go) + "'" + (x.why ? " disabled title='" + esc(x.why) + "'" : "") + ">" + esc(x.label) + "</button>").join("");
+  if (!list.length) return ex;
+  return list.map((a) => { const why = dailyBlocked(a); return "<button class='daily-act' data-daily='" + a.id + "'" + (why ? " disabled title='" + esc(why) + "'" : "") + ">" + esc(a.label) + (why && why !== "Gerade nicht." ? " <small>· " + esc(why) + "</small>" : "") + "</button>"; }).join("") + ex;
 }
 function renderDaily(scene) {
   let box = document.getElementById("daily-acts");
@@ -321,6 +324,7 @@ function renderDaily(scene) {
   box.innerHTML = dailyButtonsHtml();
   box.hidden = !box.innerHTML;
   box.querySelectorAll("[data-daily]").forEach((b) => { b.onclick = () => doDaily(b.dataset.daily); });
+  box.querySelectorAll("[data-extra]").forEach((b) => { b.onclick = () => sceneExtra(b.dataset.extra); });
 }
 
 // =====================================================================
@@ -502,3 +506,179 @@ function sysChoose(go) {
 }
 TALK_HOOKS.push((npc, c) => { if (hasPendingBond(npc.id)) c.push({ label: "Vom Pfad erzählen", go: "report_wolf" }); });
 CHOOSE_HOOKS.report_wolf = (go, npc) => { reportPending(npc.id, 1); remember(npc.id, "wolf_bericht", 1); return "Ihr erzählt, was am Pfad geschah. " + npc.name + " hört zu und merkt es sich."; };
+
+// =====================================================================
+// Stufe c · Fraktionen und Ruf: Achsen gunst/zorn/vertrauen/furcht, Kurve, Deckel, Verfall, Sühne, Neigung (fraktionen-ruf.md)
+// =====================================================================
+const RUF_STUFEN = [
+  { min: -Infinity, id: "geaechtet", name: "Geächtet" }, { min: -69, id: "gejagt", name: "Gejagt" }, { min: -54, id: "verhasst", name: "Verhasst" },
+  { min: -39, id: "beargwoehnt", name: "Beargwöhnt" }, { min: -26, id: "ungern_gesehen", name: "Ungern gesehen" }, { min: -14, id: "kuehl", name: "Kühl" },
+  { min: -4, id: "unbeschrieben", name: "Unbeschrieben" }, { min: 5, id: "geduldet", name: "Geduldet" }, { min: 15, id: "gelitten", name: "Gelitten" },
+  { min: 27, id: "geschaetzt", name: "Geschätzt" }, { min: 40, id: "angesehen", name: "Angesehen" }, { min: 55, id: "vertrauter_der_sache", name: "Vertrauter der Sache" },
+  { min: 70, id: "eingeschworen", name: "Eingeschworen" }
+];
+// Vermittler je Fraktion (Sühne/Dienst). Fällt er aus, bleibt der Brief im Gasthaus.
+const FACTION_MEDIATOR = { krone: "burgvogt", rat: "enno", nebel: "hella", gasse: "marktfrau", tempel: "priester" };
+const SUEHNE_DIENST = { krone: "Als Wegbote laufen", rat: "Am Brunnen ausbessern", nebel: "Pflanzen statt pflücken", gasse: "Eine Gefälligkeit erledigen", tempel: "Totenwache halten" };
+function axes(id) {
+  const w = state.world; if (!w.axes) w.axes = {}; if (!w.axesExt) w.axesExt = {};
+  if (!w.axes[id]) w.axes[id] = { gunst: 0, zorn: 0, zornPeak: 0, gunstPeak: 0, lastCare: 0, lastZornDrop: state.day, suehneBis: 0, heute: { day: 0 } };
+  if (!w.axesExt[id]) w.axesExt[id] = { vertrauen: 20, furcht: 0 };
+  return w.axes[id];
+}
+function axisNet(id) { const a = axes(id); return a.gunst - a.zorn; }
+function axisTier(id) { const n = axisNet(id); return n <= -40 ? "hostile" : n <= -15 ? "wary" : n < 15 ? "neutral" : n < 40 ? "warm" : "allied"; }
+function rufStufe(id) { return tierOf(RUF_STUFEN, axisNet(id)); }
+function syncFactionMirror() { Object.keys(D.FACTIONS).forEach((id) => { const a = axes(id); state.factions[id] = a.gunst - a.zorn; }); }
+// Buchung einer Achse: positive gunst/vertrauen mit Kurve Δ×(1−v/130), Tagesdeckel +15 (gunst/vertrauen) bzw. +25 (zorn/furcht).
+function bumpFaction(id, axis, d, opts) {
+  if (!D.FACTIONS[id] || !d) return 0;
+  opts = opts || {};
+  const a = axes(id), ext = state.world.axesExt[id];
+  if (a.heute.day !== state.day) a.heute = { day: state.day, gunst: 0, vertrauen: 0, zorn: 0, furcht: 0 };
+  const isExt = axis === "vertrauen" || axis === "furcht";
+  const cur = isExt ? ext[axis] : a[axis];
+  if (d > 0) {
+    if (axis === "gunst" || axis === "vertrauen") d = Math.max(1, Math.round(d * (1 - cur / 130)));
+    if (axis === "gunst") {  // Summen-Druck
+      const sum = Object.keys(D.FACTIONS).reduce((s, f) => s + axes(f).gunst, 0);
+      if (sum > 52 * Object.keys(D.FACTIONS).length) d -= 1;
+    }
+    const cap = (axis === "zorn" || axis === "furcht") ? 25 : 15;
+    d = Math.max(0, Math.min(d, cap - a.heute[axis]));
+    a.heute[axis] += d;
+    if (axis === "furcht" && ext.vertrauen > 50) ext.vertrauen = 50;
+  }
+  let nv = clamp(cur + d, 0, 100);
+  if (axis === "zorn" && d < 0) nv = Math.max(nv, Math.ceil((a.zornPeak || 0) * 0.25));
+  if (axis === "gunst" && d < 0 && a.gunstPeak >= 40) nv = Math.max(nv, Math.min(cur, 30));
+  if (axis === "vertrauen" && ext.furcht >= 50) nv = Math.min(nv, 50);
+  const real = nv - cur;
+  if (isExt) ext[axis] = nv; else a[axis] = nv;
+  if (axis === "zorn") { a.zornPeak = Math.max(a.zornPeak || 0, a.zorn); if (real > 0 && !opts.lean) a.lastZornDrop = state.day; }
+  if (axis === "gunst") { a.gunstPeak = Math.max(a.gunstPeak || 0, a.gunst); if (real > 0) a.lastCare = state.day; }
+  syncFactionMirror();
+  return real;
+}
+// Neigung (Korruption/Haltung/Perks/Rote Tür): höchstens ±1 je Fraktion und Tag, negativ = zorn +1 (nur solange zorn < 30).
+function factionLean(id, sign) {
+  if (!D.FACTIONS[id]) return 0;
+  const w = state.world; if (!w.lean) w.lean = {};
+  if (w.lean[id] === state.day) return 0;
+  w.lean[id] = state.day;
+  if (sign > 0) return bumpFaction(id, "gunst", 1, { lean: true });
+  if (axes(id).zorn >= 30) return 0;
+  return bumpFaction(id, "zorn", 1, { lean: true });
+}
+function zornBoden(id) { return Math.ceil((axes(id).zornPeak || 0) * 0.25); }
+function suehneOffen(id) { const a = axes(id); return a.zorn > zornBoden(id) && axisNet(id) < 0 && (state.world.suehneTag !== state.day); }
+function suehne(id, art) {
+  if (!suehneOffen(id)) return "";
+  const a = axes(id), before = a.zorn;
+  const stufe = Math.min(5, Math.max(1, Math.ceil(a.zorn / 20)));
+  if (art === "busse") {
+    const cost = 10 * stufe; if (state.hero.gold < cost) return "Dafür reicht euer Gold nicht.";
+    state.hero.gold -= cost; bumpFaction(id, "zorn", -6);
+  } else { advance(2); bumpFaction(id, "zorn", -10); bumpFaction(id, "gunst", 3); }
+  const done = before - a.zorn; a.zornPeak = Math.max(a.zorn, a.zornPeak - done);
+  a.suehneBis = state.day + 3; state.world.suehneTag = state.day;
+  syncFactionMirror();
+  return art === "busse" ? "Ihr zahlt die Buße. Man nimmt sie, ohne zu lächeln." : "Ihr leistet den Dienst. Man hat es gesehen.";
+}
+function suehneKosten(id) { return 10 * Math.min(5, Math.max(1, Math.ceil(axes(id).zorn / 20))); }
+TALK_HOOKS.push((npc, c) => {
+  const f = Object.keys(FACTION_MEDIATOR).find((k) => FACTION_MEDIATOR[k] === npc.id);
+  if (!f || !suehneOffen(f) || !canPlead(npc.id)) return;
+  c.push({ label: "Buße zahlen (" + suehneKosten(f) + " Gold)", go: "suehne:" + f + ":busse" });
+  c.push({ label: SUEHNE_DIENST[f] + " (Dienst)", go: "suehne:" + f + ":dienst" });
+});
+CHOOSE_HOOKS.suehne = (go) => { const [, f, art] = go.split(":"); return suehne(f, art) || "Heute nicht mehr."; };
+// Brief im Gasthaus: Sühne, wenn ein Vermittler ausgefallen ist (kein feindlicher Softlock).
+function briefSuehneFaktionen() { return Object.keys(FACTION_MEDIATOR).filter((f) => state.npcEnd[FACTION_MEDIATOR[f]] && suehneOffen(f)); }
+// Fürsprache (freiwillig): Nähe ≥ vertraut, nicht erpresst/abhängig/verraten; 1/Tag gesamt, je NPC 1/7 Tage, je Fraktion 7 Tage.
+function canIntercede(npc, f) {
+  const w = state.world; w.fuersprache = w.fuersprache || { tag: 0, npc: {}, fraktion: {} };
+  if (!npc || npc.faction !== f && !D.FACTIONS[f]) return false;
+  if (w.fuersprache.tag === state.day) return false;
+  if (state.day - (w.fuersprache.npc[npc.id] || -99) < 7 || state.day - (w.fuersprache.fraktion[f] || -99) < 7) return false;
+  const a = axes(f); if (!(a.zorn > zornBoden(f) && axisNet(f) < 0)) return false;
+  return (state.bonds[npc.id] || 0) >= 38 && canPlead(npc.id) && !rel(npc.id).betrayed && npcPresent(npc.id);
+}
+TALK_HOOKS.push((npc, c) => { Object.keys(D.FACTIONS).filter((f) => f !== npc.faction && canIntercede(npc, f)).slice(0, 1).forEach((f) => c.push({ label: "Um Fürsprache bei " + D.FACTIONS[f].name + " bitten", go: "fuersprache:" + f })); });
+CHOOSE_HOOKS.fuersprache = (go, npc) => {
+  const f = go.split(":")[1]; if (!canIntercede(npc, f)) return "Nicht jetzt.";
+  const a = axes(f), b = a.zorn; bumpFaction(f, "zorn", -8); a.zornPeak = Math.max(a.zorn, a.zornPeak - (b - a.zorn));
+  const w = state.world.fuersprache; w.tag = state.day; w.npc[npc.id] = state.day; w.fraktion[f] = state.day;
+  return npc.name + " verspricht, ein Wort einzulegen.";
+};
+// Beichte: Ruf-Teil (tempel vertrauen +2, bei Ilwe +1), eigener Cooldown in confess().
+function confessionRuf(who) { if (!who) return false; bumpFaction("tempel", "vertrauen", who === "ilwe" ? 1 : 2); return true; }
+// Tempel-Wissen über Korruption (werte §8.6): vier Quellen, Flag mit Stufe überschrieben.
+function setTempelKennt() { state.flags.tempel_kennt_korr = korrTier().id; }
+function tempelZeuge(tag) { if (Object.values(D.NPCs).some((n) => n.faction === "tempel" && isWitness(n.id))) setTempelKennt(); }
+const TEMPEL_GERUECHT_TAGS = [];  // (d) Gerücht mit passendem origTag – Gerüchtewandern ist in Act 1 noch nicht gebaut
+TALK_HOOKS.push((npc) => { if (npc.faction === "tempel" && npc.location === "tempel" && state.flags["met_" + npc.id]) setTempelKennt(); });
+onNewDay((day) => {
+  if (!state || !state.world || !state.world.axes) return;
+  Object.keys(D.FACTIONS).forEach((id) => {
+    const a = axes(id), ext = state.world.axesExt[id];
+    if (day - (a.lastCare || 0) > 7 && day % 3 === 0 && a.gunst > 0) a.gunst = Math.max(a.gunstPeak >= 40 ? Math.min(a.gunst, 30) : 0, a.gunst - 1);
+    const zEvery = a.suehneBis >= day ? 1 : 5;
+    if (a.zorn > zornBoden(id) && (day - (a.lastZornDrop || 0)) % zEvery === 0) a.zorn = Math.max(zornBoden(id), a.zorn - 1);
+    if (ext.vertrauen > 40 && day % 14 === 0) ext.vertrauen -= 1;
+    if (ext.furcht > 0) ext.furcht -= 1;
+  });
+  // Tempel-Neigung: nur mit Wissen, ab k5, zorn < 30, nicht in der Ruhe nach einer Beichte mit Abbau
+  const kf = state.flags.tempel_kennt_korr;
+  if (kf && state.values) {
+    const known = Math.min(Number(String(kf).slice(1)), korrTierIdx());
+    if (known >= 5 && day >= (state.values.tempelRuheBis || 0)) factionLean("tempel", -1);
+  }
+  syncFactionMirror();
+});
+// when-Keys für Ruf: rufMin { fraktion: netto }, rufMax, tierIs { fraktion: tier }
+function sysWhenMore(w) {
+  if (w.rufMin) for (const f of Object.keys(w.rufMin)) if (!D.FACTIONS[f] || axisNet(f) < w.rufMin[f]) return false;
+  if (w.rufMax) for (const f of Object.keys(w.rufMax)) if (!D.FACTIONS[f] || axisNet(f) > w.rufMax[f]) return false;
+  if (typeof sysWhenPerk === "function" && !sysWhenPerk(w)) return false;
+  return true;
+}
+// Händlerpreis nach Ruf: preis × (1 − netto/400 − furcht/500), 0,75…1,30. Feindliche Fraktionshändler verweigern; Stände bleiben.
+function rufPreisFaktor(npc) {
+  if (!npc || !npc.faction || !D.FACTIONS[npc.faction] || !state.world || !state.world.axes) return 1;
+  return clamp(1 - axisNet(npc.faction) / 400 - state.world.axesExt[npc.faction].furcht / 500, 0.75, 1.3);
+}
+function haendlerVerweigert(npc) { return !!(npc && npc.faction && !npc.stall && state.world && state.world.axes && axisTier(npc.faction) === "hostile"); }
+function migV5(s) {
+  const prev = state; state = s;
+  try {
+    if (!s.world) s.world = {};
+    if (!s.flags.sim_axes_migrated) {
+      Object.keys(D.FACTIONS).forEach((id) => { const n = Number(s.factions[id]) || 0; const a = axes(id); a.gunst = Math.max(0, n); a.zorn = Math.max(0, -n); a.zornPeak = a.zorn; a.gunstPeak = a.gunst; a.lastCare = s.day || 1; a.lastZornDrop = s.day || 1; });
+      s.flags.sim_axes_migrated = true;
+    }
+    Object.keys(D.FACTIONS).forEach((id) => axes(id));
+    syncFactionMirror();
+  } finally { state = prev; }
+  return s;
+}
+function factionsHtml() {
+  return "<h3>Ruf</h3>" + Object.keys(D.FACTIONS).map((id) => {
+    const a = axes(id), e = state.world.axesExt[id];
+    return "<div class='tiny'><b>" + esc(D.FACTIONS[id].name) + "</b>: " + rufStufe(id).name + (suehneOffen(id) ? " · Sühne möglich bei " + esc(D.NPCs[FACTION_MEDIATOR[id]].name) : "") +
+      dbg("gunst " + a.gunst + ", zorn " + a.zorn + ", vertrauen " + e.vertrauen + ", furcht " + e.furcht) + "</div>";
+  }).join("");
+}
+
+const SCENE_HANDLERS = {};
+function sceneExtra(go) {
+  if (state.narrator || state.dialogue || state.inCombat || state.trading) return;
+  const k = go.split(":")[0]; const line = SCENE_HANDLERS[k] && SCENE_HANDLERS[k](go);
+  if (!line) return;
+  log(line); persist(); render(); showFace(null); showLine(line, [{ label: "Weiter", go: "clear" }]);
+}
+SCENE_EXTRAS.push(() => state.location === "gasthaus" ? briefSuehneFaktionen().map((f) => ({ label: "Brief an " + D.FACTIONS[f].name + " (Buße " + suehneKosten(f) + " Gold)", go: "brief:" + f })) : []);
+SCENE_HANDLERS.brief = (go) => suehne(go.split(":")[1], "busse");
+const STATS_MORE = [];  // fn() -> html
+function sysStatsMore() { return STATS_MORE.map((fn) => fn()).join(""); }
+STATS_MORE.push(factionsHtml);

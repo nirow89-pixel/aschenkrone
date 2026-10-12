@@ -132,7 +132,9 @@ const MIGRATIONS = [
   // v2 -> v3: Werte (werte.md): state.values, state.daily, state.buffs, Flag-Spiegel.
   function v2to3(s) { return migV3(s); },
   // v3 -> v4: Beziehungen (relations, npcEnd, world.pendingBonds), wolf_tot -> wolf_slain gespiegelt.
-  function v3to4(s) { return migV4(s); }
+  function v3to4(s) { return migV4(s); },
+  // v4 -> v5: Fraktionen als Achsen (gunst = max(0,n), zorn = max(0,−n)); state.factions bleibt Spiegel.
+  function v4to5(s) { return migV5(s); }
 ];
 const SAVE_VERSION = MIGRATIONS.length;
 function migrate(s) {
@@ -418,7 +420,7 @@ function talkChoices() {
     if (npc.id === "tamsin" && !state.quests.tamsin_wolf) choices.push({ label: "Fragen, was das Dorf braucht", go: "quest" });
     if (npc.id === "tamsin" && state.quests.tamsin_wolf === "active" && (state.flags.wolf_slain || state.flags.wolf_tot)) choices.push({ label: "Sagen, der Pfad ist frei", go: "done" });
     sysTalkChoices(npc, choices);
-    if (npc.merchant) choices.push({ label: "Handeln", go: "shop" });
+    if (npc.merchant && !haendlerVerweigert(npc)) choices.push({ label: "Handeln", go: "shop" });
   }
   if (node === "shop") choices.push({ label: "Handel beenden", go: "endtrade" });
   choices.push({ label: "Gehen", go: "leave" });
@@ -446,10 +448,10 @@ function choose(go) {
   }
   if (go === "done") {
     if (npc.id === "burgvogt" && state.quests.wolfspfad === "active") {
-      state.quests.wolfspfad = "done"; state.hero.gold += 18; bumpBond("burgvogt", 8, { source: "quest_story" }); bumpTrust("burgvogt", 8); state.factions.krone = (state.factions.krone || 0) + 6; gain("ansehen", 6);
+      state.quests.wolfspfad = "done"; state.hero.gold += 18; bumpBond("burgvogt", 8, { source: "quest_story" }); bumpTrust("burgvogt", 8); bumpFaction("krone", "gunst", 6); gain("ansehen", 6);
     }
     if (npc.id === "tamsin" && state.quests.tamsin_wolf === "active") {
-      state.quests.tamsin_wolf = "done"; state.hero.gold += 8; bumpBond("tamsin", 10, { source: "quest_story" }); bumpTrust("tamsin", 8); state.factions.rat = (state.factions.rat || 0) + 5;
+      state.quests.tamsin_wolf = "done"; state.hero.gold += 8; bumpBond("tamsin", 10, { source: "quest_story" }); bumpTrust("tamsin", 8); bumpFaction("rat", "gunst", 5);
     }
   }
   state.dialogue.node = go === "endtrade" ? "start" : go;
@@ -543,8 +545,8 @@ function gearFx(key, sub) {
 }
 function maxHp() { return state.hero.hpMax + gearBonus("hp"); }
 function buyPrice(it) {
-  const pct = Math.min(15, gearFx("tradePct"));
-  return Math.max(1, Math.round(it.price * (1 - pct / 100)));
+  const pct = Math.min(15, gearFx("tradePct") + (typeof perkTradePct === "function" ? perkTradePct(lastTalk) : 0));
+  return Math.max(1, Math.round(it.price * (1 - pct / 100) * rufPreisFaktor(lastTalk)));
 }
 function sellPrice(it) { return it.price ? Math.floor(it.price / 2) : (it.sell || 0); }
 function statText(it) {
