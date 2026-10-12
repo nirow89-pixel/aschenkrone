@@ -204,7 +204,7 @@ const NPCs = {
     id: "corin", name: "Corin", title: "", location: "bordell",
     text: "Corin lehnt am Vorhang und zählt die Gäste.",
     art: "ui/siluette.jpg",  // Platzhalter, eigenes Bild fehlt noch
-    merchant: false, hours: ["nachmittag","abend","nacht"], pin: { x: 32, y: 95 }, faction: "gasse",
+    merchant: false, hours: ["nachmittag","abend","nacht"], pin: { x: 34, y: 87 }, faction: "gasse",
     lines: ["Ich sehe, wer kommt. Das reicht mir."],
     talk: { start: "Ihr seid nicht von hier. Das sieht man an den Schuhen." }
   },
@@ -212,7 +212,7 @@ const NPCs = {
     id: "ila", name: "Ila", title: "", location: "bordell",
     text: "Ila hält ein Glas, aus dem sie nicht trinkt.",
     art: "ui/siluette.jpg",  // Platzhalter, eigenes Bild fehlt noch
-    merchant: false, hours: ["nachmittag","abend","nacht"], pin: { x: 46, y: 97 }, faction: "gasse",
+    merchant: false, hours: ["nachmittag","abend","nacht"], pin: { x: 47, y: 89 }, faction: "gasse",
     lines: ["Fragt Vesse, nicht mich."],
     talk: { start: "Setzt euch, wenn ihr wollt. Reden kostet hier nichts. Noch nicht." }
   },
