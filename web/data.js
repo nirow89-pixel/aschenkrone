@@ -245,7 +245,7 @@ const NPCs = {
     lines: [],
     talk: {
       start: "Willkommen in Unterorten. Der Brunnen ist sauber. Sagt, was ihr sucht.",
-      quest: "Am Nebelpfad nimmt ein Wolf den Leuten die Ruhe. Wenn er fort ist, trinke ich mit euch."
+      quest: "Am Nebelpfad nimmt ein Wolf den Leuten die Ruhe. Wenn er fort ist, sitzen wir zusammen am Feuer."
     }
   },
   enno: {
@@ -477,36 +477,37 @@ const NARRATOR = {
   }
 };
 
+// Kartenknöpfe: x/y in Prozent des BILDES (Ort sichtbar im Bild); app.js rechnet auf den beschnittenen Ausschnitt (cover) um.
 const REGIONS = {
   vorstadt: { id: "vorstadt", name: "Vor den Toren", hub: "nebelpfad", map: "maps/vorstadt.jpg", wait: "ui/wait_vorstadt.jpg", idle: "ui/idle_vorstadt.jpg", pins: [
-    { id: "nebelpfad", label: "Nebelpfad", x: 50, y: 48 },
-    { id: "obsidiansee", label: "Obsidiansee", x: 16, y: 36 },
-    { id: "knochenfeld", label: "Knochenfeld", x: 20, y: 74 },
-    { id: "platz", label: "Aschenstadt", x: 50, y: 88 },
-    { id: "dorfzentrum", label: "Unterorten", x: 80, y: 22 },
-    { id: "alter_baum", label: "Düsterwald", x: 84, y: 60 }
+    { id: "nebelpfad", label: "Nebelpfad", x: 47, y: 45 },
+    { id: "obsidiansee", label: "Obsidiansee", x: 78, y: 70 },
+    { id: "knochenfeld", label: "Knochenfeld", x: 26, y: 16 },
+    { id: "platz", label: "Aschenstadt", x: 48, y: 86 },
+    { id: "dorfzentrum", label: "Unterorten", x: 78, y: 18 },
+    { id: "alter_baum", label: "Düsterwald", x: 82, y: 42 }
   ]},
   stadt: { id: "stadt", name: "Aschenstadt", hub: "platz", map: "maps/stadt.jpg", wait: "ui/wait_stadt.jpg", idle: "ui/idle_stadt.jpg", pins: [
-    { id: "platz", label: "Platz", x: 50, y: 48 },
-    { id: "burg", label: "Burg", x: 50, y: 14 },
-    { id: "tempel", label: "Tempel", x: 80, y: 26 },
-    { id: "markt", label: "Markt", x: 42, y: 68 },
-    { id: "gassen", label: "Gassen", x: 16, y: 46 },
-    { id: "nebelpfad", label: "Vor den Toren", x: 50, y: 90 }
+    { id: "platz", label: "Platz", x: 49, y: 57 },
+    { id: "burg", label: "Burg", x: 50, y: 20 },
+    { id: "tempel", label: "Tempel", x: 78, y: 28 },
+    { id: "markt", label: "Markt", x: 45, y: 83 },
+    { id: "gassen", label: "Gassen", x: 22, y: 42 },
+    { id: "nebelpfad", label: "Vor den Toren", x: 78, y: 82 }
   ]},
   unterorten: { id: "unterorten", name: "Unterorten", hub: "dorfzentrum", map: "maps/unterorten.jpg", wait: "ui/wait_unterorten.jpg", idle: "ui/idle_unterorten.jpg", pins: [
-    { id: "dorfzentrum", label: "Dorfzentrum", x: 50, y: 50 },
-    { id: "schmied", label: "Schmiede", x: 18, y: 44 },
-    { id: "ratshalle", label: "Ratshalle", x: 50, y: 18 },
-    { id: "schenke", label: "Schenke", x: 80, y: 56 },
-    { id: "nebelpfad", label: "Nebelpfad", x: 50, y: 90 }
+    { id: "dorfzentrum", label: "Dorfzentrum", x: 49, y: 57 },
+    { id: "schmied", label: "Schmiede", x: 22, y: 46 },
+    { id: "ratshalle", label: "Ratshalle", x: 49, y: 20 },
+    { id: "schenke", label: "Schenke", x: 72, y: 58 },
+    { id: "nebelpfad", label: "Nebelpfad", x: 52, y: 93 }
   ]},
   duesterwald: { id: "duesterwald", name: "Düsterwald", hub: "alter_baum", back: "Zurück zum Alten Baum", map: "maps/duesterwald.jpg", wait: "ui/wait_duesterwald.jpg", idle: "ui/idle_duesterwald.jpg", pins: [
-    { id: "alter_baum", label: "Alter Baum", x: 50, y: 46 },
-    { id: "hexenhuette", label: "Hexenhütte", x: 18, y: 32 },
-    { id: "blueteich", label: "Blütenteich", x: 80, y: 28 },
-    { id: "sumpf", label: "Sumpf", x: 74, y: 70 },
-    { id: "nebelpfad", label: "Nebelpfad", x: 50, y: 90 }
+    { id: "alter_baum", label: "Alter Baum", x: 54, y: 29 },
+    { id: "hexenhuette", label: "Hexenhütte", x: 24, y: 35 },
+    { id: "blueteich", label: "Blütenteich", x: 76, y: 73 },
+    { id: "sumpf", label: "Sumpf", x: 17, y: 72 },
+    { id: "nebelpfad", label: "Nebelpfad", x: 51, y: 93 }
   ]}
 };
 
@@ -604,8 +605,6 @@ const LOCATIONS = {
 const BASE_HERO = { level: 1, hp: 28, hpMax: 28, atk: 4, def: 2, will: 3, fortune: 4, ansehen: 0, gold: 16, ap: 2, apMax: 2, crit: 4 };
 
 const WOLF_LINES = {
-  wolf_spared: "Ihr senkt die Hände und gebt den Pfad frei. Der Wolf weicht in den Nebel zurück und bleibt am Leben.",
-  wolf_bargain: "Ihr bietet dem Wolf einen Anteil und wartet. Er schnuppert, nimmt an und räumt die Mitte des Weges.",
   wolf_niederlage: "Ihr liegt am Brunnen, nicht auf dem Pfad. Der Wolf hat euch umgeworfen und ist geblieben. Trinkt, dann entscheidet, ob ihr noch einmal hingeht."
 };
 
@@ -642,6 +641,7 @@ window.D.PERKS = {
   segen_nebelpfand: { art: "segen", name: "Nebelpfand", sichtbar: "spuerbar", geber: "nebel", text: "Ein Pfand, das an Zöllnern vorbeiführt.", wirkung: "ruht, bis es Zoll gibt", stufen: [{}], exklusiv: ["segen_kronensiegel"] },
   segen_der_esse: { art: "segen", name: "Segen der Esse", sichtbar: "offen", grad: true, ortSegen: true, text: "Die Esse kennt eure Hände.", wirkung: "mehr Lohn und bessere Preise in der Schmiede", stufen: [{ workGold: 2, tradePct: { schmied: 5 } }, { workGold: 3, tradePct: { schmied: 8 } }] },
   segen_rote_gunst: { art: "segen", name: "Gunst der Roten Tür", sichtbar: "spuerbar", geber: "gasse", text: "Das Haus hinter der roten Tür hält zu euch, solange ihr schweigt.", wirkung: "bessere Preise in der Gasse", bedingung: "Kein Plaudern, keine Gewalt im Haus", stufen: [{ tradePct: { gasse: 6 } }, { tradePct: { gasse: 8 } }] },
+  // nur noch für Altstände (nicht mehr erwerbbar, Leitung 13.10.): Anzeige und Wirkung bleiben, damit alte Saves laden.
   segen_tamsins_tisch: { art: "segen", name: "Tamsins Tisch", sichtbar: "offen", text: "An Tamsins Tisch ist ein Platz für euch.", wirkung: "Einkehr in der Schenke bringt mehr Kraft", stufen: [{ wkAktion: { schenke: 1 } }, { wkAktion: { schenke: 1 } }] },
   segen_brot_und_dach: { art: "segen", name: "Brot und Dach", sichtbar: "offen", geber: "rat", text: "Unterorten gibt euch Brot und ein Dach.", wirkung: "Ruhe im Dorfzentrum bringt mehr Kraft", stufen: [{ wkAktion: { ruhe: 1 } }, { wkAktion: { ruhe: 2 } }] },
   segen_zweiter_atem: { art: "segen", name: "Zweiter Atem", sichtbar: "offen", grad: true, ortSegen: true, text: "Wenn ihr fallt, steht ihr noch einmal auf.", wirkung: "einmal am Tag im Kampf, kurz vor dem Fall, etwas Leben zurück", stufen: [{ zweiterAtem: 20 }, { zweiterAtem: 25 }] },

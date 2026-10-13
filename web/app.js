@@ -400,22 +400,6 @@ function fleeAlt() {
   } else state.combat.note = "Der Weg bleibt versperrt.";
   render();
 }
-function resolveWolf(flag) {
-  if (!state.inCombat || !state.combat || state.combat.id !== "russwolf" || state.combat.engaged) return;
-  clearInterval(battleTimer); battleTimer = null;
-  state.inCombat = false;
-  state.combat = null;
-  state.flags[flag] = true;
-  state.flags.cleared_russwolf = true;
-  if (!state.flags.wolf_dealt) { state.flags.wolf_dealt = true; parkWolfBonds(flag); }
-  state.pending = null;
-  log(flag === "wolf_spared" ? "Ihr lasst den Rußwolf gehen." : "Ihr einigt euch mit dem Rußwolf.");
-  lastTalk = null;
-  persist();
-  render();
-  showFace(null);
-  showLine(D.WOLF_LINES[flag], [{ label: "Weiter", go: "clear" }]);
-}
 function wolfDefeat() {
   const blows = (state.combat && state.combat.log) ? state.combat.log.join("\n") : "";
   clearInterval(battleTimer); battleTimer = null;
@@ -470,7 +454,6 @@ function talkChoices() {
   return choices;
 }
 function choose(go) {
-  if (go === "spare" || go === "bargain") return;  // Wolf nur Kämpfen/Entgleiten (Q-04); resolveWolf bleibt unerreichbar
   if (go === "clear" || go === "leave") {
     state.dialogue = null; state.trading = false; lastTalk = null; sheet = null; state.combatEnd = null;
     document.getElementById("scene-sheet").hidden = true;
@@ -543,6 +526,20 @@ function showFace(p) {
 }
 function esc(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+// Kartenknopf auf den sichtbaren Bildort setzen: Bild-% -> Ausschnitt-% bei background-size cover; danach in den Rahmen ziehen.
+function pinPlace(map, b, pin, region) {
+  const ar = region.aspect || 1.49, w = map.clientWidth || 1, h = map.clientHeight || 1;
+  const fx = w / h < ar ? (w / h) / ar : 1, fy = w / h > ar ? ar / (w / h) : 1;  // sichtbarer Bildanteil
+  b.style.left = (50 + (pin.x - 50) / fx) + "%"; b.style.top = (50 + (pin.y - 50) / fy) + "%";
+}
+function pinFit(map, b) {
+  const w = map.clientWidth, h = map.clientHeight; if (!w || !h) return;
+  b.style.whiteSpace = "nowrap";
+  const bw = b.offsetWidth, bh = b.offsetHeight;  // .pin hängt mit translate(-50%,-100%) über dem Punkt
+  const x = Math.min(Math.max(parseFloat(b.style.left) / 100 * w, bw / 2 + 3), w - bw / 2 - 3);
+  const y = Math.min(Math.max(parseFloat(b.style.top) / 100 * h, bh + 3), h - 3);
+  b.style.left = (x / w * 100) + "%"; b.style.top = (y / h * 100) + "%";
 }
 function showLine(text, choices) {
   document.getElementById("talk-who").textContent = lastTalk ? (lastTalk.name + " · " + (lastTalk.title || "")) : (state.inCombat && state.combat ? state.combat.name : "");
@@ -769,7 +766,7 @@ function openTrade() {
     (mk ? '<div class="trade-gold trade-mgold">Kasse <b id="tr-mgold">' + mk.gold + '</b>' + (mk.gold < 5 ? ' <span class="tiny">· leer bis zur neuen Woche</span>' : '') + '</div>' : '') +
     '<div id="tr-buy" class="tile-grid"></div><div id="tr-detail" class="trade-detail"></div></div>' +
     '<div class="trade-sep"><span>◆</span></div>' +
-    '<div class="trade-col trade-bag"><h3>Euer Beutel</h3><div class="trade-gold">Gold <b id="tr-gold">' + gold + '</b></div><div id="tr-sell" class="tile-grid"></div></div></div>';
+    '<div class="trade-col trade-bag"><h3>Euer Beutel</h3><div class="trade-gold">Gold <b id="tr-gold">' + gold + '</b></div><div id="tr-sell" class="tile-grid"></div><div id="tr-detail-sell" class="trade-detail"></div></div></div>';
   const tile = (it, priceTxt, cls, mode, n) => {
     const d = document.createElement("div");
     d.className = "card tile" + (cls ? " " + cls : "");
@@ -782,12 +779,12 @@ function openTrade() {
     if (it.img) onImg(im, it.img); else im.hidden = true;
     if (tradePick && tradePick.id === it.id && tradePick.mode === mode) d.classList.add("picked");
     const pick = () => {
-      tradePick = { id: it.id, mode };
+      tradePick = { id: it.id, mode, side: priceTxt === "ausverkauft" ? "ware" : undefined };
       document.querySelectorAll("#sheet-body .tile.picked").forEach((n) => n.classList.remove("picked"));
       d.classList.add("picked");
       paintTradeDetail();
     };
-    d.onmouseenter = () => paintTradeDetail({ id: it.id, mode });
+    d.onmouseenter = () => paintTradeDetail({ id: it.id, mode, side: priceTxt === "ausverkauft" ? "ware" : undefined });
     d.onmouseleave = () => paintTradeDetail();
     d.onclick = pick;
     return d;
@@ -812,9 +809,14 @@ function openTrade() {
   paintTradeDetail();
 }
 function paintTradeDetail(hover) {
-  const box = document.getElementById("tr-detail");
-  if (!box) return;
+  // Kaufen bleibt auf der Warenseite (links), Verkaufen samt Text auf der Beutelseite (rechts).
+  const wareBox = document.getElementById("tr-detail"), bagBox = document.getElementById("tr-detail-sell");
+  if (!wareBox) return;
   const pick = hover || tradePick;
+  const onBag = !!(pick && bagBox && pick.mode !== "buy" && pick.side !== "ware");
+  const box = onBag ? bagBox : wareBox;
+  const other = onBag ? wareBox : bagBox;
+  if (other) other.innerHTML = other === bagBox ? "<span class='tiny'>Beutel anklicken, um zu verkaufen.</span>" : "<span class='tiny'>Ware anklicken, um Werte und Vergleich zu sehen.</span>";
   if (!pick) { box.innerHTML = "<span class='tiny'>Ware oder Beutel anklicken, um Werte und Vergleich zu sehen.</span>"; return; }
   const it = D.ITEMS[pick.id];
   if (!it) { box.innerHTML = ""; return; }
@@ -1036,11 +1038,12 @@ function render() {
       const b = document.createElement("button");
       const reachable = open.has(pin.id);
       b.className = "pin" + (pin.id === loc.id ? " here" : "");
-      b.style.left = pin.x + "%"; b.style.top = pin.y + "%";
       b.textContent = pin.label;
+      pinPlace(map, b, pin, region);
       b.disabled = pin.id === loc.id || state.inCombat || !reachable;
       b.onclick = (ev) => { ev.stopPropagation(); if (reachable) travel(pin.id); };
       map.appendChild(b);
+      pinFit(map, b);
     });
   }
   const acts = document.getElementById("combat-acts");

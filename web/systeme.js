@@ -452,15 +452,6 @@ function onTalk(id) {
   bookPendingByReport(id);
 }
 // Wolf-Bindungen parken (werte §8.4): Bericht beim NPC bucht voll, Gerücht nach 2 Tagen 60 %.
-function parkWolfBonds(outcome) {
-  if (state.flags.sim_bonds_wolf_settled) return;
-  state.flags.sim_bonds_wolf_settled = true;
-  if (!state.world) state.world = {};
-  if (!Array.isArray(state.world.pendingBonds)) state.world.pendingBonds = [];
-  const D_ = { wolf_spared: { burgvogt: -2, tamsin: 4 }, wolf_bargain: { burgvogt: -3, tamsin: 2 } }[outcome];
-  if (!D_) return;  // Erschlagen: die Quest-Abgabe ist der Bericht (keine Doppelbuchung)
-  Object.keys(D_).forEach((npc) => state.world.pendingBonds.push({ npc, delta: D_[npc], origTag: outcome, day: state.day }));
-}
 function bookPendingByReport(id) { /* Bericht nur über ausdrückliche Option (talkChoices "Vom Pfad erzählen") */ }
 function hasPendingBond(id) { return ((state.world && state.world.pendingBonds) || []).some((p) => p.npc === id); }
 function reportPending(id, factor) {
@@ -1240,7 +1231,6 @@ TALK_HOOKS.push((npc, c) => {
   }
 });
 const PERK_LINES = {
-  segen_tamsins_tisch: "Tamsin schiebt euch einen Stuhl hin. „Der bleibt eurer.“",
   segen_der_glocke: "Eld legt die Hand an die Glocke. Sie summt, ohne zu schlagen.",
   segen_des_zuhoerens: "„Hört nicht auf die Worte. Hört, wann sie kommen.“",
   segen_brot_und_dach: "Enno nickt. „Wer mit anpackt, hat hier ein Dach.“",
@@ -1275,9 +1265,7 @@ useItem = function (id) {
   _useItem(id);
   if (had && id === "spiegeltrank") { const w = state.world; w.spiegel = (w.spiegel || []).filter((d) => d >= state.day - 6).concat([state.day]); if (w.spiegel.length >= 3) grantPerkById("fluch_spiegelhunger", { quelle: "ereignis:spiegeltrank" }); persist(); render(); }
 };
-// Wolf-Ausgänge: Paktmal
-const _parkWolfBonds = parkWolfBonds;
-parkWolfBonds = function (outcome) { _parkWolfBonds(outcome); grantPerkById("mal_des_wolfspakts", { quelle: "story", herkunftTag: outcome }); };
+// Wolf-Ausgänge verschont/verhandelt gibt es nicht mehr; Paktmal nur noch aus Altständen (Migration).
 onNewDay((day) => {
   if (!state || !state.perks) return;
   // Spiegelhunger klingt ab: 7 Tage ohne Spiegeltrank -> Stufe −1
