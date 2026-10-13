@@ -300,15 +300,15 @@ const NPCs = {
     talk: { start: "Ein Spiel gefällig? Nein? Dann setzt euch wenigstens, ihr verdeckt mir die Kerze." } },
   // ---- Palast-NPCs (Leitung 13.10.; keine Eigennamen in Verzeichnis/Vorrat/Tafel -> Rollentitel; ohne Quests; Texte PLATZHALTER für Ext Text) ----
   prinz: { id: "prinz", name: "Der Prinz", title: "Sohn des Herrschers", location: "palast_prinzenzimmer",
-    text: "Ein schmaler Mann mit dunklem Haar und goldenem Stirnreif. Er sieht euch an, als hätte er euch erwartet und nicht gehofft.",
+    text: "Ein blasser junger Mann, der Kragen so hoch, dass er den Kopf nicht senken kann. Am Stirnreif hängt kein Stein; den hat ihm noch keiner zugestanden. Er sieht dich an wie eine Liste, auf die er bald selbst schreibt.",
     art: "npcs/npc_kragenherr.jpg", merchant: false, pin: { x: 30, y: 80 }, faction: "krone",
-    lines: ["In diesem Palast hat jede Tür ein Ohr. Meine hat zwei."],
-    talk: { start: "Ihr seid weit gekommen für einen Gast ohne Einladung. Sprecht, solange mein Vater nicht zuhört." } },
+    lines: ["Mein Vater hört auf den Rat. Ich höre, wer im Rat spricht."],
+    talk: { start: "Ein Gast ohne Siegel, im Flügel des Erben. Entweder hat Euch jemand durchgelassen, oder die Wache schläft. Beides will ich wissen. Sprecht leise; die Wände hier werden bezahlt." } },
   beraterin: { id: "beraterin", name: "Die Beraterin", title: "Beraterin des Königs", location: "palast_ratskammer",
-    text: "Eine Frau in tiefrotem Gewand sitzt dort, wo sonst der König sitzt. Ihr Lächeln erreicht die Augen nicht.",
+    text: "Rotes Haar, rotes Gewand, und sie sitzt auf dem hohen Stuhl, als wäre das nie umstritten gewesen. Die Kerzen neben ihr brennen ruhig, ohne zu flackern. Niemand weiß, wann sie an den Hof kam, und keiner erinnert sich an ihre Ankunft.",
     art: "npcs/npc_beraterin.jpg", merchant: false, pin: { x: 30, y: 80 }, faction: "krone",
-    lines: ["Der König entscheidet. Ich sorge nur dafür, dass er das Richtige will."],
-    talk: { start: "Ein neues Gesicht in der Ratskammer. Wie selten. Setzt euch nicht. Ihr werdet nicht lange bleiben." } },
+    lines: ["Der König entscheidet. Ich sorge nur dafür, dass er sich daran erinnert, was er will."],
+    talk: { start: "Bleibt stehen. Die Stühle hier gehören Leuten, die etwas schulden. Ihr seid neu, das rieche ich am Straßenstaub. Sagt, was Ihr wollt, und ich sage Euch, was es kostet." } },
   tamsin: {
     id: "tamsin", name: "Tamsin", title: "Jägerin", location: "schenke",
     text: "Tamsin kennt jedes Gesicht, das länger als eine Nacht bleibt.",
@@ -673,7 +673,7 @@ const LOCATIONS = {
       { id: "garnison_haupthalle", label: "Garnison", x: 19, y: 74, arch: true },
       { id: "palast_eingangshalle", label: "Aschenpalast", x: 77, y: 74, arch: true } ] },  // Palast: Haupttor rechts  // Torbogen an der linken Seitentür (Harn steht bei 34/78)
   // ---- Garnison (Ortstexte: PLATZHALTER für Ext Text) ----
-  garnison_haupthalle: { id: "garnison_haupthalle", name: "Haupthalle", region: "garnison", pass: "ui/pass_garnison.jpg", blurb: "Ein langer Tisch unter Bannern, im Kamin glimmt Glut. Wachen essen hier zwischen zwei Schichten.", art: "locations/garnison_haupthalle.jpg",
+  garnison_haupthalle: { id: "garnison_haupthalle", name: "Haupthalle", region: "garnison", pass: "ui/pass_garnison.jpg", blurb: "Kronenbanner über einem Tisch voller Kerben. Wachen löffeln Grütze, ohne den Helm abzulegen. Ein Fremder wird hier zuerst gezählt und dann angesehen.", art: "locations/garnison_haupthalle.jpg",
     exits: [
       { id: "garnison_waffenkammer", label: "Waffenkammer" },
       { id: "garnison_schlafsaal", label: "Schlafsaal" },
@@ -681,29 +681,29 @@ const LOCATIONS = {
       { id: "garnison_kerker", label: "Kerker" },
       { id: "burg", label: "Ausgang" }
     ] },
-  garnison_waffenkammer: { id: "garnison_waffenkammer", name: "Waffenkammer", region: "garnison", blurb: "Speere und Schilde stehen in Reihen. Jede Lücke im Gestell hat einen Namen im Buch.", art: "locations/garnison_waffenkammer.jpg",
+  garnison_waffenkammer: { id: "garnison_waffenkammer", name: "Waffenkammer", region: "garnison", blurb: "Speere in Reihen, Schilde mit abgekratztem Wappen. Für jede Lücke im Gestell steht ein Name im Buch, und einige der Namen sind durchgestrichen.", art: "locations/garnison_waffenkammer.jpg",
     exits: [
       { id: "garnison_haupthalle", label: "Haupthalle", x: 50, y: 90, arch: true }
     ] },
-  garnison_schlafsaal: { id: "garnison_schlafsaal", name: "Schlafsaal", region: "garnison", blurb: "Pritschen in Reihen, darauf graue Decken. Es riecht nach Leder und kaltem Schweiß.", art: "locations/garnison_schlafsaal.jpg",
+  garnison_schlafsaal: { id: "garnison_schlafsaal", name: "Schlafsaal", region: "garnison", blurb: "Zwanzig Pritschen und dreißig Mann; wer sich hinlegt, legt sich warm. Es stinkt nach Leder, Talg und nassen Fußlappen.", art: "locations/garnison_schlafsaal.jpg",
     exits: [
       { id: "garnison_haupthalle", label: "Haupthalle", x: 50, y: 90, arch: true }
     ] },
-  garnison_buero: { id: "garnison_buero", name: "Büro", region: "garnison", blurb: "Auf dem Tisch liegt eine Karte der Stadt, beschwert mit Dolch und Becher. Hier werden Wachen eingeteilt.", art: "locations/garnison_buero.jpg",
+  garnison_buero: { id: "garnison_buero", name: "Büro", region: "garnison", blurb: "Die Stadtkarte ist mit Dolch und Becher beschwert, in den Gassen stecken Nadeln. Hier wird verteilt, wer wo wacht und wo keiner hinsieht.", art: "locations/garnison_buero.jpg",
     exits: [
       { id: "garnison_haupthalle", label: "Haupthalle", x: 50, y: 90, arch: true }
     ] },
-  garnison_kerker: { id: "garnison_kerker", name: "Kerker", region: "garnison", blurb: "Ein feuchter Gang mit Gittern zu beiden Seiten. Am Haken hängen schwere Schlüssel.", art: "locations/garnison_kerker.jpg",
+  garnison_kerker: { id: "garnison_kerker", name: "Kerker", region: "garnison", blurb: "Wasser steht zwischen den Steinen. Hinter den Gittern husten Leute, deren Namen nicht im Buch stehen. Die Schlüssel hängen gut sichtbar am Haken, damit jeder sieht, dass er keinen hat.", art: "locations/garnison_kerker.jpg",
     exits: [
       { id: "garnison_haupthalle", label: "Haupthalle", x: 50, y: 90, arch: true },
       { id: "garnison_zelle", label: "Zelle", x: 12, y: 66, arch: true }
     ] },
-  garnison_zelle: { id: "garnison_zelle", name: "Zelle", region: "garnison", parent: "garnison_kerker", pass: "ui/pass_zelle.jpg", back: "Zurück in den Kerker", blurb: "Stroh auf dem Boden, ein Eimer, ein schmales Fenster hoch oben. Die Tür fällt schwer ins Schloss.", art: "locations/garnison_zelle.jpg",
+  garnison_zelle: { id: "garnison_zelle", name: "Zelle", region: "garnison", parent: "garnison_kerker", pass: "ui/pass_zelle.jpg", back: "Zurück in den Kerker", blurb: "Faules Stroh, ein Eimer, ein Fensterschlitz, zu hoch für jede Hand. Jemand vor dir hat Striche in die Wand gekratzt und irgendwann damit aufgehört.", art: "locations/garnison_zelle.jpg",
     exits: [
       { id: "garnison_kerker", label: "Zurück in den Kerker" }
     ] },
   // ---- Aschenpalast (Ortstexte: PLATZHALTER für Ext Text; Ratskammer ≠ Ratshalle in Unterorten) ----
-  palast_eingangshalle: { id: "palast_eingangshalle", name: "Eingangshalle", region: "aschenpalast", pass: "ui/pass_aschenpalast.jpg", blurb: "Ein roter Läufer führt über blanken Stein zur Treppe. Wachen stehen still wie die Säulen.", art: "locations/palast_eingangshalle.jpg",
+  palast_eingangshalle: { id: "palast_eingangshalle", name: "Eingangshalle", region: "aschenpalast", pass: "ui/pass_aschenpalast.jpg", blurb: "Der rote Läufer reicht vom Tor bis zur Treppe, und die Wachen achten darauf, dass du daneben gehst. Auf dem blanken Stein siehst du jede Spur, die dein Stiefel mitbringt.", art: "locations/palast_eingangshalle.jpg",
     exits: [
       { id: "palast_thronsaal", label: "Thronsaal" },
       { id: "palast_ratskammer", label: "Ratskammer" },
@@ -711,29 +711,29 @@ const LOCATIONS = {
       { id: "palast_kueche", label: "Königliche Küche" },
       { id: "burg", label: "Ausgang" }
     ] },
-  palast_ratskammer: { id: "palast_ratskammer", name: "Ratskammer", region: "aschenpalast", blurb: "Ein runder Tisch mit hohen Stühlen. Hier berät der König mit wenigen, und nichts davon steht in einem Buch.", art: "locations/palast_ratskammer.jpg",
+  palast_ratskammer: { id: "palast_ratskammer", name: "Ratskammer", region: "aschenpalast", blurb: "Hohe Stühle um einen runden Tisch, einer davon höher als der Thron draußen. Kein Schreiber, keine Tinte. Was hier beschlossen wird, gilt draußen als Wille des Königs. Die Luft ist trocken und für den Stein zu warm.", art: "locations/palast_ratskammer.jpg",
     exits: [
       { id: "palast_eingangshalle", label: "Eingangshalle", x: 50, y: 90, arch: true }
     ] },
-  palast_speisesaal: { id: "palast_speisesaal", name: "Speisesaal", region: "aschenpalast", blurb: "Silber und Kerzen auf einer langen Tafel. Wer hier sitzt, wird gesehen.", art: "locations/palast_speisesaal.jpg",
+  palast_speisesaal: { id: "palast_speisesaal", name: "Speisesaal", region: "aschenpalast", blurb: "Silber auf einer langen Tafel, die Sitzordnung mit Kreide aufs Holz geschrieben. Wer weiter unten sitzt, isst später. Wer einen Platz nach unten rückt, erfährt es vor allen anderen.", art: "locations/palast_speisesaal.jpg",
     exits: [
       { id: "palast_eingangshalle", label: "Eingangshalle", x: 50, y: 90, arch: true }
     ] },
-  palast_kueche: { id: "palast_kueche", name: "Königliche Küche", region: "aschenpalast", blurb: "Feuer unter Kesseln, Bratenduft und Rufe. Hier arbeiten mehr Hände als im ganzen Palast sonst.", art: "locations/palast_kueche.jpg",
+  palast_kueche: { id: "palast_kueche", name: "Königliche Küche", region: "aschenpalast", blurb: "Feuer unter acht Kesseln, Mägde mit verbrannten Unterarmen. Ein Vorkoster sitzt in der Ecke und isst langsam. Hier hört man vor dem Thronsaal, wer beim König in Ungnade gefallen ist.", art: "locations/palast_kueche.jpg",
     exits: [
       { id: "palast_eingangshalle", label: "Eingangshalle", x: 50, y: 90, arch: true }
     ] },
-  palast_thronsaal: { id: "palast_thronsaal", name: "Thronsaal", region: "aschenpalast", blurb: "Stufen führen zum Thron hinauf, Banner hängen schwer von den Säulen. Der Rauch der Becken steht still in der Luft.", art: "locations/palast_thronsaal.jpg",
+  palast_thronsaal: { id: "palast_thronsaal", name: "Thronsaal", region: "aschenpalast", blurb: "Elf Stufen bis zum Thron, und auf jeder wird man leiser. Rauch aus den Becken hängt unter den Bannern. Hier trägt Malrik die Krone, die dem Reich ihren Namen gibt.", art: "locations/palast_thronsaal.jpg",
     exits: [
       { id: "palast_eingangshalle", label: "Eingangshalle", x: 50, y: 90, arch: true },
       { id: "palast_gemaecher", label: "Königliche Gemächer", x: 14, y: 66, arch: true },
       { id: "palast_prinzenzimmer", label: "Zimmer des Prinzen", x: 86, y: 66, arch: true }
     ] },
-  palast_gemaecher: { id: "palast_gemaecher", name: "Königliche Gemächer", region: "aschenpalast", parent: "palast_thronsaal", pass: "ui/pass_gemaecher.jpg", back: "Zurück in den Thronsaal", blurb: "Ein Himmelbett unter rotem Stoff, schwere Teppiche, Stille. Hierher kommt nur, wen man ruft.", art: "locations/palast_gemaecher.jpg",
+  palast_gemaecher: { id: "palast_gemaecher", name: "Königliche Gemächer", region: "aschenpalast", parent: "palast_thronsaal", pass: "ui/pass_gemaecher.jpg", back: "Zurück in den Thronsaal", blurb: "Unter dem roten Baldachin des Himmelbetts sind beide Kissen eingedrückt. Die Teppiche schlucken jeden Schritt. Wer ungerufen hier steht, hat schon erklärt, warum er bleiben muss.", art: "locations/palast_gemaecher.jpg",
     exits: [
       { id: "palast_thronsaal", label: "Zurück in den Thronsaal" }
     ] },
-  palast_prinzenzimmer: { id: "palast_prinzenzimmer", name: "Zimmer des Prinzen", region: "aschenpalast", parent: "palast_thronsaal", pass: "ui/pass_prinzenzimmer.jpg", back: "Zurück in den Thronsaal", blurb: "Bücher, ein Schreibpult und ein Bett mit blauer Decke. Alles hier ist ordentlich, als würde jemand zusehen.", art: "locations/palast_prinzenzimmer.jpg",
+  palast_prinzenzimmer: { id: "palast_prinzenzimmer", name: "Zimmer des Prinzen", region: "aschenpalast", parent: "palast_thronsaal", pass: "ui/pass_prinzenzimmer.jpg", back: "Zurück in den Thronsaal", blurb: "Bücher mit zerlesenen Rücken, ein Pult mit abgeschlossener Lade. Die Decke ist gefaltet, wie es Diener nicht tun. Hier wohnt einer, der weiß, dass sein Zimmer durchsucht wird.", art: "locations/palast_prinzenzimmer.jpg",
     exits: [
       { id: "palast_thronsaal", label: "Zurück in den Thronsaal" }
     ] },
@@ -825,11 +825,11 @@ const LOCATIONS = {
     exits: [ { id: "berum_zentralplatz", label: "Zentralplatz", x: 50, y: 90, arch: true } ] },
   berum_wilder_wal: { id: "berum_wilder_wal", name: "Gasthaus zum Wilden Wal", region: "berum", blurb: "Über der Tür hängt ein Walschädel. Drinnen ist es laut und warm.", art: "locations/berum_wilder_wal.jpg",
     exits: [ { id: "berum_zentralplatz", label: "Zentralplatz", x: 50, y: 90, arch: true } ] },
-  berum_anwesen_mcclair: { id: "berum_anwesen_mcclair", name: "Anwesen der McClairs", region: "berum", blurb: "Hinter einer Mauer steht das Haus über der Stadt. Das Tor ist geschlossen, die Fenster sehen aufs Meer.", art: "locations/berum_anwesen_mcclair.jpg",
+  berum_anwesen_mcclair: { id: "berum_anwesen_mcclair", name: "Anwesen der McClairs", region: "berum", blurb: "Die Mauer ist frisch gekalkt, damit das Salz nicht frisst. Das Haus steht über Berum, mit dem Rücken zum Hafen, der es bezahlt hat. Am Tor fragt dich ein Diener nach deinem Namen und vergleicht ihn mit einer Liste.", art: "locations/berum_anwesen_mcclair.jpg",
     exits: [ { id: "berum_zentralplatz", label: "Zentralplatz", x: 50, y: 90, arch: true },
       { id: "berum_anwesen_innen", label: "Anwesen innen", x: 66, y: 44, arch: true } ] },  // Torbogen am Hauseingang
   // Anwesen innen (Leitung 13.10.): kleiner Nebenort, nur über Torbogen; Text PLATZHALTER für Ext Text
-  berum_anwesen_innen: { id: "berum_anwesen_innen", name: "Anwesen innen", region: "berum", blurb: "Dunkles Holz, Teppiche und der Geruch von Salz und Wachs. Durch hohe Fenster sieht man aufs graue Meer.", art: "locations/berum_anwesen_innen.jpg",
+  berum_anwesen_innen: { id: "berum_anwesen_innen", name: "Anwesen innen", region: "berum", blurb: "Teppiche aus dem Süden, an den Rändern vom Salz zerfressen. Wachs, Seeluft, kalter Tabak. Die hohen Fenster gehen aufs Meer, damit die McClairs ihre Schiffe zählen können, bevor die Gilde es tut.", art: "locations/berum_anwesen_innen.jpg",
     parent: "berum_anwesen_mcclair", pass: "ui/pass_anwesen.jpg", back: "Zurück vor das Anwesen",
     exits: [ { id: "berum_anwesen_mcclair", label: "Zurück vor das Anwesen" } ] },
   berum_docks: { id: "berum_docks", name: "Docks", region: "berum", blurb: "Schiffe liegen am nassen Steg, ein Kran knarrt im Wind. Hinter dem Nebel beginnt das offene Wasser.", art: "locations/berum_docks.jpg",
@@ -891,7 +891,7 @@ const LOCATIONS = {
   lotfild_werkstatt: { id: "lotfild_werkstatt", name: "Werkstatt", region: "lotfild", blurb: "Aus dem Schornstein steigt Rauch. Auf der Werkbank liegen Späne, und ein halb fertiger Zaunpfahl wartet.", art: "locations/lotfild_werkstatt.jpg",
     exits: [ { id: "lotfild_bauernhaus", label: "Bauernhaus außen", x: 50, y: 90, arch: true } ] },
   // ---- Bauernhaus innen (Ortstexte: PLATZHALTER für Ext Text) ----
-  bauernhaus_diele: { id: "bauernhaus_diele", name: "Diele", region: "bauernhaus_innen", pass: "ui/pass_bauernhaus.jpg", blurb: "Eine Laterne hängt über dem Teppich. Von der Diele gehen alle Türen des Hauses ab.", art: "locations/bauernhaus_diele.jpg",
+  bauernhaus_diele: { id: "bauernhaus_diele", name: "Diele", region: "bauernhaus_innen", pass: "ui/pass_bauernhaus.jpg", blurb: "Lehm von den Feldern klebt an der Schwelle, Stiefel stehen nach Größe gereiht. Sechs Türen, und jede hört, wer durch die Diele geht.", art: "locations/bauernhaus_diele.jpg",
     exits: [
       { id: "bauernhaus_wohnzimmer", label: "Wohnzimmer" },
       { id: "bauernhaus_meinzimmer", label: "Mein Zimmer" },
@@ -900,15 +900,15 @@ const LOCATIONS = {
       { id: "bauernhaus_elternzimmer", label: "Elternzimmer" },
       { id: "lotfild_bauernhaus", label: "Ausgang" }
     ] },
-  bauernhaus_wohnzimmer: { id: "bauernhaus_wohnzimmer", name: "Wohnzimmer", region: "bauernhaus_innen", blurb: "Der Kamin knistert, auf der Bank liegen Kissen. Hier sitzt die Familie an langen Abenden.", art: "locations/bauernhaus_wohnzimmer.jpg",
+  bauernhaus_wohnzimmer: { id: "bauernhaus_wohnzimmer", name: "Wohnzimmer", region: "bauernhaus_innen", blurb: "Am Kamin hängt das Pachtbuch an einem Nagel, damit es keiner vergisst. Auf der Bank sitzt man nach Rang: Vater, Mutter, dann der Rest.", art: "locations/bauernhaus_wohnzimmer.jpg",
     exits: [ { id: "bauernhaus_diele", label: "Diele", x: 50, y: 90, arch: true } ] },
-  bauernhaus_meinzimmer: { id: "bauernhaus_meinzimmer", name: "Mein Zimmer", region: "bauernhaus_innen", blurb: "Ein schmales Bett, eine Truhe, eine Kerze am Fenster. Mehr braucht es nicht, um hier zu Hause zu sein.", art: "locations/bauernhaus_meinzimmer.jpg",
+  bauernhaus_meinzimmer: { id: "bauernhaus_meinzimmer", name: "Mein Zimmer", region: "bauernhaus_innen", blurb: "Ein Bett, kürzer als du. In der Truhe liegt, was du besitzt, und der Deckel schließt trotzdem. Durchs Fenster siehst du die Straße, die aus Lotfild hinausführt.", art: "locations/bauernhaus_meinzimmer.jpg",
     exits: [ { id: "bauernhaus_diele", label: "Diele", x: 50, y: 90, arch: true } ] },
-  bauernhaus_kueche: { id: "bauernhaus_kueche", name: "Küche", region: "bauernhaus_innen", blurb: "Töpfe hängen über dem Herd, auf dem Tisch steht Brot. Es riecht nach Rauch und Kräutern.", art: "locations/bauernhaus_kueche.jpg",
+  bauernhaus_kueche: { id: "bauernhaus_kueche", name: "Küche", region: "bauernhaus_innen", blurb: "Rauch im Gebälk, Ruß an den Töpfen. Das Brot ist angeschnitten und abgezählt. Wer hier zu viel nimmt, merkt es am nächsten Morgen an den Blicken.", art: "locations/bauernhaus_kueche.jpg",
     exits: [ { id: "bauernhaus_diele", label: "Diele", x: 50, y: 90, arch: true } ] },
-  bauernhaus_bad: { id: "bauernhaus_bad", name: "Badezimmer", region: "bauernhaus_innen", blurb: "Ein Holzzuber steht bereit, daneben Eimer und ein Stück grobe Seife.", art: "locations/bauernhaus_bad.jpg",
+  bauernhaus_bad: { id: "bauernhaus_bad", name: "Badezimmer", region: "bauernhaus_innen", blurb: "Ein Holzzuber, der Wasser nur hält, wenn man ihn vorher quellen lässt. Das Wasser trägt man selbst vom Brunnen herein. Wer zuletzt badet, badet im Grau der anderen.", art: "locations/bauernhaus_bad.jpg",
     exits: [ { id: "bauernhaus_diele", label: "Diele", x: 50, y: 90, arch: true } ] },
-  bauernhaus_elternzimmer: { id: "bauernhaus_elternzimmer", name: "Elternzimmer", region: "bauernhaus_innen", blurb: "Ein breites Bett unter einer grünen Decke. Auf dem Nachttisch brennt ein Licht.", art: "locations/bauernhaus_elternzimmer.jpg",
+  bauernhaus_elternzimmer: { id: "bauernhaus_elternzimmer", name: "Elternzimmer", region: "bauernhaus_innen", blurb: "Das breite Bett, die Kiste mit dem Schloss, der Schlüssel am Hals deines Vaters. Ohne Grund kommt hier keiner herein, und wer es tut, braucht eine Erklärung.", art: "locations/bauernhaus_elternzimmer.jpg",
     exits: [ { id: "bauernhaus_diele", label: "Diele", x: 50, y: 90, arch: true } ] },
   lotfild_brunnen: { id: "lotfild_brunnen", name: "Brunnen", region: "lotfild", blurb: "Der Eimer hängt am Seil, das Wasser unten ist kalt und klar. Hier treffen sich die Wege des Hofs.", art: "locations/lotfild_brunnen.jpg",
     exits: [ { id: "lotfild_bauernhaus", label: "Bauernhaus außen", x: 50, y: 90, arch: true } ] },
