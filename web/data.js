@@ -558,7 +558,8 @@ const REGIONS = {
     { id: "platz", label: "Aschenstadt", x: 48, y: 86 },
     { id: "dorfzentrum", label: "Unterorten", x: 78, y: 18 },
     { id: "alter_baum", label: "Düsterwald", x: 82, y: 42 },
-    { id: "auen_kreuzung", label: "Grüne Auen", x: 12, y: 78 }  // Weg links unten aus dem Bild; Auen selbst sind nicht gezeichnet
+    { id: "auen_kreuzung", label: "Grüne Auen", x: 12, y: 78 },  // Weg links unten aus dem Bild; Auen selbst sind nicht gezeichnet
+    { id: "friedhof_eingang", label: "Friedhof", x: 28, y: 62 }  // links vor der Stadtmauer
   ]},
   stadt: { id: "stadt", name: "Aschenstadt", hub: "platz", map: "maps/stadt.jpg", wait: "ui/wait_stadt.jpg", idle: "ui/idle_stadt.jpg", pins: [
     { id: "platz", label: "Platz", x: 49, y: 57 },
@@ -614,6 +615,14 @@ const REGIONS = {
     { id: "palast_speisesaal", label: "Speisesaal", x: 74, y: 63 },
     { id: "palast_kueche", label: "Königliche Küche", x: 88, y: 31 },
     { id: "burg", label: "Ausgang", x: 48, y: 89 }
+  ]},
+  // Friedhof von Aschenstadt (Leitung 13.10.): eigenes Gebiet, Weg vom Nebelpfad. Zentralort Eingang.
+  friedhof: { id: "friedhof", name: "Friedhof von Aschenstadt", hub: "friedhof_eingang", back: "Zurück zum Eingang", map: "maps/friedhof.jpg", wait: "ui/wait_friedhof.jpg", idle: "ui/idle_friedhof.jpg", pins: [
+    { id: "friedhof_eingang", label: "Eingang", x: 50, y: 82 },
+    { id: "friedhof_verwaltung", label: "Friedhofsverwaltung", x: 10, y: 49 },
+    { id: "friedhof_grosse_krypta", label: "Große Krypta", x: 50, y: 17 },
+    { id: "friedhof_graeberfelder", label: "Gräberfelder", x: 72, y: 56 },
+    { id: "nebelpfad", label: "Nebelpfad", x: 82, y: 92 }
   ]},
   // Nirfal (Nico 13.10.): Zentralort Versammlungsplatz, Weg zurück zu den Kalten Wegen.
   nirfal: { id: "nirfal", name: "Kleines Dorf Nirfal", hub: "nirfal_versammlungsplatz", back: "Zurück zum Versammlungsplatz", map: "maps/nirfal.jpg", wait: "ui/wait_nirfal.jpg", idle: "ui/idle_nirfal.jpg", pins: [
@@ -777,7 +786,28 @@ const LOCATIONS = {
       { id: "platz", label: "Aschenstadt" },
       { id: "dorfzentrum", label: "Unterorten" },
       { id: "alter_baum", label: "Düsterwald" },
-      { id: "auen_kreuzung", label: "Grüne Auen" }
+      { id: "auen_kreuzung", label: "Grüne Auen" },
+      { id: "friedhof_eingang", label: "Friedhof" }
+    ] },
+  // ---- Friedhof von Aschenstadt (Ortstexte: PLATZHALTER für Ext Text) ----
+  friedhof_eingang: { id: "friedhof_eingang", name: "Eingang", region: "friedhof", blurb: "Ein schmiedeeisernes Tor zwischen zwei Steinpfeilern. Dahinter liegen Gräber im Nebel, so weit man sehen kann.", art: "locations/friedhof_eingang.jpg",
+    exits: [
+      { id: "friedhof_verwaltung", label: "Friedhofsverwaltung" },
+      { id: "friedhof_grosse_krypta", label: "Große Krypta" },
+      { id: "friedhof_graeberfelder", label: "Gräberfelder" },
+      { id: "nebelpfad", label: "Nebelpfad" }
+    ] },
+  friedhof_verwaltung: { id: "friedhof_verwaltung", name: "Friedhofsverwaltung", region: "friedhof", blurb: "Ein niedriges Haus mit Licht im Fenster. Hier stehen die Namen der Toten in Büchern, und die Bücher sind voll.", art: "locations/friedhof_verwaltung.jpg",
+    exits: [
+      { id: "friedhof_eingang", label: "Eingang", x: 50, y: 90, arch: true }
+    ] },
+  friedhof_graeberfelder: { id: "friedhof_graeberfelder", name: "Gräberfelder", region: "friedhof", blurb: "Schiefe Steine, eingesunkene Hügel. Manche Namen sind noch zu lesen, die meisten nicht mehr.", art: "locations/friedhof_graeberfelder.jpg",
+    exits: [
+      { id: "friedhof_eingang", label: "Eingang", x: 50, y: 90, arch: true }
+    ] },
+  friedhof_grosse_krypta: { id: "friedhof_grosse_krypta", name: "Große Krypta", region: "friedhof", blurb: "Eine Kuppel aus dunklem Stein, von Efeu bewachsen. Hinter der Tür flackert ein Licht, das niemand angezündet hat.", art: "locations/friedhof_grosse_krypta.jpg",
+    exits: [
+      { id: "friedhof_eingang", label: "Eingang", x: 50, y: 90, arch: true }
     ] },
   obsidiansee: { id: "obsidiansee", name: "Obsidiansee", region: "vorstadt", blurb: "Das Wasser ist dunkel und still. Der Pfad bleibt hinter dem Schilf.", art: "locations/obsidiansee.jpg",
     exits: [ { id: "nebelpfad", label: "Nebelpfad", x: 50, y: 90, arch: true } ] },
