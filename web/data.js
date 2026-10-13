@@ -311,10 +311,10 @@ const NPCs = {
     talk: { start: "Bleibt stehen. Die Stühle hier gehören Leuten, die etwas schulden. Ihr seid neu, das rieche ich am Straßenstaub. Sagt, was Ihr wollt, und ich sage Euch, was es kostet." } },
   // ---- Nekromantin (Leitung 13.10.; Name „Mara Venthal“ nur Vorschlag -> Rollentitel; ohne Quests; Texte PLATZHALTER für Ext Text) ----
   nekromantin: { id: "nekromantin", name: "Die Nekromantin", title: "Herrin der Hallen", location: "krypta_hallen_der_toten",
-    text: "Eine Frau in dunklem Kapuzenmantel steht zwischen den Sarkophagen. Violettes Licht spielt um ihre Finger.",
+    text: "Eine Frau unter tiefer Kapuze, das Gewand mit dürrem Dornengeflecht bestickt. Um ihre Finger zieht violettes Licht. Sie spricht zu den Sarkophagen wie eine Vogtin zu ihren Schuldnern.",
     art: "npcs/npc_nekromantin.jpg", merchant: false, pin: { x: 30, y: 80 }, faction: "",
-    lines: ["Die Toten sind geduldige Zuhörer. Die Lebenden sollten es auch sein."],
-    talk: { start: "Ihr seid lebendig hier unten. Das ist selten. Sprecht leise, die anderen schlafen." } },
+    lines: ["Die Toten widersprechen nicht. Darum führe ich sie besser als der König seine Lebenden."],
+    talk: { start: "Ein Lebender, der freiwillig herunterkommt. Entweder sucht Ihr jemanden, oder Ihr verkauft etwas. Sprecht leise. Hier unten gehorcht man mir, und Ihr gehört noch nicht dazu." } },
   tamsin: {
     id: "tamsin", name: "Tamsin", title: "Jägerin", location: "schenke",
     text: "Tamsin kennt jedes Gesicht, das länger als eine Nacht bleibt.",
@@ -802,33 +802,33 @@ const LOCATIONS = {
       { id: "friedhof_eingang", label: "Friedhof" }
     ] },
   // ---- Friedhof von Aschenstadt (Ortstexte: PLATZHALTER für Ext Text) ----
-  friedhof_eingang: { id: "friedhof_eingang", name: "Eingang", region: "friedhof", blurb: "Ein schmiedeeisernes Tor zwischen zwei Steinpfeilern. Dahinter liegen Gräber im Nebel, so weit man sehen kann.", art: "locations/friedhof_eingang.jpg",
+  friedhof_eingang: { id: "friedhof_eingang", name: "Eingang", region: "friedhof", blurb: "Ein eisernes Tor, das Schloss neuer als die Angeln. Auf dem linken Pfeiler steht, was ein Grab kostet; auf dem rechten hat jemand die Preise zerkratzt. Dahinter Steine, so weit der Nebel reicht.", art: "locations/friedhof_eingang.jpg",
     exits: [
       { id: "friedhof_verwaltung", label: "Friedhofsverwaltung" },
       { id: "friedhof_grosse_krypta", label: "Große Krypta" },
       { id: "friedhof_graeberfelder", label: "Gräberfelder" },
       { id: "nebelpfad", label: "Nebelpfad" }
     ] },
-  friedhof_verwaltung: { id: "friedhof_verwaltung", name: "Friedhofsverwaltung", region: "friedhof", blurb: "Ein niedriges Haus mit Licht im Fenster. Hier stehen die Namen der Toten in Büchern, und die Bücher sind voll.", art: "locations/friedhof_verwaltung.jpg",
+  friedhof_verwaltung: { id: "friedhof_verwaltung", name: "Friedhofsverwaltung", region: "friedhof", blurb: "Ein niedriges Haus, hinter dem Fenster brennt bis spät Licht. Die Bücher hier führen jeden Toten mit Namen, Platz und bezahlter Frist. Wer nicht zahlt, wird ausgegraben und bekommt eine Zeile ohne Namen.", art: "locations/friedhof_verwaltung.jpg",
     exits: [
       { id: "friedhof_eingang", label: "Eingang", x: 50, y: 90, arch: true }
     ] },
-  friedhof_graeberfelder: { id: "friedhof_graeberfelder", name: "Gräberfelder", region: "friedhof", blurb: "Schiefe Steine, eingesunkene Hügel. Manche Namen sind noch zu lesen, die meisten nicht mehr.", art: "locations/friedhof_graeberfelder.jpg",
+  friedhof_graeberfelder: { id: "friedhof_graeberfelder", name: "Gräberfelder", region: "friedhof", blurb: "Schiefe Steine, abgesackte Hügel, an manchen Stellen frisch umgegrabene Erde, obwohl dort keiner beerdigt wurde. Die Reichen liegen an der Mauer, die anderen dort, wo das Wasser steht.", art: "locations/friedhof_graeberfelder.jpg",
     exits: [
       { id: "friedhof_eingang", label: "Eingang", x: 50, y: 90, arch: true }
     ] },
-  friedhof_grosse_krypta: { id: "friedhof_grosse_krypta", name: "Große Krypta", region: "friedhof", blurb: "Eine Kuppel aus dunklem Stein, von Efeu bewachsen. Hinter der Tür flackert ein Licht, das niemand angezündet hat.", art: "locations/friedhof_grosse_krypta.jpg",
+  friedhof_grosse_krypta: { id: "friedhof_grosse_krypta", name: "Große Krypta", region: "friedhof", blurb: "Dunkle Kuppel, Efeu bis zum Scheitel. Die Tür hat kein Schloss, nur Kratzer, und die meisten sind innen. Hinter dem Spalt brennt violettes Licht, für das in der Verwaltung keiner Öl abrechnet.", art: "locations/friedhof_grosse_krypta.jpg",
     exits: [
       { id: "friedhof_eingang", label: "Eingang", x: 50, y: 90, arch: true },
       { id: "krypta_vorhalle", label: "In der Krypta", x: 58, y: 56, arch: true }  // Torbogen an der Kryptatür
     ] },
   // ---- In der Krypta (Ortstexte: PLATZHALTER für Ext Text) ----
-  krypta_vorhalle: { id: "krypta_vorhalle", name: "Vorhalle", region: "krypta", pass: "ui/pass_krypta.jpg", blurb: "Eine Treppe führt hinab, violettes Licht brennt in steinernen Schalen. Die Luft ist kalt und riecht nach Staub.", art: "locations/krypta_vorhalle.jpg",
+  krypta_vorhalle: { id: "krypta_vorhalle", name: "Vorhalle", region: "krypta", pass: "ui/pass_krypta.jpg", blurb: "Die Stufen sind in der Mitte ausgetreten, und ein Teil der Spuren führt nur hinunter. In den Steinschalen brennt violettes Licht ohne Rauch. Der Staub ist kalt, die Luft riecht nach Kalk und altem Eisen.", art: "locations/krypta_vorhalle.jpg",
     exits: [
       { id: "krypta_hallen_der_toten", label: "Hallen der Toten" },
       { id: "friedhof_grosse_krypta", label: "Ausgang" }
     ] },
-  krypta_hallen_der_toten: { id: "krypta_hallen_der_toten", name: "Hallen der Toten", region: "krypta", blurb: "Sarkophage in langen Reihen, in den Wänden Nischen voller Knochen. Irgendwo flüstert jemand, und es ist nicht der Wind.", art: "locations/krypta_hallen_der_toten.jpg",
+  krypta_hallen_der_toten: { id: "krypta_hallen_der_toten", name: "Hallen der Toten", region: "krypta", blurb: "Sarkophage in Reihen, in den Wandnischen sind die Knochen nach Größe sortiert, nicht nach Familien. Einige Deckel liegen schief, und keiner davon ist zerbrochen. Hier unten ordnet jemand die Toten, und sie halten still.", art: "locations/krypta_hallen_der_toten.jpg",
     exits: [
       { id: "krypta_vorhalle", label: "Vorhalle", x: 50, y: 90, arch: true }
     ] },
@@ -925,7 +925,7 @@ const LOCATIONS = {
       { id: "auen_ausstellflaeche", label: "NPC-Ausstellfläche", x: 85, y: 56, arch: true }
     ] },
   // NPC-Ausstellfläche (Leitung 13.10.): kleiner Nebenort an der Kreuzung; Inhalt berechnet (siehe AUSSTELLUNG unten).
-  auen_ausstellflaeche: { id: "auen_ausstellflaeche", name: "NPC-Ausstellfläche", region: "auen", parent: "auen_kreuzung", pass: "ui/pass_ausstellflaeche.jpg", back: "Zurück zur Kreuzung", blurb: "Eine stille Lichtung abseits der Kreuzung. Hier warten Gestalten, die noch keinen Ort in der Welt gefunden haben.", art: "locations/auen_ausstellflaeche.jpg",
+  auen_ausstellflaeche: { id: "auen_ausstellflaeche", name: "NPC-Ausstellfläche", region: "auen", parent: "auen_kreuzung", pass: "ui/pass_ausstellflaeche.jpg", back: "Zurück zur Kreuzung", blurb: "Eine Lichtung hinter den Wagen, das Gras ist niedergetreten. Hier lagern Leute, die keinen Ort haben, der sie aufnimmt, und keinen, der sie wegschickt. Jeder sieht dich an, als wärst du der Grund für ihr Warten.", art: "locations/auen_ausstellflaeche.jpg",
     exits: [
       { id: "auen_kreuzung", label: "Zurück zur Kreuzung" }
     ] },
@@ -995,12 +995,15 @@ const WOLF_LINES = {
 const AUSSTELLUNG = [
   { id: "cerise", name: "Lady Cerise Varr", art: "npcs/npc_cerise.jpg" },
   { id: "ilwe", name: "Schwester Ilwe", art: "npcs/npc_ilwe.jpg" },
-  { id: "daemonin_1", name: "Dämonin I", art: "npcs/npc_daemonin_1.jpg" },  // Titel aus Dateiname (kein Verzeichniseintrag)
-  { id: "daemonin_2", name: "Dämonin II", art: "npcs/npc_daemonin_2.jpg" },
-  { id: "daemonin_3", name: "Dämonin III", art: "npcs/npc_daemonin_3.jpg" }
+  { id: "daemonin_1", name: "Dämonin I", art: "npcs/npc_daemonin_1.jpg",
+    text: "Schwarzes Haar mit violettem Schimmer, zwei kurze Hörner, die sie nicht versteckt. Die Flügel hält sie angelegt wie einen Mantel. Sie riecht nach Rosen, die zu lange in der Vase standen. Wer ihr zu nah kommt, merkt erst später, was er dafür hergegeben hat.", line: "Ich nehme nie etwas. Man bringt es mir.", start: "Ihr starrt auf die Hörner. Alle tun das, beim ersten Mal. Beim zweiten Mal sehen sie woanders hin, und dann wird es teuer." },  // Titel aus Dateiname (kein Verzeichniseintrag)
+  { id: "daemonin_2", name: "Dämonin II", art: "npcs/npc_daemonin_2.jpg",
+    text: "Ihre Flügel füllen die Lichtung. Das Gewand hängt zerrissen wie altes Banner, durchzogen von Gold, die Finger enden in Klauen aus Metall. Wo sie steht, ist das Gras am Morgen trocken.", line: "Ich habe Könige gekannt, bevor sie gekrönt waren. Und danach.", start: "Bleibt, wo Ihr seid. Nicht aus Angst um Euch. Ich zähle nur gern, wie viele Schritte jemand braucht, bis er mich um etwas bittet." },
+  { id: "daemonin_3", name: "Dämonin III", art: "npcs/npc_daemonin_3.jpg",
+    text: "Große Hörner unter einem Golddiadem, Ketten statt Stoff, und sie trägt beides wie ein Amt. Sie sieht von oben herab, auch wenn sie sitzt. Ihre Haut ist warm, obwohl die Nacht kalt ist.", line: "Jede Kette war einmal ein Versprechen. Ich trage nur die, die gehalten wurden.", start: "Kniet nicht, ich habe genug Knie gesehen. Sagt mir Euren Namen. Ihr glaubt, das kostet nichts, und darum fange ich immer damit an." }
 ];
 const AUSSTELL_ORT = "auen_ausstellflaeche";
-const AUSSTELL_ZEILE = "Ein Nicken, ein stiller Blick. Mehr gibt es hier noch nicht zu sagen.";
+const AUSSTELL_ZEILE = "Ein Nicken. Wer hier wartet, redet nicht mit dem Ersten, der vorbeikommt.";
 function ausstellungNeu() {
   Object.values(NPCs).forEach((n) => { if (n.exhibit === "neu") delete NPCs[n.id]; else if (n.exhibit === "geliehen") { delete n.location; delete n.pin; delete n.exhibit; } });
   const placed = new Set(Object.values(NPCs).filter((n) => n.location).map((n) => n.art));
@@ -1008,8 +1011,8 @@ function ausstellungNeu() {
   list.forEach((n) => { n.exhibit = "geliehen"; n.location = AUSSTELL_ORT; });
   AUSSTELLUNG.filter((a) => !NPCs[a.id] && !placed.has(a.art)).forEach((a) => {
     NPCs[a.id] = { id: a.id, name: a.name, title: "Noch ohne festen Ort", location: AUSSTELL_ORT, exhibit: "neu",
-      text: "Ein Bildnis auf der Ausstellfläche. Die Gestalt wartet auf ihren Platz in der Welt.", art: a.art, merchant: false, faction: "",
-      lines: [AUSSTELL_ZEILE], talk: { start: AUSSTELL_ZEILE } };
+      text: a.text || "Am Rand der Lichtung sitzt jemand mit Gepäck, das nie aufgeschnürt wird. Woher und wohin, das sagt dir keiner.", art: a.art, merchant: false, faction: "",
+      lines: [a.line || AUSSTELL_ZEILE], talk: { start: a.start || AUSSTELL_ZEILE } };
     list.push(NPCs[a.id]);
   });
   // Raster ohne Überlappung: bis 4 Spalten, Zeilen gleichmäßig zwischen y 44 und 92.
