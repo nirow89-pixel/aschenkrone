@@ -618,6 +618,12 @@ function statText(it) {
   if (!it) return "";
   return (it.slot ? ["atk", "def", "will", "hp"] : ["heal"]).filter((k) => it[k]).map((k) => STAT_NAMES[k] + (k === "heal" ? " " : " +") + it[k]).join(", ");
 }
+// Waffenwerte für den Tooltip: Schaden (dmgMin–dmgMax) und Tempo (speed, Sekunden je Schlag).
+function weaponText(it) {
+  if (!it || it.type !== "waffe") return "";
+  const f = (n) => String(n).replace(".", ",");
+  return [it.dmgMax ? "Schaden " + it.dmgMin + "–" + it.dmgMax : "", it.speed ? "Tempo " + f(it.speed) + " s" : ""].filter(Boolean).join(" · ");
+}
 function compareText(it) {
   if (!it || !it.slot) return "";
   const slots = it.slot === "waffeL" ? ["waffeL", "waffeR"] : [it.slot];
@@ -1273,13 +1279,14 @@ function tipCompare(it) {
 }
 function tipHtml(it, mode, count) {
   if (mode === "buy" || mode === "sell" || mode === "worn" || mode === "none") {  // Handel: nur Name und Wirkung
-    const eff = [statText(it)].concat(fxLines(it)).filter(Boolean);
+    const eff = [statText(it), weaponText(it)].concat(fxLines(it)).filter(Boolean);
     return "<b>" + esc(it.name) + "</b>" + (eff.length ? eff.map((l) => "<div class='tip-fx'>" + l + "</div>").join("") : (it.text ? "<div class='tiny'>" + esc(it.text) + "</div>" : ""));
   }
   const worn = Object.values(state.equipped || {}).includes(it.id) && (mode === "slot" || mode === "worn");
   const lines = [];
   lines.push("<b>" + esc(it.name) + "</b>" + (count > 1 ? " ×" + count : "") + (slotWord(it) ? " <span class='tiny'>· " + slotWord(it) + "</span>" : ""));
   if (statText(it)) lines.push("<div>" + statText(it) + "</div>");
+  if (weaponText(it)) lines.push("<div class='tip-wpn'>" + weaponText(it) + "</div>");
   fxLines(it).forEach((l) => lines.push("<div class='tip-fx'>" + l + "</div>"));
   if (mode === "buy") lines.push("<div>Preis: " + buyPrice(it) + " Gold" + (buyPrice(it) !== it.price ? " <span class='tiny'>(statt " + it.price + ")</span>" : "") + "</div>");
   else if (it.price && it.sell && it.type !== "quest") lines.push("<div>Verkauf: " + sellPrice(it) + " Gold" + (worn ? " <span class='tiny'>(erst ablegen)</span>" : "") + "</div>");
