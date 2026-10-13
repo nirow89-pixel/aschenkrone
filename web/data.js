@@ -485,7 +485,8 @@ const REGIONS = {
     { id: "knochenfeld", label: "Knochenfeld", x: 26, y: 16 },
     { id: "platz", label: "Aschenstadt", x: 48, y: 86 },
     { id: "dorfzentrum", label: "Unterorten", x: 78, y: 18 },
-    { id: "alter_baum", label: "Düsterwald", x: 82, y: 42 }
+    { id: "alter_baum", label: "Düsterwald", x: 82, y: 42 },
+    { id: "auen_kreuzung", label: "Grüne Auen", x: 12, y: 78 }  // Weg links unten aus dem Bild; Auen selbst sind nicht gezeichnet
   ]},
   stadt: { id: "stadt", name: "Aschenstadt", hub: "platz", map: "maps/stadt.jpg", wait: "ui/wait_stadt.jpg", idle: "ui/idle_stadt.jpg", pins: [
     { id: "platz", label: "Platz", x: 49, y: 57 },
@@ -501,6 +502,25 @@ const REGIONS = {
     { id: "ratshalle", label: "Ratshalle", x: 49, y: 20 },
     { id: "schenke", label: "Schenke", x: 72, y: 58 },
     { id: "nebelpfad", label: "Nebelpfad", x: 52, y: 93 }
+  ]},
+  // Die grünen Auen (Nico 13.10.): Zentralort Die Kreuzung. Gebirgsvorland/Hafenstadt gesperrt, bis Bilder da sind (pin.locked).
+  auen: { id: "auen", name: "Die grünen Auen", hub: "auen_kreuzung", back: "Zurück zur Kreuzung", map: "maps/auen.jpg", wait: "ui/wait_auen.jpg", idle: "ui/idle_auen.jpg", mood: "ui/mood_auen.jpg", scrim: "linear-gradient(rgba(12,7,8,.58), rgba(12,7,8,.66))", pins: [  // helle Bilder: stärkere Abdunklung
+    { id: "auen_kreuzung", label: "Die Kreuzung", x: 61, y: 67 },
+    { id: "nebelpfad", label: "Nebelpfad", x: 26, y: 38 },
+    { id: "lotfild_strasse", label: "Bauernhof Lotfild", x: 15, y: 86 },
+    { id: "auen_gebirgsvorland", label: "Gebirgsvorland", x: 86, y: 30, locked: "Der Weg ist noch nicht begehbar." },
+    { id: "auen_hafenstadt", label: "Hafenstadt", x: 81, y: 83, locked: "Der Weg ist noch nicht begehbar." }
+  ]},
+  // Bauernhof Lotfild (Nico 13.10.): Zentralort Bauernhaus (draußen). Später: eigener Bereich „Bauernhaus innen“ als Nebenort (parent/pass) vom Bauernhaus aus.
+  lotfild: { id: "lotfild", name: "Bauernhof Lotfild", hub: "lotfild_bauernhaus", back: "Zurück zum Bauernhaus", map: "maps/lotfild.jpg", wait: "ui/wait_lotfild.jpg", idle: "ui/idle_lotfild.jpg", mood: "ui/mood_lotfild.jpg", pins: [
+    { id: "lotfild_bauernhaus", label: "Bauernhaus", x: 62, y: 52 },
+    { id: "lotfild_feld", label: "Feld", x: 28, y: 17 },
+    { id: "lotfild_apfelbaeume", label: "Apfelbäume", x: 59, y: 19 },
+    { id: "lotfild_scheune", label: "Scheune", x: 11, y: 40 },
+    { id: "lotfild_werkstatt", label: "Werkstatt", x: 21, y: 84 },
+    { id: "lotfild_brunnen", label: "Brunnen", x: 54, y: 93 },
+    { id: "lotfild_teich", label: "Teich", x: 87, y: 88 },
+    { id: "lotfild_strasse", label: "Die Straße", x: 94, y: 57 }
   ]},
   duesterwald: { id: "duesterwald", name: "Düsterwald", hub: "alter_baum", back: "Zurück zum Alten Baum", map: "maps/duesterwald.jpg", wait: "ui/wait_duesterwald.jpg", idle: "ui/idle_duesterwald.jpg", pins: [
     { id: "alter_baum", label: "Alter Baum", x: 54, y: 29 },
@@ -561,7 +581,8 @@ const LOCATIONS = {
       { id: "knochenfeld", label: "Knochenfeld" },
       { id: "platz", label: "Aschenstadt" },
       { id: "dorfzentrum", label: "Unterorten" },
-      { id: "alter_baum", label: "Düsterwald" }
+      { id: "alter_baum", label: "Düsterwald" },
+      { id: "auen_kreuzung", label: "Grüne Auen" }
     ] },
   obsidiansee: { id: "obsidiansee", name: "Obsidiansee", region: "vorstadt", blurb: "Das Wasser ist dunkel und still. Der Pfad bleibt hinter dem Schilf.", art: "locations/obsidiansee.jpg",
     exits: [ { id: "nebelpfad", label: "Nebelpfad", x: 50, y: 90, arch: true } ] },
@@ -596,6 +617,38 @@ const LOCATIONS = {
   hexenhuette_innen: { id: "hexenhuette_innen", name: "Hexenhütte (innen)", region: "duesterwald", blurb: "Ein Raum mit Feuerstelle, Tisch und Spiegel. Unter der Decke trocknen Kräuter.", art: "locations/hexenhaus.jpg",
     parent: "hexenhuette", pass: "ui/pass_huette.jpg",
     exits: [ { id: "hexenhuette", label: "Zurück zur Hexenhütte" } ] },
+  // ---- Die grünen Auen (Ortstext: PLATZHALTER für Ext Text) ----
+  auen_kreuzung: { id: "auen_kreuzung", name: "Die Kreuzung", region: "auen", blurb: "Ein alter Wegstein steht, wo sich vier Wege kreuzen. Der Bach murmelt daneben, und jeder Weg führt woandershin.", art: "locations/auen_kreuzung.jpg",
+    exits: [
+      { id: "nebelpfad", label: "Nebelpfad" },
+      { id: "lotfild_strasse", label: "Bauernhof Lotfild" }
+    ] },
+  // ---- Bauernhof Lotfild (Ortstexte: PLATZHALTER für Ext Text) ----
+  lotfild_bauernhaus: { id: "lotfild_bauernhaus", name: "Bauernhaus", region: "lotfild", blurb: "Rauch steigt aus dem Schornstein, über der Tür brennt eine Laterne. Von hier führen die Wege zu Feld, Scheune und Straße.", art: "locations/lotfild_bauernhaus.jpg",
+    exits: [
+      { id: "lotfild_feld", label: "Feld" },
+      { id: "lotfild_apfelbaeume", label: "Apfelbäume" },
+      { id: "lotfild_scheune", label: "Scheune" },
+      { id: "lotfild_werkstatt", label: "Werkstatt" },
+      { id: "lotfild_brunnen", label: "Brunnen" },
+      { id: "lotfild_teich", label: "Teich" },
+      { id: "lotfild_strasse", label: "Die Straße" }
+    ] },
+  lotfild_feld: { id: "lotfild_feld", name: "Feld", region: "lotfild", blurb: "Das Korn steht hoch und raschelt im Wind. Zwischen den Halmen führt ein schmaler Pfad zurück zum Haus.", art: "locations/lotfild_feld.jpg",
+    exits: [ { id: "lotfild_bauernhaus", label: "Bauernhaus", x: 50, y: 90, arch: true } ] },
+  lotfild_apfelbaeume: { id: "lotfild_apfelbaeume", name: "Apfelbäume", region: "lotfild", blurb: "Die Äste hängen schwer von roten Äpfeln. Im Gras liegt Fallobst, und Wespen sind schneller als ihr.", art: "locations/lotfild_apfelbaeume.jpg",
+    exits: [ { id: "lotfild_bauernhaus", label: "Bauernhaus", x: 50, y: 90, arch: true } ] },
+  lotfild_scheune: { id: "lotfild_scheune", name: "Scheune", region: "lotfild", blurb: "Das Tor steht halb offen, drinnen riecht es nach Heu und altem Holz. Werkzeug lehnt an der Wand.", art: "locations/lotfild_scheune.jpg",
+    exits: [ { id: "lotfild_bauernhaus", label: "Bauernhaus", x: 50, y: 90, arch: true } ] },
+  lotfild_werkstatt: { id: "lotfild_werkstatt", name: "Werkstatt", region: "lotfild", blurb: "Aus dem Schornstein steigt Rauch. Auf der Werkbank liegen Späne, und ein halb fertiger Zaunpfahl wartet.", art: "locations/lotfild_werkstatt.jpg",
+    exits: [ { id: "lotfild_bauernhaus", label: "Bauernhaus", x: 50, y: 90, arch: true } ] },
+  lotfild_brunnen: { id: "lotfild_brunnen", name: "Brunnen", region: "lotfild", blurb: "Der Eimer hängt am Seil, das Wasser unten ist kalt und klar. Hier treffen sich die Wege des Hofs.", art: "locations/lotfild_brunnen.jpg",
+    exits: [ { id: "lotfild_bauernhaus", label: "Bauernhaus", x: 50, y: 90, arch: true } ] },
+  lotfild_teich: { id: "lotfild_teich", name: "Teich", region: "lotfild", blurb: "Ein Steg reicht ins stille Wasser. Frösche verstummen, wenn jemand näher kommt.", art: "locations/lotfild_teich.jpg",
+    exits: [ { id: "lotfild_bauernhaus", label: "Bauernhaus", x: 50, y: 90, arch: true } ] },
+  lotfild_strasse: { id: "lotfild_strasse", name: "Die Straße", region: "lotfild", blurb: "Der Weg windet sich ins neblige Tal hinab. Hinter dem Gatter liegt der Hof, vor euch die Kreuzung.", art: "locations/lotfild_strasse.jpg",
+    exits: [ { id: "lotfild_bauernhaus", label: "Bauernhaus", x: 20, y: 90, arch: true },
+      { id: "auen_kreuzung", label: "Die Kreuzung", x: 68, y: 86, arch: true } ] },
   blueteich: { id: "blueteich", name: "Blütenteich", region: "duesterwald", blurb: "Blüten liegen auf dem Wasser. Der Baum bleibt der Weg zurück.", art: "locations/blueteich.jpg",
     exits: [ { id: "alter_baum", label: "Alter Baum", x: 50, y: 90, arch: true } ] },
   sumpf: { id: "sumpf", name: "Sumpf", region: "duesterwald", blurb: "Der Boden gibt nach. Wer weiter will, kehrt besser zum Baum um.", art: "locations/sumpf.jpg",

@@ -7,7 +7,7 @@ let lastTalk = null;
 
 // ---- Systeme: Zeit, Speicherstände, Ereignisse ----
 const AUTO_SLOT = "auto";              // eigener Autosave-Slot (Schlüssel "auto" im selben localStorage-Objekt)
-const HUBS = ["nebelpfad", "platz", "dorfzentrum", "alter_baum"];
+const HUBS = ["nebelpfad", "platz", "dorfzentrum", "alter_baum", "lotfild_bauernhaus", "auen_kreuzung"];
 const TIME_COST = { travel: 1, talk: 0, wait: 1, rest: 3 }; // Tageszeit-Schritte
 const ON_NEW_DAY = [];                 // onNewDay-Hooks: fn(day)
 // Nur für Tests: ?debug=1 in der URL gibt bei Neuem Spiel und bei jedem Laden +500 Gold. Ohne Parameter keine Wirkung.
@@ -42,13 +42,23 @@ function onImg(img, rel, fallbacks) {
   img.onerror = next;
   next();
 }
+// Fehlt ein Orts-/Kartenbild, nimmt der Hintergrund ein neutrales Bild (einmal je Pfad geprüft).
+const ART_FALLBACK = "ui/kampf_bg.jpg", ART_MISSING = new Set(), ART_CHECKED = new Set();
+function artOk(rel, redo) {
+  if (!rel || ART_CHECKED.has(rel)) return ART_MISSING.has(rel) ? ART_FALLBACK : rel;
+  ART_CHECKED.add(rel);
+  const im = new Image(); im.onerror = () => { ART_MISSING.add(rel); redo(); }; im.src = art(rel);  // redo prüft selbst, ob der Knoten noch dieses Bild zeigt
+  return rel;
+}
 function bg(node, rel) {
   if (!rel) { node.style.backgroundImage = "none"; return; }
+  rel = artOk(rel, () => { if (node.style.backgroundImage.includes(art(rel))) bg(node, rel); });
   node.style.backgroundImage = 'url("' + art(rel) + '")';
 }
 function areaBg(node, rel, scrim) {
   if (!node) return;
   if (!rel) { node.style.backgroundImage = "none"; return; }
+  rel = artOk(rel, () => { if (node.style.backgroundImage.includes(art(rel))) areaBg(node, rel, scrim); });
   node.style.backgroundImage = (scrim ? scrim + "," : "") + 'url("' + art(rel) + '")';
   node.style.backgroundSize = "cover";
   node.style.backgroundPosition = "center";
@@ -216,7 +226,7 @@ function createHero(name, gender, portraitId, points) {
   return hero;
 }
 // Alle beginnen in Unterorten (Dorfzentrum); der erste Wolf wartet beim Verlassen auf dem Nebelpfad.
-const START_LOCATION = "dorfzentrum";
+const START_LOCATION = "lotfild_bauernhaus";  // Neues Spiel startet auf dem Bauernhof Lotfild (draußen); Altstände behalten ihren Ort
 function newGame(payload) {
   state = {
     hero: createHero(payload.name, payload.gender, payload.portraitId, payload.points),
@@ -968,12 +978,12 @@ function render() {
     sceneArt.alt = "";
     scene.insertBefore(sceneArt, scene.firstChild);
   }
-  if (sceneArt) sceneArt.src = art(loc.art);
+  if (sceneArt) { sceneArt.onerror = () => { if (!sceneArt.src.endsWith(ART_FALLBACK)) sceneArt.src = art(ART_FALLBACK); }; sceneArt.src = art(loc.art); }
   if (scene) scene.style.backgroundImage = "none";
   // Gebietsbilder: Person = idle_<gebiet>, Gespräch = wait_<gebiet> (Gebiet = LOCATIONS[x].region).
-  areaBg(document.getElementById("pane-face"), region.idle || loc.art, "linear-gradient(rgba(16,9,11,.28), rgba(16,9,11,.18))");
-  areaBg(document.querySelector("#pane-face .pane-body"), region.idle || loc.art, "linear-gradient(rgba(16,9,11,.28), rgba(16,9,11,.18))");
-  areaBg(document.querySelector("#pane-talk .pane-body"), region.wait || loc.art, "linear-gradient(rgba(7,4,5,.45), rgba(12,7,8,.55))");
+  areaBg(document.getElementById("pane-face"), region.idle || loc.art, region.scrim || "linear-gradient(rgba(16,9,11,.28), rgba(16,9,11,.18))");
+  areaBg(document.querySelector("#pane-face .pane-body"), region.idle || loc.art, region.scrim || "linear-gradient(rgba(16,9,11,.28), rgba(16,9,11,.18))");
+  areaBg(document.querySelector("#pane-talk .pane-body"), region.wait || loc.art, region.scrim || "linear-gradient(rgba(7,4,5,.45), rgba(12,7,8,.55))");
   document.getElementById("place-name").textContent = loc.name;
   document.getElementById("place-blurb").textContent = loc.blurb || "";
   document.getElementById("btn-rest").hidden = true;  // Rasten nur noch beim Gastwirt (Einkehren)
@@ -1023,7 +1033,8 @@ function render() {
   const parentLoc = loc.parent && D.LOCATIONS[loc.parent];
   // Nebenort: pass-Bild; sonstiger Nicht-Zentralort: Ortsbild des Zentralorts; Zentralort: Gebietskarte.
   const backLoc = parentLoc || hubLoc;
-  bg(map, locked ? region.wait : (parentLoc ? (loc.pass || region.map) : (hubLoc ? hubLoc.art : region.map)));
+  map.classList.toggle("mood", !!locked); document.getElementById("shell").dataset.region = loc.region || "";
+  bg(map, locked ? (region.mood || region.wait) : (parentLoc ? (loc.pass || region.map) : (hubLoc ? hubLoc.art : region.map)));
   if (!locked && backLoc) {  // nur Rückweg, keine Schnellreise
     const b = document.createElement("button");
     b.className = "pin pass-back";
@@ -1042,6 +1053,7 @@ function render() {
       pinPlace(map, b, pin, region);
       b.disabled = pin.id === loc.id || state.inCombat || !reachable;
       b.onclick = (ev) => { ev.stopPropagation(); if (reachable) travel(pin.id); };
+      if (pin.locked) { b.classList.add("pin-locked"); b.disabled = !!state.inCombat; b.onclick = (ev) => { ev.stopPropagation(); showLine(pin.locked, []); }; }  // gesperrter Weg: nur Hinweis
       map.appendChild(b);
       pinFit(map, b);
     });
