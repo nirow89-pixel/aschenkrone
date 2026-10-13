@@ -815,7 +815,12 @@ const LOCATIONS = {
   berum_wilder_wal: { id: "berum_wilder_wal", name: "Gasthaus zum Wilden Wal", region: "berum", blurb: "Über der Tür hängt ein Walschädel. Drinnen ist es laut und warm.", art: "locations/berum_wilder_wal.jpg",
     exits: [ { id: "berum_zentralplatz", label: "Zentralplatz", x: 50, y: 90, arch: true } ] },
   berum_anwesen_mcclair: { id: "berum_anwesen_mcclair", name: "Anwesen der McClairs", region: "berum", blurb: "Hinter einer Mauer steht das Haus über der Stadt. Das Tor ist geschlossen, die Fenster sehen aufs Meer.", art: "locations/berum_anwesen_mcclair.jpg",
-    exits: [ { id: "berum_zentralplatz", label: "Zentralplatz", x: 50, y: 90, arch: true } ] },
+    exits: [ { id: "berum_zentralplatz", label: "Zentralplatz", x: 50, y: 90, arch: true },
+      { id: "berum_anwesen_innen", label: "Anwesen innen", x: 66, y: 44, arch: true } ] },  // Torbogen am Hauseingang
+  // Anwesen innen (Leitung 13.10.): kleiner Nebenort, nur über Torbogen; Text PLATZHALTER für Ext Text
+  berum_anwesen_innen: { id: "berum_anwesen_innen", name: "Anwesen innen", region: "berum", blurb: "Dunkles Holz, Teppiche und der Geruch von Salz und Wachs. Durch hohe Fenster sieht man aufs graue Meer.", art: "locations/berum_anwesen_innen.jpg",
+    parent: "berum_anwesen_mcclair", pass: "ui/pass_anwesen.jpg", back: "Zurück vor das Anwesen",
+    exits: [ { id: "berum_anwesen_mcclair", label: "Zurück vor das Anwesen" } ] },
   berum_docks: { id: "berum_docks", name: "Docks", region: "berum", blurb: "Schiffe liegen am nassen Steg, ein Kran knarrt im Wind. Hinter dem Nebel beginnt das offene Wasser.", art: "locations/berum_docks.jpg",
     exits: [ { id: "berum_zentralplatz", label: "Zentralplatz", x: 50, y: 90, arch: true },
       { id: "berum_schiffsweg", label: "Wird fortgesetzt", x: 55, y: 66, arch: true, locked: "Der Weg ist noch nicht begehbar." } ] },
