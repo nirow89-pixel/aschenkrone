@@ -124,7 +124,7 @@ const PORTRAITS = {
 
 const ITEMS = {
   aschenklinge: { id: "aschenklinge", img: "items/aschenklinge.jpg", name: "Aschenklinge", type: "waffe", slot: "waffeL", atk: 3, dmgMin: 4, dmgMax: 8, speed: 2.4, price: 28, sell: 14, text: "Die Schneide hält die Wärme eines alten Feuers." },
-  glasdolch: { id: "glasdolch", img: "items/glasdolch.jpg", name: "Glasdolch", type: "waffe", slot: "waffeL", atk: 5, crit: 6, dmgMin: 3, dmgMax: 6, speed: 1.8, fx: { fleePct: 5 }, price: 50, sell: 25, text: "Leicht, scharf und leicht zu verstecken." },
+  glasdolch: { id: "glasdolch", img: "items/glasdolch.jpg", name: "Glasdolch", type: "waffe", slot: "waffeL", atk: 4, crit: 6, dmgMin: 3, dmgMax: 6, speed: 1.8, fx: { fleePct: 5 }, price: 50, sell: 25, text: "Leicht, scharf und leicht zu verstecken." },
   russmantel: { id: "russmantel", img: "items/russmantel.jpg", name: "Rußmantel", type: "ruestung", slot: "brust", def: 2, fx: { travelSafePct: 10 }, price: 22, sell: 11, text: "Der Stoff hält Wind und neugierige Blicke ab." },
   glutphiole: { id: "glutphiole", img: "items/glutphiole.jpg", name: "Glutphiole", type: "verbrauch", heal: 18, price: 10, sell: 5, text: "Ein Schluck Wärme. Die Rippen werden leichter." },
   nebeltrank: { id: "nebeltrank", img: "items/nebeltrank.jpg", name: "Nebeltrank", type: "verbrauch", ap: 1, price: 12, sell: 6, text: "Danach fällt der nächste Entschluss leichter." },
@@ -132,10 +132,10 @@ const ITEMS = {
   aschesalbe: { id: "aschesalbe", img: "items/aschesalbe.jpg", name: "Aschesalbe", type: "verbrauch", heal: 8, def: 1, price: 11, sell: 5, text: "Zieht auf der Haut und hält eine Weile stand." },
   obsidianmuenze: { id: "obsidianmuenze", img: "items/obsidianmuenze.jpg", name: "Obsidianmünze", type: "quest", text: "Auf der einen Seite eine Krone, auf der anderen ein offenes Tor." },
   aschenkrone: { id: "aschenkrone", name: "Aschenkrone", type: "quest", text: "Das Reifstück des Reichs. Wer es trägt, trägt auch den Titel." },
-  dorfstahl: { id: "dorfstahl", img: "items/dorfstahl.jpg", name: "Dorfstahl", type: "waffe", slot: "waffeL", atk: 2, dmgMin: 2, dmgMax: 5, speed: 1.7, price: 18, sell: 9, text: "Ein einfacher Dolch mit gerader Klinge und Ledergriff." },
-  nebelklinge: { id: "nebelklinge", img: "items/nebelklinge.jpg", name: "Nebelklinge", type: "waffe", slot: "waffeL", atk: 4, dmgMin: 3, dmgMax: 7, speed: 2.1, fx: { vsMonster: { glashexe: 2 } }, price: 42, sell: 21, text: "Ein gerades Schwert mit heller, glatter Klinge und einfachem Querstück." },
+  dorfstahl: { id: "dorfstahl", img: "items/dorfstahl.jpg", name: "Dorfstahl", type: "waffe", slot: "waffeL", atk: 2, dmgMin: 2, dmgMax: 4, speed: 1.9, price: 18, sell: 9, text: "Ein einfacher Dolch mit gerader Klinge und Ledergriff." },
+  nebelklinge: { id: "nebelklinge", img: "items/nebelklinge.jpg", name: "Nebelklinge", type: "waffe", slot: "waffeL", atk: 4, dmgMin: 3, dmgMax: 7, speed: 2.1, fx: { vsMonster: { glashexe: 2 } }, price: 48, sell: 24, text: "Ein gerades Schwert mit heller, glatter Klinge und einfachem Querstück." },
   thronnadel: { id: "thronnadel", img: "items/thronnadel.jpg", name: "Thronnadel", type: "waffe", slot: "waffeL", atk: 3, dmgMin: 3, dmgMax: 7, speed: 2.1, fx: { vsMonster: { raeuber: 2 } }, price: 34, sell: 17, text: "Ein langer, dünner Stichdolch mit verziertem Messinggriff." },
-  zweihander: { id: "zweihander", img: "items/zweihander.jpg", name: "Zweihänder", type: "waffe", slot: "waffeL", twoHanded: true, atk: 6, dmgMin: 5, dmgMax: 9, speed: 2.8, fx: { fleePct: -10 }, price: 60, sell: 30, text: "Ein langes, schweres Schwert mit dunkler Parierstange für beide Hände." },
+  zweihander: { id: "zweihander", img: "items/zweihander.jpg", name: "Zweihänder", type: "waffe", slot: "waffeL", twoHanded: true, atk: 7, dmgMin: 5, dmgMax: 9, speed: 2.8, fx: { fleePct: -10 }, price: 52, sell: 26, text: "Ein langes, schweres Schwert mit dunkler Parierstange für beide Hände." },
   aschenschild: { id: "aschenschild", img: "items/aschenschild.jpg", name: "Aschenschild", type: "ruestung", slot: "schild", def: 3, price: 30, sell: 15, text: "Ein runder dunkler Schild mit Eisenrand, Nieten und eingeprägter Krone." },
   glaspanzer: { id: "glaspanzer", img: "items/glaspanzer.jpg", name: "Glaspanzer", type: "ruestung", slot: "brust", def: 4, fx: { fleePct: -5 }, price: 55, sell: 27, text: "Ein Brustpanzer aus geschuppten, hell glänzenden Metallplatten." },
   pelzmantel: { id: "pelzmantel", img: "items/pelzmantel.jpg", name: "Pelzmantel", type: "ruestung", slot: "brust", def: 3, fx: { restSteps: 1 }, price: 38, sell: 19, text: "Ein dicker Pelzmantel mit dunkel-violettem Futter und Metallschließe." },
@@ -173,7 +173,7 @@ const MONSTER = {
   raeuber: { id: "raeuber", name: "Räuber", hp: 22, atk: 5, def: 1, speed: 2.0, crit: 5, gold: [8, 16], loot: ["glutphiole"], lootChance: { leder_hose: 20 }, art: "monsters/raeuber.jpg", human: true, text: "Ein Mann mit Tuch vor dem Mund. Er will den Beutel, nicht ein Gespräch.", tags: ["mensch"] },
   nebelkind: { id: "nebelkind", name: "Nebelkind", hp: 26, atk: 8, def: 3, speed: 1.8, crit: 0, weaponHalf: true, gold: [0, 6], loot: ["nebeltrank"], art: "monsters/nebelkind.jpg", text: "Ein Umriss aus Nebel, kaum größer als ein Kind. Klingen gehen halb durch ihn hindurch.", wild: true, tags: ["wild"] },
   thronassel: { id: "thronassel", name: "Thronassel", hp: 70, atk: 12, def: 7, speed: 3.0, crit: 0, armored: true, gold: [30, 50], loot: [], art: "monsters/thronassel.jpg", text: "Ein gepanzertes Ding, so groß wie ein Thronsessel. Es kriecht, und der Boden knirscht.", unique: true },
-  kronenbruch: { id: "kronenbruch", name: "Kronenbruch", hp: 90, atk: 13, def: 8, speed: 2.6, speed2: 2.0, crit: 10, gold: [60, 90], loot: [], art: "monsters/kronenbruch.jpg", text: "Ein Ritter ohne Herrn. Auf dem Helm sitzt ein gesprungener Reif.", unique: true }
+  kronenbruch: { id: "kronenbruch", name: "Kronenbruch", hp: 90, atk: 15, def: 8, speed: 2.6, speed2: 2.0, crit: 10, gold: [60, 90], loot: [], art: "monsters/kronenbruch.jpg", text: "Ein Ritter ohne Herrn. Auf dem Helm sitzt ein gesprungener Reif.", unique: true }
 };
 // Zufallsbegegnungen nur an Wildorten (nie in Stadt oder Dorf, Entscheid Leitung). Chance je Tag/Abend/Nacht in %.
 const SPAWN_TABLES = {
