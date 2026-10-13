@@ -921,7 +921,13 @@ const LOCATIONS = {
       { id: "nebelpfad", label: "Nebelpfad" },
       { id: "lotfild_strasse", label: "Bauernhof Lotfild" },
       { id: "gebirge_kalte_wege", label: "Gebirgsvorland" },
-      { id: "berum_zentralplatz", label: "Hafenstadt" }
+      { id: "berum_zentralplatz", label: "Hafenstadt" },
+      { id: "auen_ausstellflaeche", label: "NPC-Ausstellfläche", x: 85, y: 56, arch: true }
+    ] },
+  // NPC-Ausstellfläche (Leitung 13.10.): kleiner Nebenort an der Kreuzung; Inhalt berechnet (siehe AUSSTELLUNG unten).
+  auen_ausstellflaeche: { id: "auen_ausstellflaeche", name: "NPC-Ausstellfläche", region: "auen", parent: "auen_kreuzung", pass: "ui/pass_ausstellflaeche.jpg", back: "Zurück zur Kreuzung", blurb: "Eine stille Lichtung abseits der Kreuzung. Hier warten Gestalten, die noch keinen Ort in der Welt gefunden haben.", art: "locations/auen_ausstellflaeche.jpg",
+    exits: [
+      { id: "auen_kreuzung", label: "Zurück zur Kreuzung" }
     ] },
   // ---- Bauernhof Lotfild (Ortstexte: PLATZHALTER für Ext Text) ----
   lotfild_bauernhaus: { id: "lotfild_bauernhaus", name: "Bauernhaus außen", region: "lotfild", blurb: "Rauch steigt aus dem Schornstein, über der Tür brennt eine Laterne. Von hier führen die Wege zu Feld, Scheune und Straße.", art: "locations/lotfild_bauernhaus.jpg",
@@ -982,10 +988,42 @@ const WOLF_LINES = {
   wolf_niederlage: "Ihr liegt am Brunnen, nicht auf dem Pfad. Der Wolf hat euch umgeworfen und ist geblieben. Trinkt, dann entscheidet, ob ihr noch einmal hingeht."
 };
 
+// NPC-Ausstellfläche (Leitung 13.10.): zeigt alle fertigen NPC-Portraits ohne festen Ort, automatisch berechnet.
+// Kandidaten = Portraits aus alle-bilder/npcs ohne Datensatz; dazu jeder NPC-Datensatz ohne location.
+// Bekommt ein NPC mit demselben Bild (oder derselben id) einen Ort, verschwindet er hier von selbst.
+// Ausgeschlossen: npc_tempelstimme (ausgemustert), *_lack/_alt, Dubletten platzierter NPCs, Varus/Kael (Leitung NPC9: ab Akt 2, nicht bauen), nicht eindeutig erwachsen wirkende Portraits.
+const AUSSTELLUNG = [
+  { id: "cerise", name: "Lady Cerise Varr", art: "npcs/npc_cerise.jpg" },
+  { id: "ilwe", name: "Schwester Ilwe", art: "npcs/npc_ilwe.jpg" },
+  { id: "daemonin_1", name: "Dämonin I", art: "npcs/npc_daemonin_1.jpg" },  // Titel aus Dateiname (kein Verzeichniseintrag)
+  { id: "daemonin_2", name: "Dämonin II", art: "npcs/npc_daemonin_2.jpg" },
+  { id: "daemonin_3", name: "Dämonin III", art: "npcs/npc_daemonin_3.jpg" }
+];
+const AUSSTELL_ORT = "auen_ausstellflaeche";
+const AUSSTELL_ZEILE = "Ein Nicken, ein stiller Blick. Mehr gibt es hier noch nicht zu sagen.";
+function ausstellungNeu() {
+  Object.values(NPCs).forEach((n) => { if (n.exhibit === "neu") delete NPCs[n.id]; else if (n.exhibit === "geliehen") { delete n.location; delete n.pin; delete n.exhibit; } });
+  const placed = new Set(Object.values(NPCs).filter((n) => n.location).map((n) => n.art));
+  const list = Object.values(NPCs).filter((n) => !n.location && n.art && n.id !== "tempelstimme" && n.art !== "npcs/npc_tempelstimme.jpg");
+  list.forEach((n) => { n.exhibit = "geliehen"; n.location = AUSSTELL_ORT; });
+  AUSSTELLUNG.filter((a) => !NPCs[a.id] && !placed.has(a.art)).forEach((a) => {
+    NPCs[a.id] = { id: a.id, name: a.name, title: "Noch ohne festen Ort", location: AUSSTELL_ORT, exhibit: "neu",
+      text: "Ein Bildnis auf der Ausstellfläche. Die Gestalt wartet auf ihren Platz in der Welt.", art: a.art, merchant: false, faction: "",
+      lines: [AUSSTELL_ZEILE], talk: { start: AUSSTELL_ZEILE } };
+    list.push(NPCs[a.id]);
+  });
+  // Raster ohne Überlappung: bis 4 Spalten, Zeilen gleichmäßig zwischen y 44 und 92.
+  const cols = Math.min(4, list.length) || 1, rows = Math.ceil(list.length / cols);
+  list.forEach((n, i) => { const c = i % cols, r = Math.floor(i / cols);
+    n.pin = { x: Math.round(100 * (c + 1) / (cols + 1)), y: rows === 1 ? 80 : Math.round(44 + r * 48 / (rows - 1)) }; });
+  return list.map((n) => n.id);
+}
+ausstellungNeu();
+
 window.D = {
   WORLD, FACTIONS, DAY_PHASES, BOND_STEPS, STAT_KEYS,
   HERKUENFTE, FLUECHE, PORTRAITS, AVATARE, START_POOL, EXT_ART, ITEMS, SKILLS, MONSTER, NPCs, QUESTS,
-  NARRATOR, REGIONS, LOCATIONS, BASE_HERO, WOLF_LINES, SPAWN_TABLES, ZEICHEN, PFAD_ZEICHEN, GRAD_STUFEN
+  NARRATOR, REGIONS, LOCATIONS, BASE_HERO, AUSSTELLUNG, ausstellungNeu, WOLF_LINES, SPAWN_TABLES, ZEICHEN, PFAD_ZEICHEN, GRAD_STUFEN
 };
 
 // ---- Male, Flüche, Segen (male-fluche-segen.md §6, fx laut grad-zeichen-kampf.md §12.4) ----
