@@ -595,6 +595,15 @@ const REGIONS = {
     { id: "garnison_kerker", label: "Kerker", x: 16, y: 59 },
     { id: "burg", label: "Ausgang", x: 49, y: 87 }
   ]},
+  // Aschenpalast (Leitung 13.10.): großer Nebenort der Burg, Torbogen am Haupttor. Gemächer und Zimmer des Prinzen = kleine Nebenorte nur über Torbogen im Thronsaal.
+  aschenpalast: { id: "aschenpalast", name: "Aschenpalast", hub: "palast_eingangshalle", back: "Zurück in die Eingangshalle", map: "maps/aschenpalast.jpg", wait: "ui/wait_aschenpalast.jpg", idle: "ui/idle_aschenpalast.jpg", sideArea: true, pins: [
+    { id: "palast_eingangshalle", label: "Eingangshalle", x: 48, y: 66 },
+    { id: "palast_thronsaal", label: "Thronsaal", x: 48, y: 26 },
+    { id: "palast_ratskammer", label: "Ratskammer", x: 22, y: 61 },
+    { id: "palast_speisesaal", label: "Speisesaal", x: 74, y: 63 },
+    { id: "palast_kueche", label: "Königliche Küche", x: 88, y: 31 },
+    { id: "burg", label: "Ausgang", x: 48, y: 89 }
+  ]},
   // Nirfal (Nico 13.10.): Zentralort Versammlungsplatz, Weg zurück zu den Kalten Wegen.
   nirfal: { id: "nirfal", name: "Kleines Dorf Nirfal", hub: "nirfal_versammlungsplatz", back: "Zurück zum Versammlungsplatz", map: "maps/nirfal.jpg", wait: "ui/wait_nirfal.jpg", idle: "ui/idle_nirfal.jpg", pins: [
     { id: "nirfal_versammlungsplatz", label: "Versammlungsplatz", x: 50, y: 53 },
@@ -650,7 +659,8 @@ const LOCATIONS = {
     ] },
   burg: { id: "burg", name: "Burg", region: "stadt", blurb: "Mauern über dem Platz. Harn hält hier Ordnung. Von hier sieht man die Dächer, und die Dächer sehen einen nicht zurück.", art: "locations/burg.jpg",
     exits: [ { id: "platz", label: "Zum Platz", x: 50, y: 88, arch: true },
-      { id: "garnison_haupthalle", label: "Garnison", x: 19, y: 74, arch: true } ] },  // Torbogen an der linken Seitentür (Harn steht bei 34/78)
+      { id: "garnison_haupthalle", label: "Garnison", x: 19, y: 74, arch: true },
+      { id: "palast_eingangshalle", label: "Aschenpalast", x: 77, y: 74, arch: true } ] },  // Palast: Haupttor rechts  // Torbogen an der linken Seitentür (Harn steht bei 34/78)
   // ---- Garnison (Ortstexte: PLATZHALTER für Ext Text) ----
   garnison_haupthalle: { id: "garnison_haupthalle", name: "Haupthalle", region: "garnison", pass: "ui/pass_garnison.jpg", blurb: "Ein langer Tisch unter Bannern, im Kamin glimmt Glut. Wachen essen hier zwischen zwei Schichten.", art: "locations/garnison_haupthalle.jpg",
     exits: [
@@ -680,6 +690,41 @@ const LOCATIONS = {
   garnison_zelle: { id: "garnison_zelle", name: "Zelle", region: "garnison", parent: "garnison_kerker", pass: "ui/pass_zelle.jpg", back: "Zurück in den Kerker", blurb: "Stroh auf dem Boden, ein Eimer, ein schmales Fenster hoch oben. Die Tür fällt schwer ins Schloss.", art: "locations/garnison_zelle.jpg",
     exits: [
       { id: "garnison_kerker", label: "Zurück in den Kerker" }
+    ] },
+  // ---- Aschenpalast (Ortstexte: PLATZHALTER für Ext Text; Ratskammer ≠ Ratshalle in Unterorten) ----
+  palast_eingangshalle: { id: "palast_eingangshalle", name: "Eingangshalle", region: "aschenpalast", pass: "ui/pass_aschenpalast.jpg", blurb: "Ein roter Läufer führt über blanken Stein zur Treppe. Wachen stehen still wie die Säulen.", art: "locations/palast_eingangshalle.jpg",
+    exits: [
+      { id: "palast_thronsaal", label: "Thronsaal" },
+      { id: "palast_ratskammer", label: "Ratskammer" },
+      { id: "palast_speisesaal", label: "Speisesaal" },
+      { id: "palast_kueche", label: "Königliche Küche" },
+      { id: "burg", label: "Ausgang" }
+    ] },
+  palast_ratskammer: { id: "palast_ratskammer", name: "Ratskammer", region: "aschenpalast", blurb: "Ein runder Tisch mit hohen Stühlen. Hier berät der König mit wenigen, und nichts davon steht in einem Buch.", art: "locations/palast_ratskammer.jpg",
+    exits: [
+      { id: "palast_eingangshalle", label: "Eingangshalle", x: 50, y: 90, arch: true }
+    ] },
+  palast_speisesaal: { id: "palast_speisesaal", name: "Speisesaal", region: "aschenpalast", blurb: "Silber und Kerzen auf einer langen Tafel. Wer hier sitzt, wird gesehen.", art: "locations/palast_speisesaal.jpg",
+    exits: [
+      { id: "palast_eingangshalle", label: "Eingangshalle", x: 50, y: 90, arch: true }
+    ] },
+  palast_kueche: { id: "palast_kueche", name: "Königliche Küche", region: "aschenpalast", blurb: "Feuer unter Kesseln, Bratenduft und Rufe. Hier arbeiten mehr Hände als im ganzen Palast sonst.", art: "locations/palast_kueche.jpg",
+    exits: [
+      { id: "palast_eingangshalle", label: "Eingangshalle", x: 50, y: 90, arch: true }
+    ] },
+  palast_thronsaal: { id: "palast_thronsaal", name: "Thronsaal", region: "aschenpalast", blurb: "Stufen führen zum Thron hinauf, Banner hängen schwer von den Säulen. Der Rauch der Becken steht still in der Luft.", art: "locations/palast_thronsaal.jpg",
+    exits: [
+      { id: "palast_eingangshalle", label: "Eingangshalle", x: 50, y: 90, arch: true },
+      { id: "palast_gemaecher", label: "Königliche Gemächer", x: 14, y: 66, arch: true },
+      { id: "palast_prinzenzimmer", label: "Zimmer des Prinzen", x: 86, y: 66, arch: true }
+    ] },
+  palast_gemaecher: { id: "palast_gemaecher", name: "Königliche Gemächer", region: "aschenpalast", parent: "palast_thronsaal", pass: "ui/pass_gemaecher.jpg", back: "Zurück in den Thronsaal", blurb: "Ein Himmelbett unter rotem Stoff, schwere Teppiche, Stille. Hierher kommt nur, wen man ruft.", art: "locations/palast_gemaecher.jpg",
+    exits: [
+      { id: "palast_thronsaal", label: "Zurück in den Thronsaal" }
+    ] },
+  palast_prinzenzimmer: { id: "palast_prinzenzimmer", name: "Zimmer des Prinzen", region: "aschenpalast", parent: "palast_thronsaal", pass: "ui/pass_prinzenzimmer.jpg", back: "Zurück in den Thronsaal", blurb: "Bücher, ein Schreibpult und ein Bett mit blauer Decke. Alles hier ist ordentlich, als würde jemand zusehen.", art: "locations/palast_prinzenzimmer.jpg",
+    exits: [
+      { id: "palast_thronsaal", label: "Zurück in den Thronsaal" }
     ] },
   markt: { id: "markt", name: "Markt", region: "stadt", blurb: "Buden stehen in Reihen. Der Zoll hängt an jeder Plane, und wer bleibt, wird gesehen.", art: "locations/markt.jpg",
     exits: [ { id: "platz", label: "Zum Platz", x: 50, y: 88, arch: true } ] },

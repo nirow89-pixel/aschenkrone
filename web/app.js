@@ -7,7 +7,7 @@ let lastTalk = null;
 
 // ---- Systeme: Zeit, Speicherstände, Ereignisse ----
 const AUTO_SLOT = "auto";              // eigener Autosave-Slot (Schlüssel "auto" im selben localStorage-Objekt)
-const HUBS = ["nebelpfad", "platz", "dorfzentrum", "alter_baum", "lotfild_bauernhaus", "auen_kreuzung", "gebirge_kalte_wege", "nirfal_versammlungsplatz", "berum_zentralplatz", "bauernhaus_diele", "garnison_haupthalle"];
+const HUBS = ["nebelpfad", "platz", "dorfzentrum", "alter_baum", "lotfild_bauernhaus", "auen_kreuzung", "gebirge_kalte_wege", "nirfal_versammlungsplatz", "berum_zentralplatz", "bauernhaus_diele", "garnison_haupthalle", "palast_eingangshalle"];
 const TIME_COST = { travel: 1, talk: 0, wait: 1, rest: 3 }; // Tageszeit-Schritte
 const ON_NEW_DAY = [];                 // onNewDay-Hooks: fn(day)
 // Nur für Tests: ?debug=1 in der URL gibt bei Neuem Spiel und bei jedem Laden +500 Gold. Ohne Parameter keine Wirkung.
