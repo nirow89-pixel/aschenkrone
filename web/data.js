@@ -310,11 +310,17 @@ const NPCs = {
     lines: ["Der König entscheidet. Ich sorge nur dafür, dass er sich daran erinnert, was er will."],
     talk: { start: "Bleibt stehen. Die Stühle hier gehören Leuten, die etwas schulden. Ihr seid neu, das rieche ich am Straßenstaub. Sagt, was Ihr wollt, und ich sage Euch, was es kostet." } },
   // ---- Nekromantin (Leitung 13.10.; Name „Mara Venthal“ nur Vorschlag -> Rollentitel; ohne Quests; Texte PLATZHALTER für Ext Text) ----
-  nekromantin: { id: "nekromantin", name: "Die Nekromantin", title: "Herrin der Hallen", location: "krypta_hallen_der_toten",
+  nekromantin: { id: "nekromantin", name: "Morhild Aschgebein", title: "Herrin der Hallen", location: "krypta_hallen_der_toten",
     text: "Eine Frau unter tiefer Kapuze, das Gewand mit dürrem Dornengeflecht bestickt. Um ihre Finger zieht violettes Licht. Sie spricht zu den Sarkophagen wie eine Vogtin zu ihren Schuldnern.",
     art: "npcs/npc_nekromantin.jpg", merchant: false, pin: { x: 30, y: 80 }, faction: "",
     lines: ["Die Toten widersprechen nicht. Darum führe ich sie besser als der König seine Lebenden."],
     talk: { start: "Ein Lebender, der freiwillig herunterkommt. Entweder sucht Ihr jemanden, oder Ihr verkauft etwas. Sprecht leise. Hier unten gehorcht man mir, und Ihr gehört noch nicht dazu." } },
+  // Ondine Kerrow (Leitung 13.10.): zweite Nekromantin, Texte nach npc-vorrat.v3 §25; ohne Quests.
+  ondine: { id: "ondine", name: "Ondine Kerrow", title: "Totenleserin", location: "krypta_hallen_der_toten",
+    text: "Eine hochgewachsene, schmale Frau mit sehr blasser Haut, das schwarze Haar mit einer breiten weißen Strähne streng im Nacken gebunden. Am hochgeschlossenen Gewand sitzen Knochenplättchen, an einer Kette hängt ein kleiner Schädel aus Bein.",
+    art: "npcs/npc_ondine.jpg", merchant: false, pin: { x: 66, y: 84 }, faction: "",
+    lines: ["Tote lügen nicht, aber sie reden ungern. Ich frage nur. Die Antworten müsst Ihr selbst ertragen."],
+    talk: { start: "Ihr stört nicht. Die hier unten haben Zeit, und ich auch. Fragt, wenn Ihr etwas wissen wollt, aber fragt genau." } },
   tamsin: {
     id: "tamsin", name: "Tamsin", title: "Jägerin", location: "schenke",
     text: "Tamsin kennt jedes Gesicht, das länger als eine Nacht bleibt.",
@@ -851,7 +857,9 @@ const LOCATIONS = {
   ratshalle: { id: "ratshalle", name: "Ratshalle", region: "unterorten", blurb: "Ein langer Tisch, wenig Schmuck. Hier dauern Entscheidungen, und niemand eilt sie.", art: "locations/ratshalle.jpg",
     exits: [ { id: "dorfzentrum", label: "Zum Brunnen", x: 50, y: 90, arch: true } ] },
   schenke: { id: "schenke", name: "Schenke", region: "unterorten", blurb: "Die Schenke ist wärmer als der Brunnenplatz. Krüge stehen, auch wenn wenig gesprochen wird.", art: "locations/schenke.jpg",
-    exits: [ { id: "dorfzentrum", label: "Zum Brunnen", x: 50, y: 90, arch: true } ] },
+    exits: [ { id: "dorfzentrum", label: "Zum Brunnen", x: 50, y: 90, arch: true },
+      // Hinterzimmer (Leitung 13.10.): Ortsbild fehlt noch -> Torbogen sichtbar, aber gesperrt; pass am Ausgang, noch kein Ort-Datensatz.
+      { id: "schenke_hinterzimmer", label: "Hinterzimmer", x: 18, y: 58, arch: true, pass: "ui/pass_hinterzimmer.jpg", locked: "Die Tür zum Hinterzimmer ist verriegelt. Dahinter hört man gedämpfte Stimmen." } ] },
   alter_baum: { id: "alter_baum", name: "Alter Baum", region: "duesterwald", blurb: "Der Baum ist älter als der Pfad. Von hier gehen die Wege zur Hütte, zum Teich und in den Sumpf.", art: "locations/alter_baum.jpg",
     exits: [
       { id: "hexenhuette", label: "Hexenhütte" },
@@ -995,6 +1003,7 @@ const WOLF_LINES = {
 const AUSSTELLUNG = [
   { id: "cerise", name: "Lady Cerise Varr", art: "npcs/npc_cerise.jpg" },
   { id: "ilwe", name: "Schwester Ilwe", art: "npcs/npc_ilwe.jpg" },
+  { id: "ondine", name: "Ondine Kerrow", art: "npcs/npc_ondine.jpg" },  // hat festen Ort (Krypta) -> erscheint nicht
   { id: "daemonin_1", name: "Veyla", art: "npcs/npc_daemonin_1.jpg",
     text: "Schwarzes Haar mit violettem Schimmer, zwei kurze Hörner, die sie nicht versteckt. Die Flügel hält sie angelegt wie einen Mantel. Sie riecht nach Rosen, die zu lange in der Vase standen. Wer ihr zu nah kommt, merkt erst später, was er dafür hergegeben hat.", line: "Ich nehme nie etwas. Man bringt es mir.", start: "Ihr starrt auf die Hörner. Alle tun das, beim ersten Mal. Beim zweiten Mal sehen sie woanders hin, und dann wird es teuer." },  // Namen: Ext Text 13.10., Leitung OK
   { id: "daemonin_2", name: "Sareth", art: "npcs/npc_daemonin_2.jpg",

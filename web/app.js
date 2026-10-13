@@ -1012,7 +1012,7 @@ function render() {
   const hubLoc = !loc.parent && region.hub && region.hub !== loc.id ? D.LOCATIONS[region.hub] : null;
   (loc.exits || []).filter((ex) => ex.arch && !(hubLoc && ex.id === hubLoc.id)).forEach((ex) => {
     const b = document.createElement("button");
-    const sub = D.LOCATIONS[ex.id];
+    const sub = D.LOCATIONS[ex.id] || (ex.pass ? { id: ex.id, pass: ex.pass } : null);  // gesperrter Torbogen ohne Ort: pass am Ausgang
     b.className = "arch" + (sub && sub.pass ? " pass-arch" : "");
     b.style.left = ex.x + "%"; b.style.top = ex.y + "%";
     b.textContent = ex.label;
