@@ -995,11 +995,11 @@ const WOLF_LINES = {
 const AUSSTELLUNG = [
   { id: "cerise", name: "Lady Cerise Varr", art: "npcs/npc_cerise.jpg" },
   { id: "ilwe", name: "Schwester Ilwe", art: "npcs/npc_ilwe.jpg" },
-  { id: "daemonin_1", name: "Dämonin I", art: "npcs/npc_daemonin_1.jpg",
-    text: "Schwarzes Haar mit violettem Schimmer, zwei kurze Hörner, die sie nicht versteckt. Die Flügel hält sie angelegt wie einen Mantel. Sie riecht nach Rosen, die zu lange in der Vase standen. Wer ihr zu nah kommt, merkt erst später, was er dafür hergegeben hat.", line: "Ich nehme nie etwas. Man bringt es mir.", start: "Ihr starrt auf die Hörner. Alle tun das, beim ersten Mal. Beim zweiten Mal sehen sie woanders hin, und dann wird es teuer." },  // Titel aus Dateiname (kein Verzeichniseintrag)
-  { id: "daemonin_2", name: "Dämonin II", art: "npcs/npc_daemonin_2.jpg",
+  { id: "daemonin_1", name: "Veyla", art: "npcs/npc_daemonin_1.jpg",
+    text: "Schwarzes Haar mit violettem Schimmer, zwei kurze Hörner, die sie nicht versteckt. Die Flügel hält sie angelegt wie einen Mantel. Sie riecht nach Rosen, die zu lange in der Vase standen. Wer ihr zu nah kommt, merkt erst später, was er dafür hergegeben hat.", line: "Ich nehme nie etwas. Man bringt es mir.", start: "Ihr starrt auf die Hörner. Alle tun das, beim ersten Mal. Beim zweiten Mal sehen sie woanders hin, und dann wird es teuer." },  // Namen: Ext Text 13.10., Leitung OK
+  { id: "daemonin_2", name: "Sareth", art: "npcs/npc_daemonin_2.jpg",
     text: "Ihre Flügel füllen die Lichtung. Das Gewand hängt zerrissen wie altes Banner, durchzogen von Gold, die Finger enden in Klauen aus Metall. Wo sie steht, ist das Gras am Morgen trocken.", line: "Ich habe Könige gekannt, bevor sie gekrönt waren. Und danach.", start: "Bleibt, wo Ihr seid. Nicht aus Angst um Euch. Ich zähle nur gern, wie viele Schritte jemand braucht, bis er mich um etwas bittet." },
-  { id: "daemonin_3", name: "Dämonin III", art: "npcs/npc_daemonin_3.jpg",
+  { id: "daemonin_3", name: "Azhrael", art: "npcs/npc_daemonin_3.jpg",
     text: "Große Hörner unter einem Golddiadem, Ketten statt Stoff, und sie trägt beides wie ein Amt. Sie sieht von oben herab, auch wenn sie sitzt. Ihre Haut ist warm, obwohl die Nacht kalt ist.", line: "Jede Kette war einmal ein Versprechen. Ich trage nur die, die gehalten wurden.", start: "Kniet nicht, ich habe genug Knie gesehen. Sagt mir Euren Namen. Ihr glaubt, das kostet nichts, und darum fange ich immer damit an." }
 ];
 const AUSSTELL_ORT = "auen_ausstellflaeche";
