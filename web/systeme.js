@@ -1223,8 +1223,7 @@ function sysWhenPerk(w) {
 }
 // ---- Erwerb im bestehenden Inhalt (Act 1, klein) ----
 TALK_HOOKS.push((npc, c) => {
-  if (npc.id === "tamsin" && state.quests.tamsin_wolf === "done" && (state.bonds.tamsin || 0) >= 30 && !perkEntry("segen_tamsins_tisch") && !perkBlocked("segen_tamsins_tisch", { npc: "tamsin" }))
-    c.push({ label: "Bei Tamsin am Tisch Platz nehmen", go: "perk:segen_tamsins_tisch" });
+  // S7 „Tamsins Tisch“ nicht mehr erwerbbar: Tamsin ist Jägerin und Gast, die Schenke gehört Maera (Einkehr bleibt bei Maera). Altstände behalten den Segen.
   if (npc.id === "priester" && !perkEntry("segen_der_glocke") && rel("priester").trust >= 40 && state.values.korrPeak <= 39 && !perkBlocked("segen_der_glocke", { npc: "priester" }))
     c.push({ label: "Um den Segen der Glocke bitten", go: "perk:segen_der_glocke" });
   if (npc.id === "priester" && !perkEntry("segen_des_zuhoerens") && (state.values.rufBeichten || 0) >= 3 && !perkBlocked("segen_des_zuhoerens", { npc: "priester" }))

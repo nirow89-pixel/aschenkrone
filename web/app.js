@@ -144,7 +144,17 @@ const MIGRATIONS = [
   // v8 -> v9: Korrekturliste Nico: Geschlecht (fehlt -> nach Bild, sonst m), Avatar, Herkunft entfällt, Wolfstöter-Mal nur vom legendären Wolf.
   function v8to9(s) { return migV9(s); },
   // v9 -> v10: Ausbesserung 2: Händler-Gold/Bestand/Pool im Save (state.merchants), keine Ergebung mehr, Kampf-Endfenster.
-  function v9to10(s) { return migV10(s); }
+  function v9to10(s) { return migV10(s); },
+  // v10 -> v11: Q-11: Altstände mit verschontem/verhandeltem Wolf schließen offene Wolf-Quests ohne Lohn (kein Ewig-offen).
+  function v10to11(s) {
+    const f = s.flags || {}, q = s.quests || {};
+    if ((f.wolf_spared || f.wolf_bargain) && !f.wolf_slain && !f.wolf_tot) {
+      ["wolfspfad", "tamsin_wolf"].forEach((id) => { if (q[id] === "active") q[id] = "done"; });
+      f.wolf_dealt = true; f.cleared_russwolf = true; f.wolf_alt_geschlossen = true;
+      if (s.inCombat && s.combat && s.combat.id === "russwolf") { s.inCombat = false; s.combat = null; }
+    }
+    return s;
+  }
 ];
 const SAVE_VERSION = MIGRATIONS.length;
 function migrate(s) {
@@ -448,9 +458,9 @@ function talkChoices() {
   const node = state.dialogue.node;
   const choices = [];
   if (node === "start") {
-    if (npc.id === "burgvogt" && !state.quests.wolfspfad) choices.push({ label: "Nach dem Pfad fragen", go: "quest" });
+    if (npc.id === "burgvogt" && !state.quests.wolfspfad && !state.flags.wolf_alt_geschlossen) choices.push({ label: "Nach dem Pfad fragen", go: "quest" });
     if (npc.id === "burgvogt" && state.quests.wolfspfad === "active" && (state.flags.wolf_slain || state.flags.wolf_tot)) choices.push({ label: "Den Wolf melden", go: "done" });
-    if (npc.id === "tamsin" && !state.quests.tamsin_wolf) choices.push({ label: "Fragen, was das Dorf braucht", go: "quest" });
+    if (npc.id === "tamsin" && !state.quests.tamsin_wolf && !state.flags.wolf_alt_geschlossen) choices.push({ label: "Fragen, was das Dorf braucht", go: "quest" });
     if (npc.id === "tamsin" && state.quests.tamsin_wolf === "active" && (state.flags.wolf_slain || state.flags.wolf_tot)) choices.push({ label: "Sagen, der Pfad ist frei", go: "done" });
     sysTalkChoices(npc, choices);
     if (npc.merchant && !haendlerVerweigert(npc)) choices.push({ label: "Handeln", go: "shop" });
@@ -460,7 +470,7 @@ function talkChoices() {
   return choices;
 }
 function choose(go) {
-  if (go === "spare" || go === "bargain") { resolveWolf(go === "spare" ? "wolf_spared" : "wolf_bargain"); return; }
+  if (go === "spare" || go === "bargain") return;  // Wolf nur Kämpfen/Entgleiten (Q-04); resolveWolf bleibt unerreichbar
   if (go === "clear" || go === "leave") {
     state.dialogue = null; state.trading = false; lastTalk = null; sheet = null; state.combatEnd = null;
     document.getElementById("scene-sheet").hidden = true;
@@ -481,10 +491,17 @@ function choose(go) {
   }
   if (go === "done") {
     if (npc.id === "burgvogt" && state.quests.wolfspfad === "active") {
-      state.quests.wolfspfad = "done"; state.hero.gold += 18; bumpBond("burgvogt", 8, { source: "quest_story" }); bumpTrust("burgvogt", 8); bumpFaction("krone", "gunst", 6); gain("ansehen", 6);
+      // Q-01 (a): wer zuerst abgibt, bekommt den vollen Lohn; die zweite Abgabe nur Dank (halbes Gold, halbe Bindung, keine Fraktion).
+      const zweit = state.quests.tamsin_wolf === "done";
+      state.quests.wolfspfad = "done";
+      if (zweit) { state.hero.gold += 9; bumpBond("burgvogt", 4, { source: "quest_story" }); }
+      else { state.hero.gold += 18; bumpBond("burgvogt", 8, { source: "quest_story" }); bumpTrust("burgvogt", 8); bumpFaction("krone", "gunst", 6); gain("ansehen", 6); }
     }
     if (npc.id === "tamsin" && state.quests.tamsin_wolf === "active") {
-      state.quests.tamsin_wolf = "done"; state.hero.gold += 8; bumpBond("tamsin", 10, { source: "quest_story" }); bumpTrust("tamsin", 8); bumpFaction("rat", "gunst", 5);
+      const zweit = state.quests.wolfspfad === "done";
+      state.quests.tamsin_wolf = "done";
+      if (zweit) { state.hero.gold += 4; bumpBond("tamsin", 5, { source: "quest_story" }); }
+      else { state.hero.gold += 8; bumpBond("tamsin", 10, { source: "quest_story" }); bumpTrust("tamsin", 8); bumpFaction("rat", "gunst", 5); }
     }
   }
   state.dialogue.node = go === "endtrade" ? "start" : go;

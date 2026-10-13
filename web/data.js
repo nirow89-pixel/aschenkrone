@@ -241,8 +241,8 @@ const NPCs = {
     id: "tamsin", name: "Tamsin", title: "Jägerin", location: "schenke",
     text: "Tamsin kennt jedes Gesicht, das länger als eine Nacht bleibt.",
     art: "npcs/tamsin.jpg",
-    merchant: false, hours: ["mittag","nachmittag","abend","nacht"], pin: { x: 60, y: 84 }, faction: "rat", rest: true,
-    lines: ["Brot und Lager gibt es, wenn ihr zahlt und keinen Streit anfangt."],
+    merchant: false, hours: ["mittag","nachmittag","abend","nacht"], pin: { x: 60, y: 84 }, faction: "rat",
+    lines: [],
     talk: {
       start: "Willkommen in Unterorten. Der Brunnen ist sauber. Sagt, was ihr sucht.",
       quest: "Am Nebelpfad nimmt ein Wolf den Leuten die Ruhe. Wenn er fort ist, trinke ich mit euch."
@@ -445,7 +445,7 @@ const QUESTS = {
     id: "tamsin_wolf", title: "Tamsins Ruhe", giver: "tamsin",
     where: "Nebelpfad, danach Schenke in Unterorten",
     goal: "Wenn der Rußwolf tot ist, geht zu Tamsin in die Schenke und sagt ihr, dass der Pfad wieder still ist.",
-    text: "Tamsin schenkt erst ein, wenn die Leute ohne Angst über den Pfad kommen.",
+    text: "Tamsin ruht erst, wenn die Leute ohne Angst über den Pfad kommen.",
     reward: { gold: 8, bond: { tamsin: 10 } }
   }
 };
