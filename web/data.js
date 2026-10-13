@@ -254,9 +254,9 @@ const NPCs = {
     lines: ["Der Weg nach Nirfal nimmt, was man ihm nicht freiwillig gibt."],
     talk: { start: "Ihr wollt nach Nirfal. Geht nicht nach Einbruch der Dunkelheit, und haltet euch an die Steinmänner." }
   },
-  tempelstimme: {
-    id: "tempelstimme", name: "Tempelstimme", title: "Hüterin der Totenlichter", location: "tempel",
-    text: "Die Tempeldienerin wacht über die Totenlichter. Keine Flamme erlischt, solange sie hier steht.",
+  selwyn: {
+    id: "selwyn", name: "Selwyn", title: "Hüter der Totenlichter", location: "tempel",
+    text: "Selwyn, ein Tempeldiener, wacht über die Totenlichter. Keine Flamme erlischt, solange er hier steht.",
     art: "npcs/npc_tempelstimme.jpg", merchant: false,
     pin: { x: 32, y: 82 }, faction: "tempel",
     lines: ["Jedes Licht hier gehört einem Namen. Fasst keines an."],
