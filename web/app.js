@@ -229,7 +229,7 @@ function newGame(payload) {
   D.STAT_KEYS.forEach((k) => { state.statXp[k.id] = { xp: 0, need: k.id === "grad" ? 40 : 12 }; });
   sysNewGame(state);  // neue Systeme (systeme.js) wie bei der Migration anlegen
   state.v = SAVE_VERSION;
-  if (DEBUG) state.hero.gold += 500;
+  if (DEBUG || (typeof debugOpt === "function" && debugOpt("gold"))) state.hero.gold += 500;
   activeSlot = AUTO_SLOT;  // Neues Spiel schreibt nur den Autosave, Slots 1–3 bleiben unberührt
   save(AUTO_SLOT);
   openPlay();
