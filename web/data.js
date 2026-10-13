@@ -586,6 +586,15 @@ const REGIONS = {
     { id: "bauernhaus_elternzimmer", label: "Elternzimmer", x: 81, y: 66 },
     { id: "lotfild_bauernhaus", label: "Ausgang", x: 49, y: 89 }
   ]},
+  // Garnison (Leitung 13.10.): großer Nebenort der Burg, Torbogen an der Seitentür. Zelle = kleiner Nebenort nur über Torbogen im Kerker.
+  garnison: { id: "garnison", name: "Garnison", hub: "garnison_haupthalle", back: "Zurück in die Haupthalle", map: "maps/garnison.jpg", wait: "ui/wait_garnison.jpg", idle: "ui/idle_garnison.jpg", sideArea: true, pins: [
+    { id: "garnison_haupthalle", label: "Haupthalle", x: 50, y: 43 },
+    { id: "garnison_waffenkammer", label: "Waffenkammer", x: 16, y: 23 },
+    { id: "garnison_schlafsaal", label: "Schlafsaal", x: 82, y: 24 },
+    { id: "garnison_buero", label: "Büro", x: 84, y: 63 },
+    { id: "garnison_kerker", label: "Kerker", x: 16, y: 59 },
+    { id: "burg", label: "Ausgang", x: 49, y: 87 }
+  ]},
   // Nirfal (Nico 13.10.): Zentralort Versammlungsplatz, Weg zurück zu den Kalten Wegen.
   nirfal: { id: "nirfal", name: "Kleines Dorf Nirfal", hub: "nirfal_versammlungsplatz", back: "Zurück zum Versammlungsplatz", map: "maps/nirfal.jpg", wait: "ui/wait_nirfal.jpg", idle: "ui/idle_nirfal.jpg", pins: [
     { id: "nirfal_versammlungsplatz", label: "Versammlungsplatz", x: 50, y: 53 },
@@ -640,7 +649,38 @@ const LOCATIONS = {
       { id: "nebelpfad", label: "Vor den Toren" }
     ] },
   burg: { id: "burg", name: "Burg", region: "stadt", blurb: "Mauern über dem Platz. Harn hält hier Ordnung. Von hier sieht man die Dächer, und die Dächer sehen einen nicht zurück.", art: "locations/burg.jpg",
-    exits: [ { id: "platz", label: "Zum Platz", x: 50, y: 88, arch: true } ] },
+    exits: [ { id: "platz", label: "Zum Platz", x: 50, y: 88, arch: true },
+      { id: "garnison_haupthalle", label: "Garnison", x: 19, y: 74, arch: true } ] },  // Torbogen an der linken Seitentür (Harn steht bei 34/78)
+  // ---- Garnison (Ortstexte: PLATZHALTER für Ext Text) ----
+  garnison_haupthalle: { id: "garnison_haupthalle", name: "Haupthalle", region: "garnison", pass: "ui/pass_garnison.jpg", blurb: "Ein langer Tisch unter Bannern, im Kamin glimmt Glut. Wachen essen hier zwischen zwei Schichten.", art: "locations/garnison_haupthalle.jpg",
+    exits: [
+      { id: "garnison_waffenkammer", label: "Waffenkammer" },
+      { id: "garnison_schlafsaal", label: "Schlafsaal" },
+      { id: "garnison_buero", label: "Büro" },
+      { id: "garnison_kerker", label: "Kerker" },
+      { id: "burg", label: "Ausgang" }
+    ] },
+  garnison_waffenkammer: { id: "garnison_waffenkammer", name: "Waffenkammer", region: "garnison", blurb: "Speere und Schilde stehen in Reihen. Jede Lücke im Gestell hat einen Namen im Buch.", art: "locations/garnison_waffenkammer.jpg",
+    exits: [
+      { id: "garnison_haupthalle", label: "Haupthalle", x: 50, y: 90, arch: true }
+    ] },
+  garnison_schlafsaal: { id: "garnison_schlafsaal", name: "Schlafsaal", region: "garnison", blurb: "Pritschen in Reihen, darauf graue Decken. Es riecht nach Leder und kaltem Schweiß.", art: "locations/garnison_schlafsaal.jpg",
+    exits: [
+      { id: "garnison_haupthalle", label: "Haupthalle", x: 50, y: 90, arch: true }
+    ] },
+  garnison_buero: { id: "garnison_buero", name: "Büro", region: "garnison", blurb: "Auf dem Tisch liegt eine Karte der Stadt, beschwert mit Dolch und Becher. Hier werden Wachen eingeteilt.", art: "locations/garnison_buero.jpg",
+    exits: [
+      { id: "garnison_haupthalle", label: "Haupthalle", x: 50, y: 90, arch: true }
+    ] },
+  garnison_kerker: { id: "garnison_kerker", name: "Kerker", region: "garnison", blurb: "Ein feuchter Gang mit Gittern zu beiden Seiten. Am Haken hängen schwere Schlüssel.", art: "locations/garnison_kerker.jpg",
+    exits: [
+      { id: "garnison_haupthalle", label: "Haupthalle", x: 50, y: 90, arch: true },
+      { id: "garnison_zelle", label: "Zelle", x: 12, y: 66, arch: true }
+    ] },
+  garnison_zelle: { id: "garnison_zelle", name: "Zelle", region: "garnison", parent: "garnison_kerker", pass: "ui/pass_zelle.jpg", back: "Zurück in den Kerker", blurb: "Stroh auf dem Boden, ein Eimer, ein schmales Fenster hoch oben. Die Tür fällt schwer ins Schloss.", art: "locations/garnison_zelle.jpg",
+    exits: [
+      { id: "garnison_kerker", label: "Zurück in den Kerker" }
+    ] },
   markt: { id: "markt", name: "Markt", region: "stadt", blurb: "Buden stehen in Reihen. Der Zoll hängt an jeder Plane, und wer bleibt, wird gesehen.", art: "locations/markt.jpg",
     exits: [ { id: "platz", label: "Zum Platz", x: 50, y: 88, arch: true } ] },
   tempel: { id: "tempel", name: "Tempel", region: "stadt", blurb: "Die Glocke hängt schwer. Sie schlägt selten, und wenn sie schlägt, wird der Platz still.", art: "locations/tempel.jpg",
