@@ -387,6 +387,6 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .dbg-opt{display:block;color:#f3e2b6;font-size:13px;margin:5px 0;cursor:pointer}
 .dbg-opt input{accent-color:#c7a056;width:auto!important;display:inline-block!important;margin:0 6px 0 0;vertical-align:middle}
 /* Gesperrter Kartenweg (Grüne Auen) */
-.pin.pin-locked{opacity:.55;filter:grayscale(1);border-style:dashed;cursor:not-allowed}
+.pin.pin-locked,.arch.pin-locked{opacity:.55;filter:grayscale(1);border-style:dashed;cursor:not-allowed}
 /* Helle Gebietsbilder (Grüne Auen): Abdunklung, damit Schrift lesbar bleibt */
 #shell[data-region=auen] #map.mood::before{content:"";position:absolute;inset:0;background:rgba(12,7,8,.5);pointer-events:none}

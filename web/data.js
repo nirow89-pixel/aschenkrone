@@ -503,16 +503,32 @@ const REGIONS = {
     { id: "schenke", label: "Schenke", x: 72, y: 58 },
     { id: "nebelpfad", label: "Nebelpfad", x: 52, y: 93 }
   ]},
+  // Nirfal (Nico 13.10.): Zentralort Versammlungsplatz, Weg zurück zu den Kalten Wegen.
+  nirfal: { id: "nirfal", name: "Nirfal", hub: "nirfal_versammlungsplatz", back: "Zurück zum Versammlungsplatz", map: "maps/nirfal.jpg", wait: "ui/wait_nirfal.jpg", idle: "ui/idle_nirfal.jpg", pins: [
+    { id: "nirfal_versammlungsplatz", label: "Versammlungsplatz", x: 63, y: 64 },
+    { id: "nirfal_langhaus", label: "Langhaus", x: 63, y: 40 },
+    { id: "nirfal_huetten", label: "Hütten", x: 16, y: 42 },
+    { id: "nirfal_pfaehle", label: "Lange Pfähle", x: 92, y: 24 },
+    { id: "gebirge_kalte_wege", label: "Weg", x: 62, y: 96 }
+  ]},
+  // Gebirgsvorland (Nico 13.10.): Zentralort Kalte Wege. Der Weg hinter dem Gebirgspfad ist gesperrt (locked).
+  gebirge: { id: "gebirge", name: "Gebirgsvorland", hub: "gebirge_kalte_wege", back: "Zurück zu den Kalten Wegen", map: "maps/gebirge.jpg", wait: "ui/wait_gebirge.jpg", idle: "ui/idle_gebirge.jpg", pins: [
+    { id: "gebirge_kalte_wege", label: "Kalte Wege", x: 63, y: 66 },
+    { id: "gebirge_pfad", label: "Gebirgspfad", x: 36, y: 30 },
+    { id: "gebirge_wasserfall", label: "Gefrorener Wasserfall", x: 92, y: 46 },
+    { id: "auen_kreuzung", label: "Die grünen Auen", x: 5, y: 88 },
+    { id: "nirfal_versammlungsplatz", label: "Nirfal", x: 60, y: 30 }
+  ]},
   // Die grünen Auen (Nico 13.10.): Zentralort Die Kreuzung. Gebirgsvorland/Hafenstadt gesperrt, bis Bilder da sind (pin.locked).
-  auen: { id: "auen", name: "Die grünen Auen", hub: "auen_kreuzung", back: "Zurück zur Kreuzung", map: "maps/auen.jpg", wait: "ui/wait_auen.jpg", idle: "ui/idle_auen.jpg", mood: "ui/mood_auen.jpg", scrim: "linear-gradient(rgba(12,7,8,.58), rgba(12,7,8,.66))", pins: [  // helle Bilder: stärkere Abdunklung
+  auen: { id: "auen", name: "Die grünen Auen", hub: "auen_kreuzung", back: "Zurück zur Kreuzung", map: "maps/auen.jpg", wait: "ui/wait_auen.jpg", idle: "ui/idle_auen.jpg", scrim: "linear-gradient(rgba(12,7,8,.58), rgba(12,7,8,.66))", pins: [  // helle Bilder: stärkere Abdunklung
     { id: "auen_kreuzung", label: "Die Kreuzung", x: 61, y: 67 },
     { id: "nebelpfad", label: "Nebelpfad", x: 26, y: 38 },
     { id: "lotfild_strasse", label: "Bauernhof Lotfild", x: 15, y: 86 },
-    { id: "auen_gebirgsvorland", label: "Gebirgsvorland", x: 86, y: 30, locked: "Der Weg ist noch nicht begehbar." },
+    { id: "gebirge_kalte_wege", label: "Gebirgsvorland", x: 86, y: 30 },
     { id: "auen_hafenstadt", label: "Hafenstadt", x: 81, y: 83, locked: "Der Weg ist noch nicht begehbar." }
   ]},
   // Bauernhof Lotfild (Nico 13.10.): Zentralort Bauernhaus (draußen). Später: eigener Bereich „Bauernhaus innen“ als Nebenort (parent/pass) vom Bauernhaus aus.
-  lotfild: { id: "lotfild", name: "Bauernhof Lotfild", hub: "lotfild_bauernhaus", back: "Zurück zum Bauernhaus", map: "maps/lotfild.jpg", wait: "ui/wait_lotfild.jpg", idle: "ui/idle_lotfild.jpg", mood: "ui/mood_lotfild.jpg", pins: [
+  lotfild: { id: "lotfild", name: "Bauernhof Lotfild", hub: "lotfild_bauernhaus", back: "Zurück zum Bauernhaus", map: "maps/lotfild.jpg", wait: "ui/wait_lotfild.jpg", idle: "ui/idle_lotfild.jpg", pins: [
     { id: "lotfild_bauernhaus", label: "Bauernhaus", x: 62, y: 52 },
     { id: "lotfild_feld", label: "Feld", x: 28, y: 17 },
     { id: "lotfild_apfelbaeume", label: "Apfelbäume", x: 59, y: 19 },
@@ -520,7 +536,7 @@ const REGIONS = {
     { id: "lotfild_werkstatt", label: "Werkstatt", x: 21, y: 84 },
     { id: "lotfild_brunnen", label: "Brunnen", x: 54, y: 93 },
     { id: "lotfild_teich", label: "Teich", x: 87, y: 88 },
-    { id: "lotfild_strasse", label: "Die Straße", x: 94, y: 57 }
+    { id: "lotfild_strasse", label: "Die Straße", x: 95, y: 63 }
   ]},
   duesterwald: { id: "duesterwald", name: "Düsterwald", hub: "alter_baum", back: "Zurück zum Alten Baum", map: "maps/duesterwald.jpg", wait: "ui/wait_duesterwald.jpg", idle: "ui/idle_duesterwald.jpg", pins: [
     { id: "alter_baum", label: "Alter Baum", x: 54, y: 29 },
@@ -617,11 +633,39 @@ const LOCATIONS = {
   hexenhuette_innen: { id: "hexenhuette_innen", name: "Hexenhütte (innen)", region: "duesterwald", blurb: "Ein Raum mit Feuerstelle, Tisch und Spiegel. Unter der Decke trocknen Kräuter.", art: "locations/hexenhaus.jpg",
     parent: "hexenhuette", pass: "ui/pass_huette.jpg",
     exits: [ { id: "hexenhuette", label: "Zurück zur Hexenhütte" } ] },
+  // ---- Nirfal (Ortstexte: PLATZHALTER für Ext Text) ----
+  nirfal_versammlungsplatz: { id: "nirfal_versammlungsplatz", name: "Versammlungsplatz", region: "nirfal", blurb: "In der Mitte des gepflasterten Platzes brennt ein Feuer im Steinkreis. Rauch zieht zum Langhaus hinauf.", art: "locations/nirfal_versammlungsplatz.jpg",
+    exits: [
+      { id: "nirfal_langhaus", label: "Langhaus" },
+      { id: "nirfal_huetten", label: "Hütten" },
+      { id: "nirfal_pfaehle", label: "Lange Pfähle" },
+      { id: "gebirge_kalte_wege", label: "Weg" }
+    ] },
+  nirfal_langhaus: { id: "nirfal_langhaus", name: "Langhaus", region: "nirfal", blurb: "Das Moosdach reicht fast bis zum Boden, über der Tür sind Zeichen ins Holz geschnitten. Drinnen glimmt Licht.", art: "locations/nirfal_langhaus.jpg",
+    exits: [ { id: "nirfal_versammlungsplatz", label: "Versammlungsplatz", x: 50, y: 90, arch: true } ] },
+  nirfal_huetten: { id: "nirfal_huetten", name: "Hütten", region: "nirfal", blurb: "Niedrige Hütten drängen sich an den Hang. Zwischen den Dächern hängt kalter Rauch.", art: "locations/nirfal_huetten.jpg",
+    exits: [ { id: "nirfal_versammlungsplatz", label: "Versammlungsplatz", x: 50, y: 90, arch: true } ] },
+  nirfal_pfaehle: { id: "nirfal_pfaehle", name: "Lange Pfähle", region: "nirfal", blurb: "Hohe geschnitzte Pfähle stehen am Felsrand. Der Wind pfeift durch die Kerben.", art: "locations/nirfal_pfaehle.jpg",
+    exits: [ { id: "nirfal_versammlungsplatz", label: "Versammlungsplatz", x: 50, y: 90, arch: true } ] },
+  // ---- Gebirgsvorland (Ortstexte: PLATZHALTER für Ext Text) ----
+  gebirge_kalte_wege: { id: "gebirge_kalte_wege", name: "Kalte Wege", region: "gebirge", blurb: "Ein Steinmann markiert den Sattel, der Wind pfeift über Geröll und Schnee. Von hier gehen Pfade bergauf und zurück in die Auen.", art: "locations/gebirge_kalte_wege.jpg",
+    exits: [
+      { id: "gebirge_pfad", label: "Gebirgspfad" },
+      { id: "gebirge_wasserfall", label: "Gefrorener Wasserfall" },
+      { id: "auen_kreuzung", label: "Die grünen Auen" },
+      { id: "nirfal_versammlungsplatz", label: "Nirfal" }
+    ] },
+  gebirge_pfad: { id: "gebirge_pfad", name: "Gebirgspfad", region: "gebirge", blurb: "Der Pfad klebt am Fels, daneben fällt der Hang in den Nebel. Ein krummer Baum hält sich an der Kante fest.", art: "locations/gebirge_pfad.jpg",
+    exits: [ { id: "gebirge_kalte_wege", label: "Kalte Wege", x: 50, y: 90, arch: true },
+      { id: "gebirge_weiter", label: "Wird fortgesetzt", x: 78, y: 62, arch: true, locked: "Der Weg ist noch nicht begehbar." } ] },
+  gebirge_wasserfall: { id: "gebirge_wasserfall", name: "Gefrorener Wasserfall", region: "gebirge", blurb: "Das Wasser ist mitten im Fall erstarrt. Unter dem Eis hört man es noch leise arbeiten.", art: "locations/gebirge_wasserfall.jpg",
+    exits: [ { id: "gebirge_kalte_wege", label: "Kalte Wege", x: 50, y: 90, arch: true } ] },
   // ---- Die grünen Auen (Ortstext: PLATZHALTER für Ext Text) ----
   auen_kreuzung: { id: "auen_kreuzung", name: "Die Kreuzung", region: "auen", blurb: "Ein alter Wegstein steht, wo sich vier Wege kreuzen. Der Bach murmelt daneben, und jeder Weg führt woandershin.", art: "locations/auen_kreuzung.jpg",
     exits: [
       { id: "nebelpfad", label: "Nebelpfad" },
-      { id: "lotfild_strasse", label: "Bauernhof Lotfild" }
+      { id: "lotfild_strasse", label: "Bauernhof Lotfild" },
+      { id: "gebirge_kalte_wege", label: "Gebirgsvorland" }
     ] },
   // ---- Bauernhof Lotfild (Ortstexte: PLATZHALTER für Ext Text) ----
   lotfild_bauernhaus: { id: "lotfild_bauernhaus", name: "Bauernhaus", region: "lotfild", blurb: "Rauch steigt aus dem Schornstein, über der Tür brennt eine Laterne. Von hier führen die Wege zu Feld, Scheune und Straße.", art: "locations/lotfild_bauernhaus.jpg",

@@ -7,7 +7,7 @@ let lastTalk = null;
 
 // ---- Systeme: Zeit, Speicherstände, Ereignisse ----
 const AUTO_SLOT = "auto";              // eigener Autosave-Slot (Schlüssel "auto" im selben localStorage-Objekt)
-const HUBS = ["nebelpfad", "platz", "dorfzentrum", "alter_baum", "lotfild_bauernhaus", "auen_kreuzung"];
+const HUBS = ["nebelpfad", "platz", "dorfzentrum", "alter_baum", "lotfild_bauernhaus", "auen_kreuzung", "gebirge_kalte_wege", "nirfal_versammlungsplatz"];
 const TIME_COST = { travel: 1, talk: 0, wait: 1, rest: 3 }; // Tageszeit-Schritte
 const ON_NEW_DAY = [];                 // onNewDay-Hooks: fn(day)
 // Nur für Tests: ?debug=1 in der URL gibt bei Neuem Spiel und bei jedem Laden +500 Gold. Ohne Parameter keine Wirkung.
@@ -232,7 +232,7 @@ function newGame(payload) {
     hero: createHero(payload.name, payload.gender, payload.portraitId, payload.points),
     v: 0, location: START_LOCATION, phase: "vormittag", day: 1,
     inventory: ["glutphiole"], equipped: {}, flags: {}, log: [],
-    quests: {}, bonds: {}, factions: {}, seenNarrator: { intro: true, unterorten: true },
+    quests: {}, bonds: {}, factions: {}, seenNarrator: { intro: true },  // Unterorten-Rolle erscheint beim ersten echten Besuch (Start ist Lotfild)
     dialogue: null, trading: false, inCombat: false, combat: null,
     narrator: { ...D.NARRATOR.intro }, statXp: {}, stock: {}
   };
@@ -1003,6 +1003,7 @@ function render() {
       bg(b.querySelector(".pass-img"), sub.pass);
     }
     b.onclick = () => travel(ex.id);
+    if (ex.locked) { b.classList.add("pin-locked"); b.onclick = () => showLine(ex.locked, []); }  // gesperrter Weg: nur Hinweis
     scene.appendChild(b);
   });
   Object.values(D.NPCs).filter((n) => n.location === state.location).forEach((p) => {
@@ -1033,8 +1034,8 @@ function render() {
   const parentLoc = loc.parent && D.LOCATIONS[loc.parent];
   // Nebenort: pass-Bild; sonstiger Nicht-Zentralort: Ortsbild des Zentralorts; Zentralort: Gebietskarte.
   const backLoc = parentLoc || hubLoc;
-  map.classList.toggle("mood", !!locked); document.getElementById("shell").dataset.region = loc.region || "";
-  bg(map, locked ? (region.mood || region.wait) : (parentLoc ? (loc.pass || region.map) : (hubLoc ? hubLoc.art : region.map)));
+  map.classList.toggle("mood", !!locked);  // Klasse nur für die Abdunklung heller wait-Bilder document.getElementById("shell").dataset.region = loc.region || "";
+  bg(map, locked ? region.wait : (parentLoc ? (loc.pass || region.map) : (hubLoc ? hubLoc.art : region.map)));
   if (!locked && backLoc) {  // nur Rückweg, keine Schnellreise
     const b = document.createElement("button");
     b.className = "pin pass-back";
