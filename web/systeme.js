@@ -81,6 +81,7 @@ function bumpKorr(d, opts) {
     const before = v.korr; v.korr = Math.max(floor, v.korr + d); d = v.korr - before;
   }
   syncValueFlags();
+  if (typeof emitDelta === "function") emitDelta({ kind: "korr", key: "korr", delta: d, hidden: true });
   return d;
 }
 function bumpHaltung(d) {
@@ -426,6 +427,7 @@ function bumpBondSys(id, d, opts) {
     state.bonds[id] = round1(clamp(cur + gainV, -100, 100));
   } else state.bonds[id] = round1(clamp(cur + d, -100, 100));
   if (["talk", "gift", "quest", "quest_story"].includes(src)) r.lastContact = state.day;
+  if (typeof emitDelta === "function") emitDelta({ kind: "bond", key: id, npc: id, delta: state.bonds[id] - cur, value: state.bonds[id], source: src, rang: bondLabel(cur) !== bondLabel(state.bonds[id]) ? bondLabel(state.bonds[id]) : undefined });
   return state.bonds[id] - cur;
 }
 function bumpTrust(id, d, opts) {
@@ -579,6 +581,7 @@ function bumpFaction(id, axis, d, opts) {
   if (axis === "zorn") { a.zornPeak = Math.max(a.zornPeak || 0, a.zorn); if (real > 0 && !opts.lean) a.lastZornDrop = state.day; }
   if (axis === "gunst") { a.gunstPeak = Math.max(a.gunstPeak || 0, a.gunst); if (real > 0) a.lastCare = state.day; }
   syncFactionMirror();
+  if (typeof emitDelta === "function" && !opts.lean && (axis === "gunst" || axis === "zorn") && real) { const net = axisNet(id), was = net - (axis === "gunst" ? real : -real), rs = tierOf(RUF_STUFEN, net); emitDelta({ kind: "ruf", key: id, delta: net - was, source: opts.source, rang: tierOf(RUF_STUFEN, was) !== rs ? rs.name : undefined }); }
   return real;
 }
 // Neigung (Korruption/Haltung/Perks/Rote Tür): höchstens ±1 je Fraktion und Tag, negativ = zorn +1 (nur solange zorn < 30).

@@ -369,3 +369,11 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .cw-arena{min-height:0}
 #sheet-body.fancy .zeichen-row{gap:12px}
 #sheet-body.fancy .z-slot{width:96px;height:96px;font-size:11px;display:flex;align-items:flex-end;justify-content:center;background-size:cover;background-position:center}
+/* +1-Anzeige (emitDelta) */
+#delta-stack { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 900; display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; }
+.delta { background: rgba(8,6,4,.92); border: 1px solid #c7a056; color: #f3e2b6; font-family: "AkSZ","Cinzel",Georgia,serif; font-size: 15px; padding: 5px 14px; border-radius: 3px; box-shadow: 0 2px 10px rgba(0,0,0,.7); animation: deltaIn .25s ease-out; transition: opacity .4s, transform .4s; }
+.delta--pos { color: #e0b45a; }
+.delta--neg { color: #c98a6a; border-color: #8a5a3c; }
+.delta--hint { color: #b8b0c8; border-color: #5a5268; font-family: Georgia,serif; font-style: italic; }
+.delta--out { opacity: 0; transform: translateY(-8px); }
+@keyframes deltaIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }

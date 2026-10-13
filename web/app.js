@@ -239,7 +239,7 @@ function gain(key, amount) {
     row.xp -= row.need;
     row.need = Math.round(row.need * 1.25);
     if (key === "grad") { state.hero.level += 1; state.hero.hpMax += 4; state.hero.hp = Math.min(maxHp(), state.hero.hp + 4); log("Grad steigt auf " + state.hero.level + "."); }
-    else { state.hero[key] = (state.hero[key] || 0) + 1; log((D.STAT_KEYS.find((s) => s.id === key) || {}).name + " steigt."); }
+    else { state.hero[key] = (state.hero[key] || 0) + 1; if (typeof emitDelta === "function") emitDelta({ kind: "stat", key, delta: 1 }); log((D.STAT_KEYS.find((s) => s.id === key) || {}).name + " steigt."); }
   }
   state.statXp[key] = row;
   trackPeak();
