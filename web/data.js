@@ -237,6 +237,31 @@ const NPCs = {
     lines: ["Wer im Tempel spricht, soll es vollständig tun."],
     talk: { start: "Setzt euch, wenn die Beine schwer sind. Die Stille hier gehört niemandem ganz." }
   },
+  // ---- Drei Platzierungen (Leitung 13.10., ohne Quests; Texte PLATZHALTER für Ext Text) ----
+  russ: {
+    id: "russ", name: "Ruß", title: "Kontakt aus der Gasse", location: "berum_docks",
+    text: "Ruß lehnt im Schatten der Fässer und zählt die Boote, die ohne Laterne anlegen.",
+    art: "npcs/npc_gassenlicht.jpg", merchant: false,
+    hours: ["nacht"], pin: { x: 30, y: 80 }, faction: "gasse",
+    lines: ["Was nachts anlegt, steht morgens in keinem Buch."],
+    talk: { start: "Ihr seid spät unterwegs. Gut. Am Tag rede ich nicht über Ladung." }
+  },
+  ysra: {
+    id: "ysra", name: "Ysra", title: "Einsiedlerin des Nebelbunds", location: "gebirge_wasserfall",
+    text: "Ysra sitzt im Windschatten des Eises, den Mantel grau wie der Nebel.",
+    art: "npcs/npc_nebelmantel.jpg", merchant: false,
+    pin: { x: 30, y: 80 }, faction: "nebel",
+    lines: ["Der Weg nach Nirfal nimmt, was man ihm nicht freiwillig gibt."],
+    talk: { start: "Ihr wollt nach Nirfal. Geht nicht nach Einbruch der Dunkelheit, und haltet euch an die Steinmänner." }
+  },
+  tempelstimme: {
+    id: "tempelstimme", name: "Tempelstimme", title: "Hüterin der Totenlichter", location: "tempel",
+    text: "Die Tempeldienerin wacht über die Totenlichter. Keine Flamme erlischt, solange sie hier steht.",
+    art: "npcs/npc_tempelstimme.jpg", merchant: false,
+    pin: { x: 32, y: 82 }, faction: "tempel",
+    lines: ["Jedes Licht hier gehört einem Namen. Fasst keines an."],
+    talk: { start: "Sprecht leise. Die Totenlichter brennen für jene, die nicht mehr sprechen können." }
+  },
   tamsin: {
     id: "tamsin", name: "Tamsin", title: "Jägerin", location: "schenke",
     text: "Tamsin kennt jedes Gesicht, das länger als eine Nacht bleibt.",
