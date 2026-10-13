@@ -309,6 +309,12 @@ const NPCs = {
     art: "npcs/npc_beraterin.jpg", merchant: false, pin: { x: 30, y: 80 }, faction: "krone",
     lines: ["Der König entscheidet. Ich sorge nur dafür, dass er sich daran erinnert, was er will."],
     talk: { start: "Bleibt stehen. Die Stühle hier gehören Leuten, die etwas schulden. Ihr seid neu, das rieche ich am Straßenstaub. Sagt, was Ihr wollt, und ich sage Euch, was es kostet." } },
+  // ---- Nekromantin (Leitung 13.10.; Name „Mara Venthal“ nur Vorschlag -> Rollentitel; ohne Quests; Texte PLATZHALTER für Ext Text) ----
+  nekromantin: { id: "nekromantin", name: "Die Nekromantin", title: "Herrin der Hallen", location: "krypta_hallen_der_toten",
+    text: "Eine Frau in dunklem Kapuzenmantel steht zwischen den Sarkophagen. Violettes Licht spielt um ihre Finger.",
+    art: "npcs/npc_nekromantin.jpg", merchant: false, pin: { x: 30, y: 80 }, faction: "",
+    lines: ["Die Toten sind geduldige Zuhörer. Die Lebenden sollten es auch sein."],
+    talk: { start: "Ihr seid lebendig hier unten. Das ist selten. Sprecht leise, die anderen schlafen." } },
   tamsin: {
     id: "tamsin", name: "Tamsin", title: "Jägerin", location: "schenke",
     text: "Tamsin kennt jedes Gesicht, das länger als eine Nacht bleibt.",
@@ -624,6 +630,12 @@ const REGIONS = {
     { id: "friedhof_graeberfelder", label: "Gräberfelder", x: 72, y: 56 },
     { id: "nebelpfad", label: "Nebelpfad", x: 82, y: 92 }
   ]},
+  // In der Krypta (Leitung 13.10.): großer Nebenort der Großen Krypta, nur über Torbogen. Zentralort Vorhalle.
+  krypta: { id: "krypta", name: "In der Krypta", hub: "krypta_vorhalle", back: "Zurück in die Vorhalle", map: "maps/krypta.jpg", wait: "ui/wait_krypta.jpg", idle: "ui/idle_krypta.jpg", sideArea: true, pins: [
+    { id: "krypta_vorhalle", label: "Vorhalle", x: 50, y: 78 },
+    { id: "krypta_hallen_der_toten", label: "Hallen der Toten", x: 50, y: 47 },
+    { id: "friedhof_grosse_krypta", label: "Ausgang", x: 50, y: 92 }
+  ]},
   // Nirfal (Nico 13.10.): Zentralort Versammlungsplatz, Weg zurück zu den Kalten Wegen.
   nirfal: { id: "nirfal", name: "Kleines Dorf Nirfal", hub: "nirfal_versammlungsplatz", back: "Zurück zum Versammlungsplatz", map: "maps/nirfal.jpg", wait: "ui/wait_nirfal.jpg", idle: "ui/idle_nirfal.jpg", pins: [
     { id: "nirfal_versammlungsplatz", label: "Versammlungsplatz", x: 50, y: 53 },
@@ -807,7 +819,18 @@ const LOCATIONS = {
     ] },
   friedhof_grosse_krypta: { id: "friedhof_grosse_krypta", name: "Große Krypta", region: "friedhof", blurb: "Eine Kuppel aus dunklem Stein, von Efeu bewachsen. Hinter der Tür flackert ein Licht, das niemand angezündet hat.", art: "locations/friedhof_grosse_krypta.jpg",
     exits: [
-      { id: "friedhof_eingang", label: "Eingang", x: 50, y: 90, arch: true }
+      { id: "friedhof_eingang", label: "Eingang", x: 50, y: 90, arch: true },
+      { id: "krypta_vorhalle", label: "In der Krypta", x: 58, y: 56, arch: true }  // Torbogen an der Kryptatür
+    ] },
+  // ---- In der Krypta (Ortstexte: PLATZHALTER für Ext Text) ----
+  krypta_vorhalle: { id: "krypta_vorhalle", name: "Vorhalle", region: "krypta", pass: "ui/pass_krypta.jpg", blurb: "Eine Treppe führt hinab, violettes Licht brennt in steinernen Schalen. Die Luft ist kalt und riecht nach Staub.", art: "locations/krypta_vorhalle.jpg",
+    exits: [
+      { id: "krypta_hallen_der_toten", label: "Hallen der Toten" },
+      { id: "friedhof_grosse_krypta", label: "Ausgang" }
+    ] },
+  krypta_hallen_der_toten: { id: "krypta_hallen_der_toten", name: "Hallen der Toten", region: "krypta", blurb: "Sarkophage in langen Reihen, in den Wänden Nischen voller Knochen. Irgendwo flüstert jemand, und es ist nicht der Wind.", art: "locations/krypta_hallen_der_toten.jpg",
+    exits: [
+      { id: "krypta_vorhalle", label: "Vorhalle", x: 50, y: 90, arch: true }
     ] },
   obsidiansee: { id: "obsidiansee", name: "Obsidiansee", region: "vorstadt", blurb: "Das Wasser ist dunkel und still. Der Pfad bleibt hinter dem Schilf.", art: "locations/obsidiansee.jpg",
     exits: [ { id: "nebelpfad", label: "Nebelpfad", x: 50, y: 90, arch: true } ] },
