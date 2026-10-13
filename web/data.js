@@ -298,6 +298,17 @@ const NPCs = {
     art: "npcs/npc_nessa.jpg", merchant: false, pin: { x: 30, y: 80 }, faction: "gasse",
     lines: ["Die Würfel lügen nie. Die Hände, die sie werfen, schon."],
     talk: { start: "Ein Spiel gefällig? Nein? Dann setzt euch wenigstens, ihr verdeckt mir die Kerze." } },
+  // ---- Palast-NPCs (Leitung 13.10.; keine Eigennamen in Verzeichnis/Vorrat/Tafel -> Rollentitel; ohne Quests; Texte PLATZHALTER für Ext Text) ----
+  prinz: { id: "prinz", name: "Der Prinz", title: "Sohn des Herrschers", location: "palast_prinzenzimmer",
+    text: "Ein schmaler Mann mit dunklem Haar und goldenem Stirnreif. Er sieht euch an, als hätte er euch erwartet und nicht gehofft.",
+    art: "npcs/npc_kragenherr.jpg", merchant: false, pin: { x: 30, y: 80 }, faction: "krone",
+    lines: ["In diesem Palast hat jede Tür ein Ohr. Meine hat zwei."],
+    talk: { start: "Ihr seid weit gekommen für einen Gast ohne Einladung. Sprecht, solange mein Vater nicht zuhört." } },
+  beraterin: { id: "beraterin", name: "Die Beraterin", title: "Beraterin des Königs", location: "palast_ratskammer",
+    text: "Eine Frau in tiefrotem Gewand sitzt dort, wo sonst der König sitzt. Ihr Lächeln erreicht die Augen nicht.",
+    art: "npcs/npc_beraterin.jpg", merchant: false, pin: { x: 30, y: 80 }, faction: "krone",
+    lines: ["Der König entscheidet. Ich sorge nur dafür, dass er das Richtige will."],
+    talk: { start: "Ein neues Gesicht in der Ratskammer. Wie selten. Setzt euch nicht. Ihr werdet nicht lange bleiben." } },
   tamsin: {
     id: "tamsin", name: "Tamsin", title: "Jägerin", location: "schenke",
     text: "Tamsin kennt jedes Gesicht, das länger als eine Nacht bleibt.",
