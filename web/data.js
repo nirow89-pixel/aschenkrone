@@ -257,7 +257,7 @@ const NPCs = {
   selwyn: {
     id: "selwyn", name: "Selwyn", title: "Hüter der Totenlichter", location: "tempel",
     text: "Selwyn, ein Tempeldiener, wacht über die Totenlichter. Keine Flamme erlischt, solange er hier steht.",
-    art: "ui/siluette_mann.jpg" /* Platzhalter; sobald Ext Art liefert: "npcs/npc_selwyn.jpg" */, merchant: false,
+    art: "npcs/npc_selwyn.jpg", merchant: false,
     pin: { x: 32, y: 82 }, faction: "tempel",
     lines: ["Jedes Licht hier gehört einem Namen. Fasst keines an."],
     talk: { start: "Sprecht leise. Die Totenlichter brennen für jene, die nicht mehr sprechen können." }
@@ -530,31 +530,31 @@ const REGIONS = {
   ]},
   // Berum, Hafenstadt (Nico 13.10.): Zentralort Zentralplatz; Landstraße zur Kreuzung. Der Schiffsweg ab den Docks ist gesperrt.
   berum: { id: "berum", name: "Berum", hub: "berum_zentralplatz", back: "Zurück zum Zentralplatz", map: "maps/berum.jpg", wait: "ui/wait_berum.jpg", idle: "ui/idle_berum.jpg", pins: [
-    { id: "berum_zentralplatz", label: "Zentralplatz", x: 62, y: 64 },
-    { id: "berum_fischmarkt", label: "Fischmarkt", x: 20, y: 74 },
-    { id: "berum_wilder_wal", label: "Zum Wilden Wal", x: 36, y: 36 },
-    { id: "berum_anwesen_mcclair", label: "Anwesen der McClairs", x: 87, y: 14 },
-    { id: "berum_docks", label: "Docks", x: 88, y: 82 },
-    { id: "auen_kreuzung", label: "Landstraße", x: 4, y: 12 }
+    { id: "berum_zentralplatz", label: "Zentralplatz", x: 49, y: 54 },
+    { id: "berum_fischmarkt", label: "Fischmarkt", x: 11, y: 63 },
+    { id: "berum_wilder_wal", label: "Zum Wilden Wal", x: 27, y: 34 },
+    { id: "berum_anwesen_mcclair", label: "Anwesen der McClairs", x: 71, y: 12 },
+    { id: "berum_docks", label: "Docks", x: 84, y: 70 },
+    { id: "auen_kreuzung", label: "Landstraße", x: 3, y: 13 }
   ]},
   // Große Nebenorte (Datenmodell, noch ohne Inhalt): Region mit sideArea: true hat eigene Karte, Orte, wait/idle wie ein Gebiet,
   // erscheint aber auf keiner anderen Karte und ist nur über einen Torbogen (exit mit arch + Hub-Ort mit pass) erreichbar.
   // Beispiel später: bauernhaus_innen: { id, name, hub, map, wait, idle, sideArea: true, pins: [...] } mit Torbogen am Bauernhaus.
   // Nirfal (Nico 13.10.): Zentralort Versammlungsplatz, Weg zurück zu den Kalten Wegen.
   nirfal: { id: "nirfal", name: "Nirfal", hub: "nirfal_versammlungsplatz", back: "Zurück zum Versammlungsplatz", map: "maps/nirfal.jpg", wait: "ui/wait_nirfal.jpg", idle: "ui/idle_nirfal.jpg", pins: [
-    { id: "nirfal_versammlungsplatz", label: "Versammlungsplatz", x: 63, y: 64 },
-    { id: "nirfal_langhaus", label: "Langhaus", x: 63, y: 40 },
-    { id: "nirfal_huetten", label: "Hütten", x: 16, y: 42 },
-    { id: "nirfal_pfaehle", label: "Lange Pfähle", x: 92, y: 24 },
-    { id: "gebirge_kalte_wege", label: "Weg", x: 62, y: 96 }
+    { id: "nirfal_versammlungsplatz", label: "Versammlungsplatz", x: 50, y: 53 },
+    { id: "nirfal_langhaus", label: "Langhaus", x: 50, y: 21 },
+    { id: "nirfal_huetten", label: "Hütten", x: 13, y: 42 },
+    { id: "nirfal_pfaehle", label: "Lange Pfähle", x: 87, y: 23 },
+    { id: "gebirge_kalte_wege", label: "Weg", x: 55, y: 94 }
   ]},
   // Gebirgsvorland (Nico 13.10.): Zentralort Kalte Wege. Der Weg hinter dem Gebirgspfad ist gesperrt (locked).
   gebirge: { id: "gebirge", name: "Gebirgsvorland", hub: "gebirge_kalte_wege", back: "Zurück zu den Kalten Wegen", map: "maps/gebirge.jpg", wait: "ui/wait_gebirge.jpg", idle: "ui/idle_gebirge.jpg", pins: [
-    { id: "gebirge_kalte_wege", label: "Kalte Wege", x: 63, y: 66 },
-    { id: "gebirge_pfad", label: "Gebirgspfad", x: 36, y: 30 },
-    { id: "gebirge_wasserfall", label: "Gefrorener Wasserfall", x: 92, y: 46 },
-    { id: "auen_kreuzung", label: "Die grünen Auen", x: 5, y: 88 },
-    { id: "nirfal_versammlungsplatz", label: "Nirfal", x: 60, y: 30 }
+    { id: "gebirge_kalte_wege", label: "Kalte Wege", x: 50, y: 54 },
+    { id: "gebirge_pfad", label: "Gebirgspfad", x: 20, y: 26 },
+    { id: "gebirge_wasserfall", label: "Gefrorener Wasserfall", x: 80, y: 24 },
+    { id: "auen_kreuzung", label: "Die grünen Auen", x: 4, y: 82 },
+    { id: "nirfal_versammlungsplatz", label: "Nirfal", x: 58, y: 37 }
   ]},
   // Die grünen Auen (Nico 13.10.): Zentralort Die Kreuzung. Gebirgsvorland/Hafenstadt gesperrt, bis Bilder da sind (pin.locked).
   auen: { id: "auen", name: "Die grünen Auen", hub: "auen_kreuzung", back: "Zurück zur Kreuzung", map: "maps/auen.jpg", wait: "ui/wait_auen.jpg", idle: "ui/idle_auen.jpg", scrim: "linear-gradient(rgba(12,7,8,.58), rgba(12,7,8,.66))", pins: [  // helle Bilder: stärkere Abdunklung
