@@ -576,6 +576,16 @@ const REGIONS = {
   // Große Nebenorte (Datenmodell, noch ohne Inhalt): Region mit sideArea: true hat eigene Karte, Orte, wait/idle wie ein Gebiet,
   // erscheint aber auf keiner anderen Karte und ist nur über einen Torbogen (exit mit arch + Hub-Ort mit pass) erreichbar.
   // Beispiel später: bauernhaus_innen: { id, name, hub, map, wait, idle, sideArea: true, pins: [...] } mit Torbogen am Bauernhaus.
+  // Bauernhaus innen (Leitung 13.10.): großer Nebenort (sideArea) von „Bauernhaus außen“, Torbogen an der Haustür. Zentralort Diele.
+  bauernhaus_innen: { id: "bauernhaus_innen", name: "Bauernhaus innen", hub: "bauernhaus_diele", back: "Zurück in die Diele", map: "maps/bauernhaus_innen.jpg", wait: "ui/wait_bauernhaus_innen.jpg", idle: "ui/idle_bauernhaus_innen.jpg", sideArea: true, pins: [
+    { id: "bauernhaus_diele", label: "Diele", x: 49, y: 64 },
+    { id: "bauernhaus_wohnzimmer", label: "Wohnzimmer", x: 22, y: 30 },
+    { id: "bauernhaus_meinzimmer", label: "Mein Zimmer", x: 49, y: 21 },
+    { id: "bauernhaus_kueche", label: "Küche", x: 77, y: 30 },
+    { id: "bauernhaus_bad", label: "Badezimmer", x: 20, y: 68 },
+    { id: "bauernhaus_elternzimmer", label: "Elternzimmer", x: 81, y: 66 },
+    { id: "lotfild_bauernhaus", label: "Ausgang", x: 49, y: 89 }
+  ]},
   // Nirfal (Nico 13.10.): Zentralort Versammlungsplatz, Weg zurück zu den Kalten Wegen.
   nirfal: { id: "nirfal", name: "Kleines Dorf Nirfal", hub: "nirfal_versammlungsplatz", back: "Zurück zum Versammlungsplatz", map: "maps/nirfal.jpg", wait: "ui/wait_nirfal.jpg", idle: "ui/idle_nirfal.jpg", pins: [
     { id: "nirfal_versammlungsplatz", label: "Versammlungsplatz", x: 50, y: 53 },
@@ -762,6 +772,7 @@ const LOCATIONS = {
   // ---- Bauernhof Lotfild (Ortstexte: PLATZHALTER für Ext Text) ----
   lotfild_bauernhaus: { id: "lotfild_bauernhaus", name: "Bauernhaus außen", region: "lotfild", blurb: "Rauch steigt aus dem Schornstein, über der Tür brennt eine Laterne. Von hier führen die Wege zu Feld, Scheune und Straße.", art: "locations/lotfild_bauernhaus.jpg",
     exits: [
+      { id: "bauernhaus_diele", label: "Bauernhaus innen", x: 84, y: 68, arch: true },
       { id: "lotfild_feld", label: "Feld" },
       { id: "lotfild_apfelbaeume", label: "Apfelbäume" },
       { id: "lotfild_scheune", label: "Scheune" },
@@ -778,6 +789,26 @@ const LOCATIONS = {
     exits: [ { id: "lotfild_bauernhaus", label: "Bauernhaus außen", x: 50, y: 90, arch: true } ] },
   lotfild_werkstatt: { id: "lotfild_werkstatt", name: "Werkstatt", region: "lotfild", blurb: "Aus dem Schornstein steigt Rauch. Auf der Werkbank liegen Späne, und ein halb fertiger Zaunpfahl wartet.", art: "locations/lotfild_werkstatt.jpg",
     exits: [ { id: "lotfild_bauernhaus", label: "Bauernhaus außen", x: 50, y: 90, arch: true } ] },
+  // ---- Bauernhaus innen (Ortstexte: PLATZHALTER für Ext Text) ----
+  bauernhaus_diele: { id: "bauernhaus_diele", name: "Diele", region: "bauernhaus_innen", pass: "ui/pass_bauernhaus.jpg", blurb: "Eine Laterne hängt über dem Teppich. Von der Diele gehen alle Türen des Hauses ab.", art: "locations/bauernhaus_diele.jpg",
+    exits: [
+      { id: "bauernhaus_wohnzimmer", label: "Wohnzimmer" },
+      { id: "bauernhaus_meinzimmer", label: "Mein Zimmer" },
+      { id: "bauernhaus_kueche", label: "Küche" },
+      { id: "bauernhaus_bad", label: "Badezimmer" },
+      { id: "bauernhaus_elternzimmer", label: "Elternzimmer" },
+      { id: "lotfild_bauernhaus", label: "Ausgang" }
+    ] },
+  bauernhaus_wohnzimmer: { id: "bauernhaus_wohnzimmer", name: "Wohnzimmer", region: "bauernhaus_innen", blurb: "Der Kamin knistert, auf der Bank liegen Kissen. Hier sitzt die Familie an langen Abenden.", art: "locations/bauernhaus_wohnzimmer.jpg",
+    exits: [ { id: "bauernhaus_diele", label: "Diele", x: 50, y: 90, arch: true } ] },
+  bauernhaus_meinzimmer: { id: "bauernhaus_meinzimmer", name: "Mein Zimmer", region: "bauernhaus_innen", blurb: "Ein schmales Bett, eine Truhe, eine Kerze am Fenster. Mehr braucht es nicht, um hier zu Hause zu sein.", art: "locations/bauernhaus_meinzimmer.jpg",
+    exits: [ { id: "bauernhaus_diele", label: "Diele", x: 50, y: 90, arch: true } ] },
+  bauernhaus_kueche: { id: "bauernhaus_kueche", name: "Küche", region: "bauernhaus_innen", blurb: "Töpfe hängen über dem Herd, auf dem Tisch steht Brot. Es riecht nach Rauch und Kräutern.", art: "locations/bauernhaus_kueche.jpg",
+    exits: [ { id: "bauernhaus_diele", label: "Diele", x: 50, y: 90, arch: true } ] },
+  bauernhaus_bad: { id: "bauernhaus_bad", name: "Badezimmer", region: "bauernhaus_innen", blurb: "Ein Holzzuber steht bereit, daneben Eimer und ein Stück grobe Seife.", art: "locations/bauernhaus_bad.jpg",
+    exits: [ { id: "bauernhaus_diele", label: "Diele", x: 50, y: 90, arch: true } ] },
+  bauernhaus_elternzimmer: { id: "bauernhaus_elternzimmer", name: "Elternzimmer", region: "bauernhaus_innen", blurb: "Ein breites Bett unter einer grünen Decke. Auf dem Nachttisch brennt ein Licht.", art: "locations/bauernhaus_elternzimmer.jpg",
+    exits: [ { id: "bauernhaus_diele", label: "Diele", x: 50, y: 90, arch: true } ] },
   lotfild_brunnen: { id: "lotfild_brunnen", name: "Brunnen", region: "lotfild", blurb: "Der Eimer hängt am Seil, das Wasser unten ist kalt und klar. Hier treffen sich die Wege des Hofs.", art: "locations/lotfild_brunnen.jpg",
     exits: [ { id: "lotfild_bauernhaus", label: "Bauernhaus außen", x: 50, y: 90, arch: true } ] },
   lotfild_teich: { id: "lotfild_teich", name: "Teich mit Steg", region: "lotfild", blurb: "Ein Steg reicht ins stille Wasser. Frösche verstummen, wenn jemand näher kommt.", art: "locations/lotfild_teich.jpg",
