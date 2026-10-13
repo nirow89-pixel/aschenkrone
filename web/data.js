@@ -566,7 +566,7 @@ const LOCATIONS = {
     exits: [ { id: "nebelpfad", label: "Nebelpfad", x: 50, y: 90, arch: true } ] },
   knochenfeld: { id: "knochenfeld", name: "Knochenfeld", region: "vorstadt", blurb: "Weiße Stücke im Gras. Der Wind kommt vom Pfad und nimmt nichts mit.", art: "locations/knochenfeld.jpg",
     exits: [ { id: "nebelpfad", label: "Nebelpfad", x: 50, y: 90, arch: true } ] },
-  dorfzentrum: { id: "dorfzentrum", name: "Dorfzentrum", region: "unterorten", blurb: "Der Brunnen steht in der Mitte. An Tamsins Tür riecht es nach Brot und nassem Holz.", art: "locations/dorfzentrum.jpg",
+  dorfzentrum: { id: "dorfzentrum", name: "Dorfzentrum", region: "unterorten", blurb: "Der Brunnen steht in der Mitte. An Tamsins Tür hängen Felle zum Trocknen, es riecht nach nassem Holz.", art: "locations/dorfzentrum.jpg",
     events: [
       { id: "wolf_niederlage_tamsin", when: { flags: { wolf_niederlage: true } }, once: true, priority: 10, run: "wolfDefeatTamsin" }
     ],

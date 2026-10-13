@@ -16,7 +16,7 @@ if (typeof advance === "function") {
   const advanceOrig = advance;
   advance = function () { deltaMute++; try { return advanceOrig.apply(this, arguments); } finally { deltaMute--; } };
 }
-const KORR_HINT = { up: "Etwas in Euch wird kälter.", down: "Etwas in Euch wird leichter." };  // Platzhalter für Ext Text
+const KORR_HINT = { up: "Asche setzt sich in dir fest.", down: "Ein Rest Asche fällt von dir ab." };  // Platzhalter für Ext Text
 const deltaDbg = typeof DEBUG !== "undefined" && DEBUG;
 const deltaLive = {};            // kind:key -> { el, sum, t, timer }
 function deltaText(ev, sum) {
