@@ -19,9 +19,9 @@ const EQUIP_SLOTS = [
   { id: "ring", name: "Ring", x: 83, y: 18, ph: "items/slot_ring.jpg" },
   { id: "brust", name: "Rüstung", x: 50, y: 33, ph: "items/slot_brust.jpg" },
   { id: "haende", name: "Hände", x: 17, y: 42, ph: "items/slot_haende.jpg" },
-  { id: "schild", name: "Schild", x: 83, y: 42, ph: "items/slot_schild.jpg" },
-  { id: "waffeL", name: "Waffe links", x: 17, y: 66, ph: "items/slot_waffeL.jpg" },
-  { id: "waffeR", name: "Waffe rechts", x: 83, y: 66, ph: "items/slot_waffeR.jpg" },
+  { id: "waffeL", name: "Waffe", x: 17, y: 66, ph: "items/slot_waffeL.jpg" },
+  // Nebenhand (interne Id bleibt "schild"): Schild ODER zweite Einhandwaffe; steht gegenüber der Waffe.
+  { id: "schild", name: "Nebenhand", x: 83, y: 66, ph: "items/slot_schild.jpg" },
   { id: "beine", name: "Beine", x: 50, y: 61, ph: "items/slot_beine.jpg" },
   { id: "fuesse", name: "Füße", x: 50, y: 89, ph: "items/slot_fuesse.jpg" }
 ];
@@ -163,6 +163,12 @@ const MIGRATIONS = [
       f.wolf_dealt = true; f.cleared_russwolf = true; f.wolf_alt_geschlossen = true;
       if (s.inCombat && s.combat && s.combat.id === "russwolf") { s.inCombat = false; s.combat = null; }
     }
+    return s;
+  },
+  // v11 -> v12: Slot "Waffe rechts" entfällt. Waffe rechts -> Nebenhand (schild); ist dort schon ein Schild, in den Beutel (unbegrenzt).
+  function v11to12(s) {
+    const e = s.equipped || {};
+    if (e.waffeR) { if (!e.schild) e.schild = e.waffeR; else (s.inventory = s.inventory || []).push(e.waffeR); delete e.waffeR; }
     return s;
   }
 ];
@@ -593,11 +599,11 @@ function gearBonus(key) {
   if (!state || !state.equipped) return 0;
   return Object.values(state.equipped).reduce((sum, id) => sum + ((D.ITEMS[id] && D.ITEMS[id][key]) || 0), 0);
 }
-// Altstände (vor der Zweihand-Regel) bereinigen: Zweihänder + Schild/Waffe rechts -> Beutel.
+// Altstände (vor der Zweihand-Regel) bereinigen: Zweihänder + Nebenhand -> Beutel.
 function fixTwoHanded() {
   const w = state && state.equipped && D.ITEMS[state.equipped.waffeL];
   if (!w || !w.twoHanded) return;
-  ["waffeR", "schild"].forEach((sl) => { if (state.equipped[sl]) { state.inventory.push(state.equipped[sl]); delete state.equipped[sl]; } });
+  ["schild"].forEach((sl) => { if (state.equipped[sl]) { state.inventory.push(state.equipped[sl]); delete state.equipped[sl]; } });
 }
 // Effekte (Item-Feld fx, Werte laut docs/items-werte-2026-10-11.md), summiert wie gearBonus; sub z. B. Monster-ID bei vsMonster.
 function gearFx(key, sub) {
@@ -624,10 +630,14 @@ function weaponText(it) {
   const f = (n) => String(n).replace(".", ",");
   return [it.dmgMax ? "Schaden " + it.dmgMin + "–" + it.dmgMax : "", it.speed ? "Tempo " + f(it.speed) + " s" : ""].filter(Boolean).join(" · ");
 }
+// Slot, den equip() tatsächlich belegt: zweite Einhandwaffe -> Nebenhand, solange die frei ist.
+function targetSlot(it) {
+  if (it.slot === "waffeL" && !it.twoHanded && state.equipped.waffeL && !state.equipped.schild && !(D.ITEMS[state.equipped.waffeL] || {}).twoHanded) return "schild";
+  return it.slot;
+}
 function compareText(it) {
   if (!it || !it.slot) return "";
-  const slots = it.slot === "waffeL" ? ["waffeL", "waffeR"] : [it.slot];
-  const cur = slots.map((sl) => D.ITEMS[state.equipped[sl]]).filter(Boolean)[0];
+  const cur = D.ITEMS[state.equipped[targetSlot(it)]];
   if (!cur) return "Slot frei – nichts angelegt.";
   const diff = ["atk", "def", "will", "hp"].filter((k) => (it[k] || 0) !== (cur[k] || 0))
     .map((k) => { const d = (it[k] || 0) - (cur[k] || 0); return STAT_NAMES[k] + " " + (d > 0 ? "+" : "") + d; });
@@ -731,14 +741,13 @@ function equip(id) {
     persist(); render(); return;
   }
   if (it.twoHanded) {
-    // Zweihänder: belegt beide Hände, Waffe rechts und Schild wandern in den Beutel.
-    ["waffeR", "schild"].forEach((sl) => {
+    // Zweihänder: belegt beide Hände, die Nebenhand (Schild oder zweite Waffe) wandert in den Beutel.
+    ["schild"].forEach((sl) => {
       if (state.equipped[sl]) { state.inventory.push(state.equipped[sl]); log((D.ITEMS[state.equipped[sl]] || {}).name + " in den Beutel gelegt."); delete state.equipped[sl]; }
     });
   }
-  let slot = it.slot;
-  // Einfach: zweite Waffe geht in die rechte Hand, solange die frei ist.
-  if (slot === "waffeL" && !it.twoHanded && state.equipped.waffeL && !state.equipped.waffeR) slot = "waffeR";
+  // Einhandwaffe: Haupthand; ist die belegt und die Nebenhand frei, geht sie in die Nebenhand.
+  const slot = targetSlot(it);
   const prev = state.equipped[slot];
   state.inventory.splice(i, 1);
   if (prev) state.inventory.push(prev);
@@ -897,7 +906,7 @@ function paintSheet() {
         const img = document.createElement("img");
         img.alt = "";
         const label = document.createElement("span");
-        const twoH = s.id === "waffeR" && D.ITEMS[state.equipped.waffeL] && D.ITEMS[state.equipped.waffeL].twoHanded ? D.ITEMS[state.equipped.waffeL] : null;
+        const twoH = s.id === "schild" && D.ITEMS[state.equipped.waffeL] && D.ITEMS[state.equipped.waffeL].twoHanded ? D.ITEMS[state.equipped.waffeL] : null;
         const worn = twoH || (state.equipped[s.id] && D.ITEMS[state.equipped[s.id]]);
         b.dataset.slot = s.id;
         if (twoH) {
@@ -1266,9 +1275,8 @@ function slotWord(it) {
 }
 function tipCompare(it) {
   if (!it.slot) return "";
-  let target = it.slot;
-  const held = D.ITEMS[state.equipped.waffeL];
-  if (it.slot === "waffeL" && !it.twoHanded && held && !(held.twoHanded) && !state.equipped.waffeR) return "<div class='tip-cmp'>Rechte Hand frei – kommt dazu.</div>";
+  const target = targetSlot(it);
+  if (target === "schild" && it.slot === "waffeL") return "<div class='tip-cmp'>Nebenhand frei – kommt dazu.</div>";
   const cur = D.ITEMS[state.equipped[target]];
   if (!cur) return "<div class='tip-cmp'>Slot frei.</div>";
   const rows = ["atk", "def", "will", "hp"].map((k) => {

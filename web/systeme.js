@@ -772,14 +772,14 @@ function zeichenXp(id) {
 // ---- Kampfwerte ----
 function weaponOf(slot) { const it = D.ITEMS[state.equipped && state.equipped[slot]]; return it && it.type === "waffe" ? it : null; }
 function heroSpeed() {
-  const a = weaponOf("waffeL"), b = weaponOf("waffeR");
+  const a = weaponOf("waffeL"), b = weaponOf("schild");  // Nebenhand-Waffe zählt wie früher Waffe rechts
   if (a && b) return ((a.speed || 2.0) + (b.speed || 2.0)) / 2;
   return (a && a.speed) || (b && b.speed) || 2.0;
 }
 function gearAtkCombat() {
   const pfadK = (gradState().pfad.krieger || 0) >= 3 ? 0.75 : 0.5;
   let sum = 0;
-  Object.keys(state.equipped || {}).forEach((sl) => { const it = D.ITEMS[state.equipped[sl]]; if (!it || !it.atk) return; sum += sl === "waffeR" && weaponOf("waffeL") ? Math.floor(it.atk * pfadK) : it.atk; });
+  Object.keys(state.equipped || {}).forEach((sl) => { const it = D.ITEMS[state.equipped[sl]]; if (!it || !it.atk) return; sum += sl === "schild" && weaponOf("schild") && weaponOf("waffeL") ? Math.floor(it.atk * pfadK) : it.atk; });
   return sum;
 }
 function critChance(extra) {
@@ -1349,7 +1349,7 @@ wireSheet = function (body) {
 const ZEICHEN_FX = { schnellschlag: "schwert", eisenhaut: "schild", solarplexus: "faust", feuerball: "feuerball", froststachel: "eis", heilfunke: "heilung", giftklinge: "gift", schattenhieb: "dolch", blutung: "dolch", wundmal: "fluch" };
 const FX_GLYPH = { klaue: "⟋⟋⟋", schwert: "🗡", dolch: "🔪", faust: "✊", feuerball: "🔥", eis: "❄", blitz: "⚡", schild: "🛡", heilung: "✚", gift: "☠", fluch: "✠" };
 function weaponFx() {
-  const w = weaponOf("waffeL") || weaponOf("waffeR");
+  const w = weaponOf("waffeL") || weaponOf("schild");
   if (!w) return "faust";
   return /dolch|nadel/i.test(w.id) ? "dolch" : "schwert";
 }
@@ -1475,7 +1475,7 @@ function dodgeChance() {
   return clamp(3 + Math.floor(fortuneEff() / 3) + 2 * (p.dieb || 0) + gearFx("dodgePct") + perkFxNum("dodgePct"), 0, 25);
 }
 function parryChance(c) {
-  const armed = !!(weaponOf("waffeL") || weaponOf("waffeR") || (state.equipped && state.equipped.schild));
+  const armed = !!(weaponOf("waffeL") || (state.equipped && state.equipped.schild));
   if (!armed) return 0;
   const p = gradState().pfad, shield = state.equipped && state.equipped.schild ? 6 : 0;
   const eh = c && c.eisenhaut && c.eisenhaut.left > 0 ? 5 : 0;
