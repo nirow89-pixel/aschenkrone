@@ -503,6 +503,18 @@ const REGIONS = {
     { id: "schenke", label: "Schenke", x: 72, y: 58 },
     { id: "nebelpfad", label: "Nebelpfad", x: 52, y: 93 }
   ]},
+  // Berum, Hafenstadt (Nico 13.10.): Zentralort Zentralplatz; Landstraße zur Kreuzung. Der Schiffsweg ab den Docks ist gesperrt.
+  berum: { id: "berum", name: "Berum", hub: "berum_zentralplatz", back: "Zurück zum Zentralplatz", map: "maps/berum.jpg", wait: "ui/wait_berum.jpg", idle: "ui/idle_berum.jpg", pins: [
+    { id: "berum_zentralplatz", label: "Zentralplatz", x: 62, y: 64 },
+    { id: "berum_fischmarkt", label: "Fischmarkt", x: 20, y: 74 },
+    { id: "berum_wilder_wal", label: "Zum Wilden Wal", x: 36, y: 36 },
+    { id: "berum_anwesen_mcclair", label: "Anwesen der McClairs", x: 87, y: 14 },
+    { id: "berum_docks", label: "Docks", x: 88, y: 82 },
+    { id: "auen_kreuzung", label: "Landstraße", x: 4, y: 12 }
+  ]},
+  // Große Nebenorte (Datenmodell, noch ohne Inhalt): Region mit sideArea: true hat eigene Karte, Orte, wait/idle wie ein Gebiet,
+  // erscheint aber auf keiner anderen Karte und ist nur über einen Torbogen (exit mit arch + Hub-Ort mit pass) erreichbar.
+  // Beispiel später: bauernhaus_innen: { id, name, hub, map, wait, idle, sideArea: true, pins: [...] } mit Torbogen am Bauernhaus.
   // Nirfal (Nico 13.10.): Zentralort Versammlungsplatz, Weg zurück zu den Kalten Wegen.
   nirfal: { id: "nirfal", name: "Nirfal", hub: "nirfal_versammlungsplatz", back: "Zurück zum Versammlungsplatz", map: "maps/nirfal.jpg", wait: "ui/wait_nirfal.jpg", idle: "ui/idle_nirfal.jpg", pins: [
     { id: "nirfal_versammlungsplatz", label: "Versammlungsplatz", x: 63, y: 64 },
@@ -525,7 +537,7 @@ const REGIONS = {
     { id: "nebelpfad", label: "Nebelpfad", x: 26, y: 38 },
     { id: "lotfild_strasse", label: "Bauernhof Lotfild", x: 15, y: 86 },
     { id: "gebirge_kalte_wege", label: "Gebirgsvorland", x: 86, y: 30 },
-    { id: "auen_hafenstadt", label: "Hafenstadt", x: 81, y: 83, locked: "Der Weg ist noch nicht begehbar." }
+    { id: "berum_zentralplatz", label: "Hafenstadt", x: 81, y: 83 }
   ]},
   // Bauernhof Lotfild (Nico 13.10.): Zentralort Bauernhaus (draußen). Später: eigener Bereich „Bauernhaus innen“ als Nebenort (parent/pass) vom Bauernhaus aus.
   lotfild: { id: "lotfild", name: "Bauernhof Lotfild", hub: "lotfild_bauernhaus", back: "Zurück zum Bauernhaus", map: "maps/lotfild.jpg", wait: "ui/wait_lotfild.jpg", idle: "ui/idle_lotfild.jpg", pins: [
@@ -633,6 +645,24 @@ const LOCATIONS = {
   hexenhuette_innen: { id: "hexenhuette_innen", name: "Hexenhütte (innen)", region: "duesterwald", blurb: "Ein Raum mit Feuerstelle, Tisch und Spiegel. Unter der Decke trocknen Kräuter.", art: "locations/hexenhaus.jpg",
     parent: "hexenhuette", pass: "ui/pass_huette.jpg",
     exits: [ { id: "hexenhuette", label: "Zurück zur Hexenhütte" } ] },
+  // ---- Berum (Ortstexte: PLATZHALTER für Ext Text) ----
+  berum_zentralplatz: { id: "berum_zentralplatz", name: "Zentralplatz", region: "berum", blurb: "Um den Brunnen ist das Pflaster nass vom Seenebel. Von hier gehen die Gassen zum Markt, zum Gasthaus und hinunter zu den Docks.", art: "locations/berum_zentralplatz.jpg",
+    exits: [
+      { id: "berum_fischmarkt", label: "Fischmarkt" },
+      { id: "berum_wilder_wal", label: "Zum Wilden Wal" },
+      { id: "berum_anwesen_mcclair", label: "Anwesen der McClairs" },
+      { id: "berum_docks", label: "Docks" },
+      { id: "auen_kreuzung", label: "Landstraße" }
+    ] },
+  berum_fischmarkt: { id: "berum_fischmarkt", name: "Fischmarkt", region: "berum", blurb: "Unter fleckigen Planen liegt der Fang auf Eis und Salz. Es riecht nach Tang und Teer.", art: "locations/berum_fischmarkt.jpg",
+    exits: [ { id: "berum_zentralplatz", label: "Zentralplatz", x: 50, y: 90, arch: true } ] },
+  berum_wilder_wal: { id: "berum_wilder_wal", name: "Gasthaus zum Wilden Wal", region: "berum", blurb: "Über der Tür hängt ein Walschädel. Drinnen ist es laut und warm.", art: "locations/berum_wilder_wal.jpg",
+    exits: [ { id: "berum_zentralplatz", label: "Zentralplatz", x: 50, y: 90, arch: true } ] },
+  berum_anwesen_mcclair: { id: "berum_anwesen_mcclair", name: "Anwesen der McClairs", region: "berum", blurb: "Hinter einer Mauer steht das Haus über der Stadt. Das Tor ist geschlossen, die Fenster sehen aufs Meer.", art: "locations/berum_anwesen_mcclair.jpg",
+    exits: [ { id: "berum_zentralplatz", label: "Zentralplatz", x: 50, y: 90, arch: true } ] },
+  berum_docks: { id: "berum_docks", name: "Docks", region: "berum", blurb: "Schiffe liegen am nassen Steg, ein Kran knarrt im Wind. Hinter dem Nebel beginnt das offene Wasser.", art: "locations/berum_docks.jpg",
+    exits: [ { id: "berum_zentralplatz", label: "Zentralplatz", x: 50, y: 90, arch: true },
+      { id: "berum_schiffsweg", label: "Wird fortgesetzt", x: 55, y: 66, arch: true, locked: "Der Weg ist noch nicht begehbar." } ] },
   // ---- Nirfal (Ortstexte: PLATZHALTER für Ext Text) ----
   nirfal_versammlungsplatz: { id: "nirfal_versammlungsplatz", name: "Versammlungsplatz", region: "nirfal", blurb: "In der Mitte des gepflasterten Platzes brennt ein Feuer im Steinkreis. Rauch zieht zum Langhaus hinauf.", art: "locations/nirfal_versammlungsplatz.jpg",
     exits: [
@@ -665,7 +695,8 @@ const LOCATIONS = {
     exits: [
       { id: "nebelpfad", label: "Nebelpfad" },
       { id: "lotfild_strasse", label: "Bauernhof Lotfild" },
-      { id: "gebirge_kalte_wege", label: "Gebirgsvorland" }
+      { id: "gebirge_kalte_wege", label: "Gebirgsvorland" },
+      { id: "berum_zentralplatz", label: "Hafenstadt" }
     ] },
   // ---- Bauernhof Lotfild (Ortstexte: PLATZHALTER für Ext Text) ----
   lotfild_bauernhaus: { id: "lotfild_bauernhaus", name: "Bauernhaus", region: "lotfild", blurb: "Rauch steigt aus dem Schornstein, über der Tür brennt eine Laterne. Von hier führen die Wege zu Feld, Scheune und Straße.", art: "locations/lotfild_bauernhaus.jpg",

@@ -7,7 +7,7 @@ let lastTalk = null;
 
 // ---- Systeme: Zeit, Speicherstände, Ereignisse ----
 const AUTO_SLOT = "auto";              // eigener Autosave-Slot (Schlüssel "auto" im selben localStorage-Objekt)
-const HUBS = ["nebelpfad", "platz", "dorfzentrum", "alter_baum", "lotfild_bauernhaus", "auen_kreuzung", "gebirge_kalte_wege", "nirfal_versammlungsplatz"];
+const HUBS = ["nebelpfad", "platz", "dorfzentrum", "alter_baum", "lotfild_bauernhaus", "auen_kreuzung", "gebirge_kalte_wege", "nirfal_versammlungsplatz", "berum_zentralplatz"];
 const TIME_COST = { travel: 1, talk: 0, wait: 1, rest: 3 }; // Tageszeit-Schritte
 const ON_NEW_DAY = [];                 // onNewDay-Hooks: fn(day)
 // Nur für Tests: ?debug=1 in der URL gibt bei Neuem Spiel und bei jedem Laden +500 Gold. Ohne Parameter keine Wirkung.
@@ -286,6 +286,8 @@ function travel(toId) {
   const here = D.LOCATIONS[state.location];
   if (!dest || !here) return;
   if (!(here.exits || []).some((ex) => ex.id === toId)) return;
+  const sideR = D.REGIONS[dest.region];  // großer Nebenort: hinein nur über einen Torbogen
+  if (sideR && sideR.sideArea && here.region !== dest.region && !(here.exits || []).some((ex) => ex.id === toId && ex.arch)) return;
   // Nebenorte: hinein nur vom Hauptort, hinaus nur zurück zum Hauptort.
   if (dest.parent && here.id !== dest.parent && here.parent !== toId) return;
   if (here.parent && toId !== here.parent && dest.parent !== here.id) return;  // tiefere Nebenorte (Kalte Halle → Spiegelkammer)
@@ -537,6 +539,8 @@ function showFace(p) {
 function esc(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
+// Große Nebenorte (region.sideArea): nie als Knopf auf einer fremden Karte, nur über Torbogen erreichbar.
+function sideAreaPin(pin, region) { const r = D.REGIONS[(D.LOCATIONS[pin.id] || {}).region]; return !!(r && r.sideArea && r !== region); }
 // Kartenknopf auf den sichtbaren Bildort setzen: Bild-% -> Ausschnitt-% bei background-size cover; danach in den Rahmen ziehen.
 function pinPlace(map, b, pin, region) {
   const ar = region.aspect || 1.49, w = map.clientWidth || 1, h = map.clientHeight || 1;
@@ -1046,7 +1050,7 @@ function render() {
     map.appendChild(b);
   } else if (!locked) {
     const open = new Set((loc.exits || []).map((ex) => ex.id));
-    (region.pins || []).filter((pin) => !(D.LOCATIONS[pin.id] || {}).parent).forEach((pin) => {
+    (region.pins || []).filter((pin) => !(D.LOCATIONS[pin.id] || {}).parent && !sideAreaPin(pin, region)).forEach((pin) => {
       const b = document.createElement("button");
       const reachable = open.has(pin.id);
       b.className = "pin" + (pin.id === loc.id ? " here" : "");
