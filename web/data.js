@@ -257,7 +257,7 @@ const NPCs = {
   selwyn: {
     id: "selwyn", name: "Selwyn", title: "Hüter der Totenlichter", location: "tempel",
     text: "Selwyn, ein Tempeldiener, wacht über die Totenlichter. Keine Flamme erlischt, solange er hier steht.",
-    art: "npcs/npc_tempelstimme.jpg", merchant: false,
+    art: "ui/siluette_mann.jpg" /* Platzhalter; sobald Ext Art liefert: "npcs/npc_selwyn.jpg" */, merchant: false,
     pin: { x: 32, y: 82 }, faction: "tempel",
     lines: ["Jedes Licht hier gehört einem Namen. Fasst keines an."],
     talk: { start: "Sprecht leise. Die Totenlichter brennen für jene, die nicht mehr sprechen können." }
