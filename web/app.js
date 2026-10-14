@@ -515,7 +515,9 @@ function choose(go) {
 function renderTalk() {
   const npc = lastTalk;
   const node = state.dialogue && state.dialogue.node;
-  const spoken = (npc.talk && (npc.talk[node] || npc.talk.start)) || npc.text;
+  // slotTalk (Hof, 14.10.): Begrüßung je Zeitfenster, "<wochentag>.<phase>" vor "<phase>", sonst talk.start.
+  const slot = node === "start" && npc.slotTalk ? (npc.slotTalk[weekday(state.day).id + "." + state.phase] || npc.slotTalk[state.phase]) : null;
+  const spoken = slot || (npc.talk && (npc.talk[node] || npc.talk.start)) || npc.text;
   showFace(npc);
   showLine(spoken, talkChoices());
 }
