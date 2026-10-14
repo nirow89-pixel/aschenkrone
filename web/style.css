@@ -429,3 +429,19 @@ details.bitten-abschnitt>summary{cursor:pointer;font-family:"AkSZ","Cinzel",Geor
 .cw-atem-pips i { width: 9px; height: 9px; border-radius: 50%; border: 1px solid #7fb6d8; background: transparent; }
 .cw-atem-pips i.voll { background: #7fb6d8; }
 .cw-atem-verbrauch { color: #c9a66b; white-space: nowrap; }
+
+/* Build C 14.10.: einheitliche Scrollleisten (schmal, Gold auf Schwarz) */
+*{scrollbar-width:thin;scrollbar-color:#c7a056 #0e0709}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:#0e0709;border-left:1px solid #3a2614}
+::-webkit-scrollbar-thumb{background:linear-gradient(90deg,#8a6a2e,#e0b45a,#8a6a2e);border-radius:4px;border:1px solid #0e0709}
+::-webkit-scrollbar-thumb:hover{background:#f0c66a}
+::-webkit-scrollbar-corner{background:#0e0709}
+/* Handel: nie waagerecht scrollen, Kacheln schrumpfen mit; Leiste am Rand des Seitenrahmens */
+.trade-col,.trade-col .tile-grid{overflow-x:hidden!important}
+.trade-col .tile-grid{grid-template-columns:repeat(auto-fill,minmax(min(88px,100%),1fr))}
+.trade-col .tile{min-width:0;overflow-wrap:break-word;hyphens:auto}
+.trade-col .tile b{font-size:clamp(10.5px,.95vw,12.5px)!important}
+.trade-col .tile .tile-art{max-width:100%}
+#scene-sheet.trade-bg .trade-col{padding-right:.5%}
+#scene-sheet.trade-bg .tile-grid{padding-right:calc(1.9% + 4px)}
