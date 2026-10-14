@@ -1630,3 +1630,140 @@ function migV10(s) {
   s.combatEnd = null;
   return s;
 }
+
+// ==== Stufe f · Bitten-Schema (Spec A 14.10.): Start-Folge, Erzähl-Gespräch, Besorgungsbitten, runde Knöpfe, Einblendungen ====
+function textVars(s, anredeKey) {
+  const a = (D.ANREDE[anredeKey || "eltern"] || {})[heroGender()] || "";
+  return String(s || "").replace(/\{anrede\}/g, a).replace(/\{name\}/g, (state.hero && state.hero.name) || "");
+}
+function bittenState() { return state.bitten || (state.bitten = {}); }
+function hatItem(id) { return (state.inventory || []).includes(id); }
+function nimmItem(id) { const i = state.inventory.indexOf(id); if (i >= 0) state.inventory.splice(i, 1); return i >= 0; }
+function bitteToast(text) {
+  const pane = document.getElementById("pane-scene"); if (!pane) return;
+  const t = document.createElement("div"); t.className = "bitte-toast"; t.textContent = text;
+  (pane.querySelector(".pane-body") || pane).appendChild(t);
+  setTimeout(() => t.classList.add("aus"), 1600); setTimeout(() => t.remove(), 2000);
+}
+function bitteBlink() {
+  const b = document.querySelector('[data-sheet="quests"]'); if (!b) return;
+  b.classList.remove("blink"); void b.offsetWidth; b.classList.add("blink"); setTimeout(() => b.classList.remove("blink"), 2000);
+}
+function giveBitte(id) {
+  const bs = bittenState(); if (!D.BITTEN[id] || bs[id]) return false;
+  bs[id] = { status: "aktiv", schritt: 0, tag: state.day };
+  log("Neue Bitte: " + D.BITTEN[id].title + ".");
+  bitteToast("Neue Bitte erhalten"); bitteBlink(); persist();
+  return true;
+}
+function bitteSchritt(id) { const b = bittenState()[id]; return b ? b.schritt : -1; }
+function bitteAktiv(id) { const b = bittenState()[id]; return !!b && b.status === "aktiv"; }
+function finishBitte(id, ok) {
+  const b = bittenState()[id], q = D.BITTEN[id]; if (!b || !q) return;
+  b.status = ok === false ? "fehlgeschlagen" : "abgeschlossen"; b.ende = state.day;
+  if (ok !== false) Object.entries((q.lohn && q.lohn.bond) || {}).forEach(([npc, n]) => bumpBond(npc, n, { source: "bitte" }));
+  log((ok === false ? "Bitte fehlgeschlagen: " : "Bitte abgeschlossen: ") + q.title + ".");
+  bitteToast(ok === false ? "Bitte fehlgeschlagen" : "Bitte abgeschlossen");
+}
+function failBitte(id) { finishBitte(id, false); }
+// Knöpfe am aktuellen Ort: aufheben (Schritt offen, Gegenstand fehlt), umwandeln (von im Beutel).
+function bitteKnoepfeHier() {
+  const out = [];
+  Object.keys(D.BITTEN).filter(bitteAktiv).forEach((id) => D.BITTEN[id].schritte.forEach((st, i) => {
+    if (st.ort !== state.location) return;
+    if (st.art === "aufheben" && (st.mehrfach || bitteSchritt(id) === i) && !hatItem(st.item)) out.push({ id, i, st });
+    if (st.art === "umwandeln" && hatItem(st.von)) out.push({ id, i, st });
+  }));
+  return out;
+}
+function bitteKnopf(id, i) {
+  const st = D.BITTEN[id].schritte[i], b = bittenState()[id];
+  if (st.art === "aufheben") state.inventory.push(st.item);
+  if (st.art === "umwandeln") { nimmItem(st.von); state.inventory.push(st.zu); }
+  b.schritt = Math.max(b.schritt, i + 1);
+  log(st.label + ".");
+  persist(); render();
+}
+// Zwang: NPC steht am zwang.ort, solange die Bitte aktiv ist und das Schritt-Item im Beutel liegt (auch nachts).
+function bitteZwang(npcId) {
+  for (const id of Object.keys(D.BITTEN)) {
+    if (!bitteAktiv(id)) continue;
+    const st = D.BITTEN[id].schritte.find((x) => x.npc === npcId && x.zwang && (!x.item || hatItem(x.item)));
+    if (st) return st.zwang.ort;
+  }
+  return null;
+}
+const _npcLocationNowBasis = npcLocationNow;
+npcLocationNow = function (n, day, phase) { const z = n && state && state.bitten ? bitteZwang(n.id) : null; return z || _npcLocationNowBasis(n, day, phase); };
+const SCENE_ROUND_HOOKS = [];
+SCENE_ROUND_HOOKS.push((scene) => bitteKnoepfeHier().forEach(({ id, i, st }) => {
+  const b = document.createElement("button");
+  b.className = "act-round"; b.dataset.bitte = id; b.dataset.schritt = i; b.title = st.label;
+  b.style.left = (st.x || 50) + "%"; b.style.top = (st.y || 62) + "%";
+  b.innerHTML = '<span class="ring"><img alt=""></span><span class="tag">' + esc(st.label) + "</span>";
+  onImg(b.querySelector("img"), st.bild);
+  b.onclick = () => bitteKnopf(id, i);
+  scene.appendChild(b);
+}));
+// Abgabe beim NPC als Gesprächsoption.
+TALK_HOOKS.push((npc, c) => Object.keys(D.BITTEN).filter(bitteAktiv).forEach((id) => D.BITTEN[id].schritte.forEach((st, i) => {
+  if (st.art === "abgeben" && st.npc === npc.id && hatItem(st.item)) c.push({ label: st.label, go: "bitte_abgeben:" + id + ":" + i });
+})));
+CHOOSE_HOOKS.bitte_abgeben = (go) => {
+  const [, id, i] = go.split(":"); const st = D.BITTEN[id] && D.BITTEN[id].schritte[+i];
+  if (!st || !bitteAktiv(id) || !nimmItem(st.item)) return "";
+  bittenState()[id].schritt = +i + 1;
+  finishBitte(id, true);
+  return st.text || "";
+};
+// Erzähl-Gespräch mit Porträt, ohne Nähe-Zeile, ohne Zeit; „Weiter“ vergibt ggf. die Bitte.
+function openStory(st) {
+  if (!st) return;
+  const npc = D.NPCs[st.npc];
+  state.dialogue = { npcId: st.npc, node: "story", story: st.id };
+  lastTalk = npc; render();
+  showFace(npc); document.getElementById("face-bond").hidden = true;
+  showLine(textVars(st.text, st.anrede), [{ label: "Weiter", go: "story_weiter:" + st.id }]);
+}
+CHOOSE_HOOKS.story_weiter = (go) => {
+  const st = D.STORY[go.split(":")[1]];
+  if (st && st.id === "vater_start") state.startFolge = null;
+  choose("leave");
+  if (st && st.bitte) giveBitte(st.bitte);
+  return "";
+};
+function startFolgeOffen() { return state && state.startFolge === "vater" && !state.narrator && !state.dialogue && !state.inCombat; }
+(() => {
+  const btn = document.getElementById("narr-close"), basis = btn.onclick;
+  btn.onclick = () => {
+    const warIntro = !!(state && state.narrator && state.narrator.id === "intro");
+    basis();
+    if (warIntro && state.startFolge === "vater") setTimeout(() => { if (startFolgeOffen()) openStory(D.STORY.vater_start); }, 1000);
+  };
+})();
+const _openPlayBasis = openPlay;
+openPlay = function () { _openPlayBasis(); if (startFolgeOffen()) openStory(D.STORY.vater_start); };
+// Alte Wolf-Bitten: gleiche Einblendungen wie das Bitten-Schema.
+const _chooseBasis = choose;
+choose = function (go) {
+  const vor = state && JSON.stringify(state.quests || {});
+  _chooseBasis(go);
+  if (!state || (go !== "quest" && go !== "done") || JSON.stringify(state.quests || {}) === vor) return;
+  if (go === "quest") { bitteToast("Neue Bitte erhalten"); bitteBlink(); } else bitteToast("Bitte abgeschlossen");
+};
+// Bitten-Blatt mit Abschnitten; Auf-/Zuklappen nur im Browser (localStorage „aschenkrone-ui“), nicht im Spielstand.
+function uiPrefs() { try { return JSON.parse(localStorage.getItem("aschenkrone-ui") || "{}"); } catch { return {}; } }
+function bittenSheetHtml() {
+  const card = (q, st) => "<div class='card quest" + (st !== "offen" ? " done" : "") + "'><b>" + esc(q.title) + "</b><div><b>Wo:</b> " + esc(q.where) + "</div><div><b>Was:</b> " + esc(q.goal) + "</div><div class='tiny'>" + st + "</div></div>";
+  const offen = [], fertig = [], fehl = [];
+  Object.keys(state.quests || {}).forEach((id) => { const q = D.QUESTS[id]; if (!q) return; (state.quests[id] === "done" ? fertig : offen).push(card(q, state.quests[id] === "done" ? "erledigt" : "offen")); });
+  Object.entries(state.bitten || {}).forEach(([id, b]) => { const q = D.BITTEN[id]; if (!q) return;
+    if (b.status === "aktiv") offen.push(card(q, "offen")); else if (b.status === "abgeschlossen") fertig.push(card(q, "abgeschlossen")); else fehl.push(card(q, "fehlgeschlagen")); });
+  const p = uiPrefs(), sec = (key, name, list) => "<details class='bitten-abschnitt' data-ui='" + key + "'" + (p["bitten_" + key] === false ? "" : " open") + "><summary>" + name + " (" + list.length + ")</summary>" + (list.join("") || "<p class='tiny'>Keine.</p>") + "</details>";
+  return "<h3>Offen</h3>" + (offen.join("") || "<p>Keine offene Bitte.</p>") + sec("abgeschlossen", "Abgeschlossen", fertig) + sec("fehlgeschlagen", "Fehlgeschlagen", fehl);
+}
+function wireBittenSheet(body) {
+  body.querySelectorAll("details.bitten-abschnitt").forEach((d) => d.addEventListener("toggle", () => {
+    const p = uiPrefs(); p["bitten_" + d.dataset.ui] = d.open; try { localStorage.setItem("aschenkrone-ui", JSON.stringify(p)); } catch {}
+  }));
+}

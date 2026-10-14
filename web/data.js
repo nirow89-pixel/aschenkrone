@@ -80,6 +80,9 @@ const FLUECHE = {
 // Ext-Art-Dateien, die schon im Repo liegen (assets/…). Optionale Bilder werden nur geladen, wenn sie hier stehen,
 // sonst greift der Ersatz (keine 404). Neue Lieferungen aus Drive hier eintragen.
 const EXT_ART = [
+  "ui/intro_welt.jpg",
+  "questgegenstaende/quest_eimer_leer.jpg",
+  "questgegenstaende/quest_eimer_voll.jpg",
   "ui/siluette_mann.jpg",
   "ui/siluette_frau.jpg",
   "ui/handel_bg.jpg",
@@ -130,6 +133,9 @@ const ITEMS = {
   nebeltrank: { id: "nebeltrank", img: "items/nebeltrank.jpg", name: "Nebeltrank", type: "verbrauch", ap: 1, price: 12, sell: 6, text: "Danach fällt der nächste Entschluss leichter." },
   waldphiole: { id: "waldphiole", img: "items/waldphiole.jpg", name: "Waldphiole", type: "verbrauch", heal: 12, will: 1, wk: 5, price: 14, sell: 7, text: "Bitter. Danach steht der Kopf klarer." },
   aschesalbe: { id: "aschesalbe", img: "items/aschesalbe.jpg", name: "Aschesalbe", type: "verbrauch", heal: 8, def: 1, price: 11, sell: 5, text: "Zieht auf der Haut und hält eine Weile stand." },
+  // Questgegenstände (Spec A 14.10.): type "quest", nie im Handel, Bilder in questgegenstaende/. Texte PLATZHALTER für Ext Text.
+  quest_eimer_leer: { id: "quest_eimer_leer", img: "questgegenstaende/quest_eimer_leer.jpg", name: "Leerer Eimer", type: "quest", text: "Holz, Eisenreif, ein Henkel, der quietscht." },
+  quest_eimer_voll: { id: "quest_eimer_voll", img: "questgegenstaende/quest_eimer_voll.jpg", name: "Voller Eimer", type: "quest", text: "Schwer und kalt. Nichts verschütten." },
   obsidianmuenze: { id: "obsidianmuenze", img: "items/obsidianmuenze.jpg", name: "Obsidianmünze", type: "quest", text: "Auf der einen Seite eine Krone, auf der anderen ein offenes Tor." },
   aschenkrone: { id: "aschenkrone", name: "Aschenkrone", type: "quest", text: "Das Reifstück des Reichs. Wer es trägt, trägt auch den Titel." },
   dorfstahl: { id: "dorfstahl", img: "items/dorfstahl.jpg", name: "Dorfstahl", type: "waffe", slot: "waffeL", atk: 2, dmgMin: 2, dmgMax: 4, speed: 1.9, price: 18, sell: 9, text: "Ein einfacher Dolch mit gerader Klinge und Ledergriff." },
@@ -630,8 +636,8 @@ const QUESTS = {
 
 const NARRATOR = {
   intro: {
-    id: "intro", title: "Im Reich der Asche", art: null,
-    text: "Das Aschenreich steht unter König Malrik Vael. Seit zwölf Jahren trägt er die Aschenkrone, das Reifstück im Palast und den Titel zugleich. Die Straßen sind sicher, solange niemand widerspricht. Unter dieser Ruhe sammelt sich Streit. Ihr steht noch ohne Seite. Jede Bindung, die ihr eingeht, lässt sich später lösen, aber nie ohne Preis."
+    id: "intro", title: "Im Reich der Asche", art: "ui/intro_welt.jpg", artLeft: true,
+    text: "Das Aschenreich steht unter König Malrik Vael. Seit zwölf Jahren trägt er die Aschenkrone, das Reifstück im Palast und den Titel zugleich. Die Straßen sind sicher, solange niemand widerspricht. Unter dieser Ruhe sammelt sich Streit, noch im Geheimen, doch wie lange noch?\n\nDoch von all dem ist in Lotfild nichts zu spüren. Ein ruhiges Stück Land, das deine Familie seit Generationen bewohnt und bestellt.\n\nDu bist in ruhigen Zeiten aufgewachsen und jetzt in ein Alter gekommen, wo es heißt, mit anpacken, die Arbeit erledigt sich nicht von selbst!"
   },
   unterorten: {
     id: "unterorten", title: "Unterorten", art: "ui/narr_unterorten.jpg",
@@ -1098,6 +1104,35 @@ const BASE_HERO = { level: 1, hp: 28, hpMax: 28, atk: 4, def: 2, will: 3, fortun
 const WEEKDAYS = [ { id: "mondtag", name: "Mondtag" }, { id: "siestag", name: "Siestag" }, { id: "mittwend", name: "Mittwend" }, { id: "dunstag", name: "Dunstag" },
   { id: "freyatag", name: "Freyatag" }, { id: "aschtag", name: "Aschtag" }, { id: "sonnrast", name: "Sonnrast", rest: true } ];
 
+// Anrede je Geschlecht der Spielfigur ({anrede} in Texten, textVars()).
+const ANREDE = { eltern: { m: "Junge", w: "Mädel" } };
+// Kurze Erzähl-Gespräche mit Porträt (openStory): ein Text, ein Knopf „Weiter“, danach optional eine Bitte.
+const STORY = {
+  vater_start: { id: "vater_start", npc: "hannes", anrede: "eltern", bitte: "wasser_kueche",
+    text: "Genug ausgeruht, {anrede}, es wird Zeit für dein Tagwerk. Gehe in die Scheune und hole dir einen Eimer und fülle diesen mit frischem Wasser aus dem Brunnen. Bring ihn dann deiner Mutter in die Küche." }
+};
+// Bitten-Schema (Spec A 14.10.): eine Bitte = kompakter Datensatz, nur „schritte“ ausfüllen. Beispiel:
+//   meine_bitte: { id, title, giver, where, goal, schritte: [
+//     { art: "aufheben", ort: "<ortId>", item: "<itemId>", label: "…", bild: "…" },          // runder Knopf am Ort
+//     { art: "umwandeln", ort: "<ortId>", von: "<itemId>", zu: "<itemId>", label: "…", bild: "…" },
+//     { art: "abgeben", npc: "<npcId>", item: "<itemId>", label: "…", text: "…", zwang: { ort: "<ortId>" } } ],
+//     lohn: { bond: { <npcId>: n } }, folge: { hinweis: "…", bitte: null } }
+const BITTEN = {
+  wasser_kueche: {
+    id: "wasser_kueche", title: "Wasser für die Küche", giver: "hannes", empfaenger: "ailsa",
+    where: "Scheune, Brunnen, Küche im Bauernhaus",
+    goal: "Hol einen Eimer aus der Scheune, füll ihn am Brunnen und bring ihn deiner Mutter in die Küche.",
+    schritte: [
+      { art: "aufheben", ort: "lotfild_scheune_innen", item: "quest_eimer_leer", label: "Eimer nehmen", bild: "questgegenstaende/quest_eimer_leer.jpg" },
+      { art: "umwandeln", ort: "lotfild_brunnen", von: "quest_eimer_leer", zu: "quest_eimer_voll", label: "Wasser holen", bild: "questgegenstaende/quest_eimer_voll.jpg" },
+      { art: "abgeben", npc: "ailsa", item: "quest_eimer_voll", label: "Wasser geben", zwang: { ort: "bauernhaus_kueche" },
+        text: "Danke, mein Schatz, das ist lieb. Jetzt kann ich das Essen für alle vorbereiten.\n\nGeh doch zu deinem Vater in die Werkstatt, er hat bestimmt noch mehr Aufgaben für dich." }
+    ],
+    lohn: { bond: { ailsa: 2 } },  // Leitung 14.10.
+    folge: { hinweis: "Vater in der Werkstatt", bitte: null }  // nur Text, keine Folgebitte
+  }
+};
+
 const WOLF_LINES = {
   wolf_niederlage: "Ihr liegt am Brunnen, nicht auf dem Pfad. Der Wolf hat euch umgeworfen und ist geblieben. Trinkt, dann entscheidet, ob ihr noch einmal hingeht."
 };
@@ -1140,7 +1175,7 @@ ausstellungNeu();
 
 window.D = {
   WORLD, FACTIONS, DAY_PHASES, BOND_STEPS, STAT_KEYS,
-  HERKUENFTE, FLUECHE, PORTRAITS, AVATARE, START_POOL, EXT_ART, ITEMS, SKILLS, MONSTER, NPCs, QUESTS,
+  HERKUENFTE, FLUECHE, PORTRAITS, AVATARE, START_POOL, EXT_ART, ITEMS, SKILLS, MONSTER, NPCs, QUESTS, BITTEN, STORY, ANREDE,
   NARRATOR, REGIONS, LOCATIONS, BASE_HERO, WEEKDAYS, AUSSTELLUNG, ausstellungNeu, WOLF_LINES, SPAWN_TABLES, ZEICHEN, PFAD_ZEICHEN, GRAD_STUFEN
 };
 

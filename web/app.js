@@ -202,6 +202,7 @@ function load(n) {
   if (state.inCombat && state.combat) state.combat.engaged = false;
   // Offene Gespräche/Handel sind reiner UI-Zustand und lassen sich nach dem Laden nicht fortsetzen.
   state.dialogue = null; state.trading = false;
+  state.bitten = state.bitten || {};  // Bitten-Schema (Spec A): Altstände ohne Bitten
   fixTwoHanded();
   if (DEBUG) state.hero.gold += 500;
   activeSlot = n;
@@ -236,7 +237,7 @@ const START_LOCATION = "lotfild_bauernhaus";  // Neues Spiel startet auf dem Bau
 function newGame(payload) {
   state = {
     hero: createHero(payload.name, payload.gender, payload.portraitId, payload.points),
-    v: 0, location: START_LOCATION, phase: "vormittag", day: 1,
+    v: 0, location: START_LOCATION, phase: "morgen", day: 1, startFolge: "vater", bitten: {},  // Start Mondtag Morgen, danach Vater-Dialog (Spec A)
     inventory: ["glutphiole"], equipped: {}, flags: {}, log: [],
     quests: {}, bonds: {}, factions: {}, seenNarrator: { intro: true },  // Unterorten-Rolle erscheint beim ersten echten Besuch (Start ist Lotfild)
     dialogue: null, trading: false, inCombat: false, combat: null,
@@ -786,7 +787,7 @@ function openTrade() {
   const body = document.getElementById("sheet-body");
   const extra = Object.keys((state.stock || {})[npc.id] || {}).filter((id) => !(npc.shop || []).includes(id));
   const mk = merchState(npc);
-  const buyList = (mk ? Object.keys(mk.stock).filter((id) => mk.stock[id] > 0) : (npc.shop || []).concat(extra)).map((id) => D.ITEMS[id]).filter(Boolean)
+  const buyList = (mk ? Object.keys(mk.stock).filter((id) => mk.stock[id] > 0) : (npc.shop || []).concat(extra)).map((id) => D.ITEMS[id]).filter((it) => it && it.type !== "quest")
     .filter((it) => mk || shopStock(npc, it.id) !== 0 || (npc.shop || []).includes(it.id));
   const gold = state.hero.gold;
   body.classList.remove("scroll");
@@ -827,7 +828,7 @@ function openTrade() {
     else b.appendChild(tile(it, buyPrice(it) + " Gold", gold < buyPrice(it) ? "poor" : "", "buy", n || 1));
   });
   const s = document.getElementById("tr-sell");
-  groupItems(state.inventory).forEach(({ it, n }) => {
+  groupItems(state.inventory).filter(({ it }) => it.type !== "quest").forEach(({ it, n }) => {  // Questgegenstände nie im Handel
     const ok = it.sell && it.type !== "quest";
     s.appendChild(tile(it, ok ? sellPrice(it) + " Gold" : "unverkäuflich", ok ? "" : "locked", ok ? "sell" : "none", n));
   });
@@ -954,8 +955,7 @@ function paintSheet() {
       });
     }
   } else if (sheet === "quests") {
-    const qs = Object.keys(state.quests).map((id) => ({ ...D.QUESTS[id], status: state.quests[id] })).filter((q) => q.id);
-    body.innerHTML = qs.length ? qs.map((q) => "<div class='card quest" + (q.status === "done" ? " done" : "") + "'><b>" + q.title + "</b><div><b>Wo:</b> " + q.where + "</div><div><b>Was:</b> " + q.goal + "</div><div class='tiny'>" + (q.status === "done" ? "erledigt" : "offen") + "</div></div>").join("") : "<p>Keine offene Bitte.</p>";
+    body.innerHTML = bittenSheetHtml(); wireBittenSheet(body);  // Abschnitte Offen/Abgeschlossen/Fehlgeschlagen (systeme.js, Stufe f)
   } else if (sheet === "stats") {
     body.innerHTML = "<h3>Leben</h3><div class='card' data-tip='' data-vtip='hp'><b>Gesundheit</b> " + state.hero.hp + "/" + maxHp() + "<div class='bar hp'><i style='width:" + Math.round(state.hero.hp / maxHp() * 100) + "%'></i></div></div><h3>Grundwerte</h3>" + D.STAT_KEYS.map((k) => {
       const xp = state.statXp[k.id] || { xp: 0, need: 12 };
@@ -1009,7 +1009,8 @@ function render() {
   document.getElementById("place-blurb").textContent = loc.blurb || "";
   document.getElementById("btn-rest").hidden = true;  // Rasten nur noch beim Gastwirt (Einkehren)
   renderDaily(scene);
-  scene.querySelectorAll(".spot,.arch").forEach((n) => n.remove());
+  scene.querySelectorAll(".spot,.arch,.act-round").forEach((n) => n.remove());
+  if (typeof SCENE_ROUND_HOOKS !== "undefined" && !(state.narrator || state.inCombat || state.trading || state.dialogue)) SCENE_ROUND_HOOKS.forEach((fn) => { try { fn(scene); } catch (e) { console.error(e); } });
   // Rückweg zum Zentralort des Gebiets liegt im Kartenfenster, nicht auf dem Ortsbild.
   const hubLoc = !loc.parent && region.hub && region.hub !== loc.id ? D.LOCATIONS[region.hub] : null;
   (loc.exits || []).filter((ex) => ex.arch && !(hubLoc && ex.id === hubLoc.id)).forEach((ex) => {
@@ -1086,6 +1087,7 @@ function render() {
   if (acts) acts.hidden = !(state.inCombat && state.combat && !state.combat.engaged && !state.combat.surrendered);
   const narr = document.getElementById("narrator");
   narr.hidden = !state.narrator;
+  narr.classList.toggle("art-left", !!(state.narrator && state.narrator.artLeft));
   if (state.narrator) {
     document.getElementById("narr-title").textContent = state.narrator.title || "Erzähler";
     document.getElementById("narr-text").textContent = state.narrator.text || "";
@@ -1275,7 +1277,7 @@ function slotWord(it) {
     const s = EQUIP_SLOTS.find((x) => x.id === it.slot);
     return s ? s.name : it.slot;
   }
-  return { verbrauch: "Verbrauch", ware: "Handelsware", quest: "Auftrag" }[it.type] || "";
+  return { verbrauch: "Verbrauch", ware: "Handelsware", quest: "Questgegenstand" }[it.type] || "";
 }
 function tipCompare(it) {
   if (!it.slot) return "";
