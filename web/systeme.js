@@ -1644,7 +1644,7 @@ function bitteToast(text) {
   const pane = document.getElementById("pane-scene"); if (!pane) return;
   const t = document.createElement("div"); t.className = "bitte-toast"; t.textContent = text;
   (pane.querySelector(".pane-body") || pane).appendChild(t);
-  setTimeout(() => t.classList.add("aus"), 1600); setTimeout(() => t.remove(), 2000);
+  setTimeout(() => t.classList.add("aus"), 2000); setTimeout(() => t.remove(), 2400);  // 2 s voll sichtbar, dann 0,4 s ausblenden
 }
 function bitteBlink() {
   const b = document.querySelector('[data-sheet="quests"]'); if (!b) return;
@@ -1995,7 +1995,7 @@ const _showTipBasisZ = showTip;
 showTip = function (node) {
   if (node && node.dataset && node.dataset.ztip) {
     if (!tipEl) { tipEl = document.createElement("div"); tipEl.id = "item-tip"; document.body.appendChild(tipEl); }
-    tipEl.innerHTML = zeichenTipHtml(node.dataset.ztip); tipEl.hidden = false;
+    tipEl.innerHTML = zeichenTipHtml(node.dataset.ztip) + (node.dataset.zhint ? "<div class='tiny'><i>" + esc(node.dataset.zhint) + "</i></div>" : ""); tipEl.hidden = false;
     const r = node.getBoundingClientRect(), w = tipEl.offsetWidth, h = tipEl.offsetHeight;
     tipEl.style.left = clamp(r.left + r.width / 2 - w / 2, 4, window.innerWidth - w - 4) + "px";
     tipEl.style.top = clamp(r.top - h - 8 < 4 ? r.bottom + 8 : r.top - h - 8, 4, window.innerHeight - h - 4) + "px";
@@ -2020,10 +2020,30 @@ zeichenSheetHtml = function () {
   if (!Object.keys(z.learned).length) return html + "<p class='tiny'>Noch keine Zeichen. Ein Grad-Aufstieg mit Richtung Eisenwacht, Glutweber oder Nebelhand öffnet das erste.</p>";
   if (!ids.length) return html + "<p class='tiny'>Alle gelernten Zeichen sind angelegt.</p>";
   return html + "<div class='tile-grid z-gelernt'>" + ids.map((id) => { const Z = D.ZEICHEN[id];
-    return "<div class='card tile' data-zeichen='" + id + "'" + zTipAttr(id) + "><span class='tile-art'><img alt='' src=\"" + zeichenBild(Z) + "\" onerror=\"this.onerror=null;this.src='" + art(ZEICHEN_PLATZHALTER) + "'\"></span><b>" + esc(Z.name) + "</b><div class='tiny'>" + (voll ? "Plätze voll" : "Anlegen") + " · Atem " + Z.ap + "</div></div>"; }).join("") + "</div>";
+    return "<div class='card tile' data-zeichen='" + id + "'" + zTipAttr(id) + " data-zhint='" + (voll ? "Plätze voll" : "Klicken zum Anlegen") + "'><span class='tile-art'><img alt='' src=\"" + zeichenBild(Z) + "\" onerror=\"this.onerror=null;this.src='" + art(ZEICHEN_PLATZHALTER) + "'\"></span><b>" + esc(Z.name) + "</b></div>"; }).join("") + "</div>";
 };
 bagZeichenHtml = function () {
   const z = zState(), n = zeichenSlots(); let html = "<div class='zeichen-row' id='bag-zeichen'>";
   for (let i = 0; i < n; i++) { const id = z.slots[i]; html += id ? zSlotHtml(id, "div").replace(" data-zeichen='" + id + "'", "") : "<div class='z-slot leer'>Zeichen</div>"; }
   return html + "</div>";
 };
+
+// Smoke-Fixes 14.10.
+// (2) Abwesende NPCs (z. B. Ruß, nur nachts): Klick wartete bis zur Anwesenheit, öffnete aber kein Gespräch. Jetzt direkt ansprechen.
+const _waitForBasisS = waitFor;
+waitFor = function (id) {
+  const r = _waitForBasisS(id);
+  if (state && npcAvailableNow(id) && !state.inCombat && !state.narrator && !state.dialogue && !(typeof gradSperre === "function" && gradSperre())) talk(id);
+  return r;
+};
+// (3) Hof Lotfild: Hinein/Hinaus zwischen Ort und eigenem Innenraum kostete eine ganze Tageszeit, so verschwanden Hof-NPCs (Brannoc an der Scheune) beim kurzen Gang hinein.
+const _travelBasisS = travel;
+travel = function (toId) {
+  const L = D.LOCATIONS, here = state && L[state.location], dest = L[toId];
+  const innen = here && dest && here.region === "lotfild" && dest.region === "lotfild" && (dest.parent === here.id || here.parent === toId);
+  if (!innen) return _travelBasisS(toId);
+  const alt = TIME_COST.travel; TIME_COST.travel = 0;
+  try { return _travelBasisS(toId); } finally { TIME_COST.travel = alt; }
+};
+// (4) Intro-Bild vorladen, damit es mit dem Text zusammen erscheint (nicht erst nachgeladen).
+(function () { try { const a = D.NARRATOR.intro && D.NARRATOR.intro.art; if (a) { const im = new Image(); im.src = art(a); window.__introBild = im; } } catch (e) {} })();
