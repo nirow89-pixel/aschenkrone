@@ -1128,7 +1128,7 @@ const LOCATIONS = {
     ] },
   bauernhaus_wohnzimmer: { id: "bauernhaus_wohnzimmer", name: "Wohnzimmer", region: "bauernhaus_innen", blurb: "Am Kamin hängt das Pachtbuch an einem Nagel, damit es keiner vergisst. Auf der Bank sitzt man nach Rang: Vater, Mutter, dann der Rest.", art: "locations/bauernhaus_wohnzimmer.jpg",
     exits: [ { id: "bauernhaus_diele", label: "Diele", x: 50, y: 90, arch: true } ] },
-  bauernhaus_meinzimmer: { id: "bauernhaus_meinzimmer", name: "Mein Zimmer", region: "bauernhaus_innen", blurb: "Ein Bett, kürzer als du. In der Truhe liegt, was du besitzt, und der Deckel schließt trotzdem. Durchs Fenster siehst du die Straße, die aus Lotfild hinausführt.", art: "locations/bauernhaus_meinzimmer.jpg",
+  bauernhaus_meinzimmer: { id: "bauernhaus_meinzimmer", name: "Mein Zimmer", region: "bauernhaus_innen", rest: true, blurb: "Ein Bett, kürzer als du. In der Truhe liegt, was du besitzt, und der Deckel schließt trotzdem. Durchs Fenster siehst du die Straße, die aus Lotfild hinausführt.", art: "locations/bauernhaus_meinzimmer.jpg",
     exits: [ { id: "bauernhaus_diele", label: "Diele", x: 50, y: 90, arch: true } ] },
   bauernhaus_kueche: { id: "bauernhaus_kueche", name: "Küche", region: "bauernhaus_innen", blurb: "Rauch im Gebälk, Ruß an den Töpfen. Das Brot ist angeschnitten und abgezählt. Wer hier zu viel nimmt, merkt es am nächsten Morgen an den Blicken.", art: "locations/bauernhaus_kueche.jpg",
     exits: [ { id: "bauernhaus_diele", label: "Diele", x: 50, y: 90, arch: true } ] },

@@ -2256,3 +2256,13 @@ function gradFensterVerstecken() { const w = document.getElementById("grad-win")
   const basis = window[fn];
   window[fn] = function (...a) { kampfEndeLaeuft = true; try { return basis.apply(this, a); } finally { kampfEndeLaeuft = false; gradFensterVerstecken(); } };
 });
+
+// =====================================================================
+// Bett-Rast (14.10.): eigenes Bett im Bauernhaus (Mein Zimmer, loc.rest) – gleiche Dauerwahl wie beim Wirt, kostenlos.
+// Nutzt rest() (app.js) → rastChoices → CHOOSE_HOOKS.rast/restFor; danach „Weiter“, Autosave über sysChoose.
+// =====================================================================
+SCENE_EXTRAS.push(() => {
+  const loc = D.LOCATIONS[state.location];
+  return loc && loc.rest ? [{ label: "Im eigenen Bett ruhen", go: "bett" }] : [];
+});
+SCENE_HANDLERS.bett = () => { rest(); return ""; };
