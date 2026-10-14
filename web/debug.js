@@ -6,7 +6,8 @@ const DEBUG_OPTS = [
   { id: "grad", label: "Grad-Aufstieg: Knopf „+1 Grad“ über dem Beutel" },
   { id: "tag", label: "Zeit: Knopf „+1 Tag“" },
   { id: "stufe", label: "Stufenaufstieg: Knopf „+1 Stufe“ (Grundwert steigt, Grad wie im Spiel)" },
-  { id: "stadt", label: "Reise: Knopf „Nach Aschenstadt“ (Platz)" }
+  { id: "stadt", label: "Reise: Knopf „Nach Aschenstadt“ (Platz)" },
+  { id: "uhr", label: "Uhr: +15 min, +1 h, +4 h, bis nächste Tageszeit, bis 0 Uhr, genaue Uhrzeit" }
 ];
 // +1 Stufe auf den niedrigsten Grundwert unter 20; Grad und Gradfenster entstehen wie im Spiel (trackPeak).
 function debugStufe() {
@@ -53,6 +54,11 @@ const DEBUG_ACTS = {
   stufe: { label: "+1 Stufe", run: debugStufe },
   stadt: { label: "Nach Aschenstadt", run: debugStadt }
 };
+// Uhr (Spec Uhrzeit §8): mehrere Knöpfe unter einer Option, plus genaue Anzeige HH:MM · min · Nachttag
+const DEBUG_UHR = [["uhr15", "+15 min", () => advanceMin(15)], ["uhr60", "+1 h", () => advanceMin(60)], ["uhr240", "+4 h", () => advanceMin(240)],
+  ["uhrPhase", "Bis nächste Tageszeit", () => advance(1)], ["uhr0", "Bis 0 Uhr", () => advanceMin(1440 - state.min)]];
+function debugUhrText() { if (!state || typeof state.min !== "number") return ""; const h = Math.floor(state.min / 60), m = state.min % 60;
+  return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0") + " · min " + state.min + " · Nachttag " + nightDay(state.day, state.min); }
 function paintDebugActs() {
   const acts = document.querySelector("#pane-hero .hero-acts");
   if (!acts) return;
@@ -66,6 +72,12 @@ function paintDebugActs() {
     b.onclick = () => { if (state && !state.inCombat) DEBUG_ACTS[id].run(); };
     box.appendChild(b);
   });
+  if (debugOpt("uhr") && typeof advanceMin === "function") {
+    box.hidden = false;
+    DEBUG_UHR.forEach(([id, label, run]) => { const b = document.createElement("button"); b.className = "dbg-act"; b.dataset.dbg = id; b.textContent = label;
+      b.onclick = () => { if (state && !state.inCombat) { run(); persist(); render(); } }; box.appendChild(b); });
+    const t = document.createElement("div"); t.className = "tiny dbg-uhr"; t.id = "dbg-uhr"; t.textContent = debugUhrText(); box.appendChild(t);
+  }
 }
 function debugSection() {
   const d = document.createElement("div");

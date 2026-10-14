@@ -24,13 +24,34 @@ const FACTIONS = {
 };
 
 const DAY_PHASES = [
-  { id: "morgen", name: "Morgen" },
-  { id: "vormittag", name: "Vormittag" },
-  { id: "mittag", name: "Mittag" },
-  { id: "nachmittag", name: "Nachmittag" },
-  { id: "abend", name: "Abend" },
-  { id: "nacht", name: "Nacht" }
+  { id: "morgen", name: "Morgen", from: 180, to: 479 },
+  { id: "vormittag", name: "Vormittag", from: 480, to: 719 },
+  { id: "mittag", name: "Mittag", from: 720, to: 839 },
+  { id: "nachmittag", name: "Nachmittag", from: 840, to: 1079 },
+  { id: "abend", name: "Abend", from: 1080, to: 1379 },
+  { id: "nacht", name: "Nacht", from: 1380, to: 179 }  // über Mitternacht
 ];
+// Uhrzeit (Spec 14.10.): Minuten 0–1439, Blockbeginn je Tageszeit, Wegkategorien.
+const BLOCK_START = { morgen: 180, vormittag: 480, mittag: 720, nachmittag: 840, abend: 1080, nacht: 1380 };
+const WAY_MIN = { kurz: 5, mittel: 20, weit: 60, fern: 180 };
+// Kanten-Tabelle (Schlüssel alphabetisch "a>b"); schlägt das arch-Flag. Ohne Eintrag gilt die Fallback-Regel (travelMinutes).
+const WAYS = (() => {
+  const t = {}, set = (a, list, k) => list.forEach((b) => { t[[a, b].sort().join(">")] = k; });
+  set("platz", ["burg", "tempel", "markt", "gassen"], "kurz");
+  set("nebelpfad", ["platz", "friedhof_eingang", "obsidiansee", "knochenfeld", "dorfzentrum"], "mittel");
+  set("nebelpfad", ["alter_baum", "auen_kreuzung"], "weit");
+  set("dorfzentrum", ["schmied", "ratshalle", "schenke"], "kurz");
+  set("friedhof_eingang", ["friedhof_verwaltung", "friedhof_graeberfelder", "friedhof_grosse_krypta"], "kurz");
+  set("alter_baum", ["hexenhuette", "blueteich", "sumpf"], "mittel");
+  set("auen_kreuzung", ["berum_zentralplatz"], "mittel");
+  set("auen_kreuzung", ["lotfild_strasse"], "weit");
+  set("auen_kreuzung", ["gebirge_kalte_wege"], "fern");
+  set("berum_zentralplatz", ["berum_fischmarkt", "berum_wilder_wal", "berum_anwesen_mcclair", "berum_docks"], "kurz");
+  set("gebirge_kalte_wege", ["gebirge_pfad", "gebirge_wasserfall", "nirfal_versammlungsplatz"], "mittel");
+  set("nirfal_versammlungsplatz", ["nirfal_langhaus", "nirfal_huetten", "nirfal_pfaehle"], "kurz");
+  set("lotfild_bauernhaus", ["lotfild_feld", "lotfild_apfelbaeume", "lotfild_scheune", "lotfild_werkstatt", "lotfild_brunnen", "lotfild_teich", "lotfild_strasse"], "kurz");
+  return t;
+})();
 
 const BOND_STEPS = [
   { min: -100, id: "todfeind", name: "Todfeind" },
@@ -111,6 +132,7 @@ const FLUECHE = {
 const EXT_ART = [
   "ui/intro_welt.jpg",
   "questgegenstaende/quest_eimer_leer.jpg",
+  "questgegenstaende/quest_aschenkrone.jpg",
   "questgegenstaende/quest_eimer_voll.jpg",
   "ui/siluette_mann.jpg",
   "ui/siluette_frau.jpg",
@@ -166,7 +188,7 @@ const ITEMS = {
   quest_eimer_leer: { id: "quest_eimer_leer", img: "questgegenstaende/quest_eimer_leer.jpg", name: "Leerer Eimer", type: "quest", text: "Holz, Eisenreif, ein Henkel, der quietscht." },
   quest_eimer_voll: { id: "quest_eimer_voll", img: "questgegenstaende/quest_eimer_voll.jpg", name: "Voller Eimer", type: "quest", text: "Schwer und kalt. Nichts verschütten." },
   obsidianmuenze: { id: "obsidianmuenze", img: "items/obsidianmuenze.jpg", name: "Obsidianmünze", type: "quest", text: "Auf der einen Seite eine Krone, auf der anderen ein offenes Tor." },
-  aschenkrone: { id: "aschenkrone", name: "Aschenkrone", type: "quest", text: "Das Reifstück des Reichs. Wer es trägt, trägt auch den Titel." },
+  aschenkrone: { id: "aschenkrone", img: "questgegenstaende/quest_aschenkrone.jpg", name: "Aschenkrone", type: "quest", text: "Das Reifstück des Reichs. Wer es trägt, trägt auch den Titel." },
   dorfstahl: { id: "dorfstahl", img: "items/dorfstahl.jpg", name: "Dorfstahl", type: "waffe", slot: "waffeL", atk: 2, dmgMin: 2, dmgMax: 4, speed: 1.9, price: 18, sell: 9, text: "Ein einfacher Dolch mit gerader Klinge und Ledergriff." },
   nebelklinge: { id: "nebelklinge", img: "items/nebelklinge.jpg", name: "Nebelklinge", type: "waffe", slot: "waffeL", atk: 4, dmgMin: 3, dmgMax: 7, speed: 2.1, fx: { vsMonster: { glashexe: 2 } }, price: 48, sell: 24, text: "Ein gerades Schwert mit heller, glatter Klinge und einfachem Querstück." },
   thronnadel: { id: "thronnadel", img: "items/thronnadel.jpg", name: "Thronnadel", type: "waffe", slot: "waffeL", atk: 3, dmgMin: 3, dmgMax: 7, speed: 2.1, fx: { vsMonster: { raeuber: 2 } }, price: 34, sell: 17, text: "Ein langer, dünner Stichdolch mit verziertem Messinggriff." },
@@ -1205,7 +1227,7 @@ ausstellungNeu();
 window.D = {
   WORLD, FACTIONS, DAY_PHASES, BOND_STEPS, STAT_KEYS,
   HERKUENFTE, FLUECHE, PORTRAITS, AVATARE, START_POOL, EXT_ART, ITEMS, SKILLS, MONSTER, NPCs, QUESTS, BITTEN, STORY, ANREDE,
-  NARRATOR, REGIONS, LOCATIONS, BASE_HERO, WEEKDAYS, AUSSTELLUNG, ausstellungNeu, WOLF_LINES, SPAWN_TABLES, ZEICHEN, PFAD_ZEICHEN, GRAD_STUFEN, GRUNDWERTE, STUFE_MAX, STUFEN_KOSTEN, GRAD_AUFSTIEGE, RICHTUNGEN, GRAD_BELOHNUNG, NEBENRICHTUNG_AB
+  NARRATOR, REGIONS, LOCATIONS, BASE_HERO, WEEKDAYS, AUSSTELLUNG, ausstellungNeu, WOLF_LINES, SPAWN_TABLES, ZEICHEN, PFAD_ZEICHEN, GRAD_STUFEN, GRUNDWERTE, STUFE_MAX, STUFEN_KOSTEN, GRAD_AUFSTIEGE, RICHTUNGEN, GRAD_BELOHNUNG, NEBENRICHTUNG_AB, BLOCK_START, WAY_MIN, WAYS
 };
 
 // ---- Male, Flüche, Segen (male-fluche-segen.md §6, fx laut grad-zeichen-kampf.md §12.4) ----

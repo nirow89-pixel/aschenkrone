@@ -195,7 +195,8 @@ function dailyActionsHere() { return DAILY_ACTIONS.filter((a) => a.locs.includes
 let dailyViaNpc = false;
 function dailyBlocked(a) {
   if (state.narrator || (state.dialogue && !dailyViaNpc) || state.inCombat || state.trading) return "Gerade nicht.";
-  if (state.daily[a.flag]) return "Heute erledigt.";
+  if (a.flag === "train" || a.flag === "study") { const t = trainSperre(); if (t) return t; }  // Uhrzeit §6: je Lehrer 1×, höchstens 2 am Tag
+  else if (state.daily[a.flag]) return "Heute erledigt.";
   if (a.gold && state.hero.gold < a.gold) return "Zu wenig Gold.";
   if (a.id === "confess") { const p = confessionPreview(); if (p.reason) return p.reason; }
   return "";
@@ -226,7 +227,7 @@ function doDaily(id) {
     line = "Ihr lest und hört zu. Etwas bleibt hängen.";
   } else if (id === "tavern") {
     bumpWk(5 + (state.location === "schenke" ? perkWkBonus("schenke") : 0));
-    state.hero.hp = maxHp(); onRest();  // Rasten gibt es nur noch beim Gastwirt
+    // Uhrzeit: Leben/Rast-WK kommen aus der gewählten Rast-Dauer (restFor)
     line = "Ein Krug, ein Bett, ein warmer Platz. Ihr schlaft und kommt wieder zu Kräften.";
   } else if (id === "redDoor") {
     bumpWk(6);
@@ -236,10 +237,11 @@ function doDaily(id) {
     bumpWk(4); gain("will", 1);
     line = "Unter dem alten Baum hört ihr nur den Wind.";
   }
-  advance(a.steps);
+  if (typeof a.min === "number") advanceMin(a.min); else advance(a.steps);  // Uhrzeit: Minuten statt Tageszeit-Schritte
+  if (a.flag === "train" || a.flag === "study") { const who = trainerId(); if (who) (state.daily.trainedBy = state.daily.trainedBy || []).push(who); }
   log(line);
   persist(); render();
-  showFace(null); showLine(line, [{ label: "Weiter", go: "clear" }]);
+  showFace(null); showLine(line, id === "tavern" ? rastChoices() : [{ label: "Weiter", go: "clear" }]);  // Einkehren: Rast-Dauer wählen
 }
 // Tagesaktionen über NPCs: Gesprächsoption „daily:<id>“; das Gespräch bleibt offen.
 TALK_HOOKS_LATE.push((npc, c) => {
@@ -605,7 +607,7 @@ function suehne(id, art) {
   if (art === "busse") {
     const cost = 10 * stufe; if (state.hero.gold < cost) return "Dafür reicht euer Gold nicht.";
     state.hero.gold -= cost; bumpFaction(id, "zorn", -6);
-  } else { advance(2); bumpFaction(id, "zorn", -10); bumpFaction(id, "gunst", 3); }
+  } else { advanceMin(120); bumpFaction(id, "zorn", -10); bumpFaction(id, "gunst", 3); }
   const done = before - a.zorn; a.zornPeak = Math.max(a.zorn, a.zornPeak - done);
   a.suehneBis = state.day + 3; state.world.suehneTag = state.day;
   syncFactionMirror();
@@ -992,7 +994,7 @@ function combatDefeat(c) {
   if (c.human) { lost = Math.min(30, Math.floor(state.hero.gold * 0.15)); state.hero.gold -= lost; }
   const reg = D.LOCATIONS[state.location] && D.LOCATIONS[state.location].region;
   state.location = SAFE_WAKE[reg] || "dorfzentrum";
-  advance(2);
+  advanceMin(240);  // Uhrzeit: Niederlage 4 h
   afterDefeat(c);
   log("Ihr fallt und kommt in " + D.LOCATIONS[state.location].name + " wieder zu euch.");
   lastTalk = null;
@@ -1051,7 +1053,7 @@ SCENE_HANDLERS.jagen = () => {
   const t = D.SPAWN_TABLES[state.location]; if ((state.daily.zufall || 0) >= 3) return "";
   const pakt = state.flags.wolf_spared || state.flags.wolf_bargain;
   const rows = t.rows.filter((r) => !(r.wolf && pakt)); if (!rows.length) return "";
-  state.daily.zufall = (state.daily.zufall || 0) + 1; advance(1);
+  state.daily.zufall = (state.daily.zufall || 0) + 1;  // Uhrzeit: Zeit über die Kampfminuten
   startCombatSys(rows[Math.floor(Math.random() * rows.length)].id); persist(); render(); return "";
 };
 // Migration v5 -> v6: Grad aus Wachstum, statStart (BASE + Herkunft + alte Fluch-mods), Nachhol-Wahlen, Atem.
@@ -1258,7 +1260,7 @@ CHOOSE_HOOKS.perk = (go, npc) => {
 };
 CHOOSE_HOOKS.preis = () => { if (state.hero.gold < 20) return "Euer Gold reicht nicht. Hella wartet."; state.hero.gold -= 20; removePerk("fluch_nebelpreis", "geloest"); return "Hella nimmt das Gold und nickt. Der Preis ist bezahlt."; };
 CHOOSE_HOOKS.abgeben = (go, npc) => { const id = go.split(":")[1]; removePerk(id, "abgegeben"); remember("hella", id.replace("fluch_", "") + "_preis", 2, true); return "Hella nimmt euch etwas ab, an das ihr euch nicht mehr ganz erinnert."; };
-CHOOSE_HOOKS.brechen = (go) => { const id = go.split(":")[1]; const e = perkEntry(id); if (!e) return ""; advance(2); removePerk(id, "gebrochen"); return "Ihr haltet Totenwache und läutet bis die Arme schwer sind. Der Fluch löst sich."; };
+CHOOSE_HOOKS.brechen = (go) => { const id = go.split(":")[1]; const e = perkEntry(id); if (!e) return ""; advanceMin(120); removePerk(id, "gebrochen"); return "Ihr haltet Totenwache und läutet bis die Arme schwer sind. Der Fluch löst sich."; };
 // Segen der Esse: Arbeit an 5 verschiedenen Tagen in der Schmiede
 const _doDaily = doDaily;
 doDaily = function (id) {
@@ -2048,9 +2050,183 @@ travel = function (toId) {
   // Nebenort = Ort mit Torbogen-Bild (pass), erreicht über einen Torbogen-Ausgang; Rückweg ebenso. Kartenpins kosten weiter Zeit.
   const nebenort = (von, nach) => !!(L[nach] && L[nach].pass && archTo(von, nach));
   const innen = here && dest && (nebenort(here.id, toId) || nebenort(toId, here.id));
-  if (!innen) return _travelBasisS(toId);
-  const alt = TIME_COST.travel; TIME_COST.travel = 0;
-  try { return _travelBasisS(toId); } finally { TIME_COST.travel = alt; }
+  // Stillgelegt (Spec Uhrzeit §4): Zeit für Wege kommt jetzt aus travelMinutes() (Stufe h); Torbogen/Nebenort = 0 min dort.
+  void innen; return _travelBasisS(toId);
 };
 // (4) Intro-Bild vorladen, damit es mit dem Text zusammen erscheint (nicht erst nachgeladen).
 (function () { try { const a = D.NARRATOR.intro && D.NARRATOR.intro.art; if (a) { const im = new Image(); im.src = art(a); window.__introBild = im; } } catch (e) {} })();
+
+// =====================================================================
+// Stufe h · Uhrzeit in Minuten (spec-uhrzeit-2026-10-14.md)
+// Quelle der Wahrheit: state.min (0–1439). state.phase bleibt als abgeleitete Eigenschaft (Lesen = phaseOf(min),
+// Schreiben = Blockbeginn), damit Altcode und Tests ohne Umbau weiterlaufen; beim Speichern wird sie mitgeschrieben.
+const START_MIN = 360;  // neues Spiel: Mondtag 06:00 (Spec A: Start am Morgen); Spec nennt 480 – siehe Rückmeldung
+function phaseOf(m) {
+  m = ((m % 1440) + 1440) % 1440;
+  const p = D.DAY_PHASES.find((x) => x.from <= x.to ? m >= x.from && m <= x.to : m >= x.from || m <= x.to);
+  return p ? p.id : "vormittag";
+}
+function bindClock(s) {
+  if (!s || typeof s !== "object") return s;
+  const d = Object.getOwnPropertyDescriptor(s, "phase");
+  if (d && d.get) return s;
+  if (typeof s.min !== "number") { const b = D.BLOCK_START[s.phase]; s.min = typeof b === "number" ? b : 480; }
+  delete s.phase;
+  Object.defineProperty(s, "phase", { enumerable: true, configurable: true,
+    get() { return phaseOf(this.min); },
+    set(p) { const b = D.BLOCK_START[p]; if (typeof b === "number" && phaseOf(this.min) !== p) this.min = b; } });
+  return s;
+}
+function curPhase() { bindClock(state); return state ? phaseOf(state.min) : "vormittag"; }
+function nightDay(day, min) { return min < 180 ? day - 1 : day; }
+function advanceMin(m) {
+  if (!state) return; bindClock(state);
+  m = Math.max(0, Math.round(m || 0)); if (!m) return;
+  state.min += m;
+  while (state.min >= 1440) {
+    state.min -= 1440; state.day = (state.day || 1) + 1;
+    ON_NEW_DAY.forEach((fn) => { try { fn(state.day); } catch (e) { console.error(e); } });
+  }
+}
+// Kompatibilität: 1 Schritt = bis zum Beginn des nächsten Blocks.
+advance = function (steps) {
+  if (!state) return; bindClock(state);
+  const n = Math.max(0, Math.floor(steps || 0));
+  for (let k = 0; k < n; k++) {
+    const i = D.DAY_PHASES.findIndex((p) => p.id === phaseOf(state.min));
+    const next = D.DAY_PHASES[(i + 1) % D.DAY_PHASES.length];
+    advanceMin(((next.from - state.min) % 1440 + 1440) % 1440 || 1440);
+  }
+};
+// Neue Spiele / Laden: Uhr anbinden
+const _newGameBasisU = newGame;
+newGame = function (payload) { const r = _newGameBasisU(payload); if (state) { state.min = START_MIN; bindClock(state); state.daily.trainedBy = []; render(); } return r; };
+const _loadBasisU = load;
+load = function (n) { const r = _loadBasisU(n); if (r && state) bindClock(state); return r; };
+if (state) bindClock(state);
+// Hof-Schedules: in der Nacht vor 3 Uhr gilt der Vortag; optionale Feinstufe "14-16" vor dem Block.
+const _npcLocationNowBasisU = npcLocationNow;
+npcLocationNow = function (n, day, phase) {
+  if (state && n && n.schedule && day === state.day && (phase || curPhase()) === "nacht" && state.min < 180) day = nightDay(day, state.min);
+  if (state && n && n.schedule && (phase || curPhase()) === curPhase()) {
+    const w = n.schedule[weekday(day).id] || {}, dflt = n.schedule.default || {}, h = Math.floor(state.min / 60);
+    for (const t of [w, dflt]) { const k = Object.keys(t).find((x) => /^\d+-\d+$/.test(x) && h >= +x.split("-")[0] && h < +x.split("-")[1]); if (k) return t[k]; }
+  }
+  return _npcLocationNowBasisU(n, day, phase);
+};
+// ---- Anzeige (Variante B, gerundet) ----
+const UHR_WORT = ["zwölf", "eins", "zwei", "drei", "vier", "fünf", "sechs", "sieben", "acht", "neun", "zehn", "elf", "zwölf"];
+function nachtText(m) { return m >= 1380 ? "spät in der Nacht" : m < 180 ? "tiefe Nacht" : m < 300 ? "vor dem ersten Hahnenschrei" : ""; }
+function timeLabel(m, lang) {
+  const nt = nachtText(m); if (nt) return lang ? nt : "";
+  const r = Math.round(m / 30) * 30 % 1440, h = Math.floor(r / 60), halb = r % 60 === 30;
+  if (!lang) return halb ? "~halb " + (((h + 1) % 12) || 12) : "~" + h + " Uhr";
+  return halb ? "gegen halb " + UHR_WORT[((h + 1) % 12) || 12] : "gegen " + UHR_WORT[(h % 12) || 12] + " Uhr";
+}
+function timeLong(s) { s = s || state; const m = typeof s.min === "number" ? s.min : D.BLOCK_START[s.phase] || 480;
+  return weekday(s.day).name + ", Tag " + s.day + " · " + phaseInfo(phaseOf(m)).name + ", " + timeLabel(m, true); }
+const _slotLabelBasisU = slotLabel;
+slotLabel = function (s) {
+  const m = typeof s.min === "number" ? s.min : D.BLOCK_START[s.phase] || 480, uhr = timeLabel(m) || nachtText(m);
+  const loc = D.LOCATIONS[s.location], gold = (s.hero && typeof s.hero.gold === "number") ? s.hero.gold : D.BASE_HERO.gold;
+  return weekdayLabel(s.day).replace(" (Ruhetag)", "") + " · " + phaseInfo(phaseOf(m)).name + " · " + uhr + " · " + (loc ? loc.name : "?") + " · " + gold + " Gold";
+};
+const _renderBasisU = render;
+render = function () {
+  const r = _renderBasisU.apply(this, arguments);
+  if (state && typeof state.min === "number") {
+    const tp = document.getElementById("top-phase");
+    if (tp) { const u = timeLabel(state.min) || nachtText(state.min); tp.textContent = phaseInfo(curPhase()).name + (u ? " · " + u : ""); tp.title = timeLong(); }
+  }
+  return r;
+};
+// ---- Wege ----
+function travelMinutes(from, to) {
+  const L = D.LOCATIONS, a = L[from], b = L[to]; if (!a || !b || from === to) return 0;
+  const k = D.WAYS[[from, to].sort().join(">")]; if (k) return D.WAY_MIN[k];
+  const archTo = (x, y) => ((L[x] || {}).exits || []).some((e) => e.id === y && e.arch);
+  const side = (x) => !!(D.REGIONS[x.region] || {}).sideArea;
+  if (archTo(from, to) || archTo(to, from) || a.parent === to || b.parent === from || (side(a) && side(b) && a.region === b.region)) return 0;
+  return a.region === b.region ? D.WAY_MIN.kurz : D.WAY_MIN.mittel;
+}
+function wayKat(from, to) { const m = travelMinutes(from, to); return Object.keys(D.WAY_MIN).find((k) => D.WAY_MIN[k] === m) || null; }
+TIME_COST.travel = 0;  // Uhrzeit §4: Reisezeit kommt nur noch aus travelMinutes(), nicht mehr als ganze Tageszeit
+let wegKatJetzt = null;
+const _travelBasisU = travel;
+travel = function (toId) {
+  const von = state && state.location, kat = von ? wayKat(von, toId) : null, min = von ? travelMinutes(von, toId) : 0;
+  wegKatJetzt = kat;
+  let r; try { r = _travelBasisU(toId); } finally { wegKatJetzt = null; }
+  if (state && state.location === toId && von !== toId && min) { advanceMin(min); render(); }
+  return r;
+};
+// Zufallsbegegnung: Chance je Wegkategorie (kurz ×0,25, mittel ×1, weit ×1,5, fern ×2, 0 min = keine)
+const WEG_SPAWN = { kurz: 0.25, mittel: 1, weit: 1.5, fern: 2 };
+const _rollSpawnBasisU = rollSpawn;
+rollSpawn = function (locId) {
+  if (wegKatJetzt === null && state && state.location === locId) {}  // Aufruf außerhalb einer Reise: unverändert
+  else if (!wegKatJetzt) return null;
+  const f = wegKatJetzt ? WEG_SPAWN[wegKatJetzt] : 1;
+  if (f < 1 && Math.random() >= f) return null;
+  const r = _rollSpawnBasisU(locId); if (r || f <= 1) return r;
+  return Math.random() < f - 1 ? _rollSpawnBasisU(locId) : null;
+};
+// ---- Kampf, Flucht ----
+function kampfMinuten(c) {
+  const p = D.MONSTER[c.id] || c;
+  if (typeof p.minutes === "number") return p.minutes;
+  if (p.quest || p.boss) return 60;
+  if (p.unique || p.rare) return 45;
+  return Math.min(30, Math.round((15 + 0.5 * (p.hp || c.hpMax || 0)) / 5) * 5);
+}
+const _combatVictoryBasisU = combatVictory;
+combatVictory = function (c) { const r = _combatVictoryBasisU(c); advanceMin(kampfMinuten(c)); return r; };
+const _sysFleeBasisU = sysFlee;
+sysFlee = function () { const war = !!state.inCombat; const r = _sysFleeBasisU(); if (war && !state.inCombat && !state.combatEnd) advanceMin(10); return r; };
+// ---- Gespräch und Handel ----
+const TALK_FREI = /^(leave|clear|back|zurueck|endtrade|shop|rast:|daily:|story_|bitte_|quest)/;
+const _chooseBasisU = choose;
+choose = function (go) {
+  const offen = !!(state && state.dialogue), handel = !!(state && state.trading);
+  if (offen && typeof go === "string" && !TALK_FREI.test(go)) state.talkMin = (state.talkMin || 0) + 5;
+  const r = _chooseBasisU(go);
+  let m = 0;
+  if (handel && (go === "endtrade" || go === "leave" || go === "clear")) m += 10;
+  if (offen && (go === "leave" || go === "clear")) { m += state.talkMin || 0; state.talkMin = 0; }
+  if (m) { advanceMin(m); render(); }
+  return r;
+};
+// ---- Tagesaktionen: Minuten ----
+const DAILY_MIN = { work: 120, train_atk: 120, train_def: 120, study_will: 120, study_fortune: 120, pray: 30, confess: 30, stille: 30, redDoor: 60, tavern: 0 };
+DAILY_ACTIONS.forEach((a) => { if (a.id in DAILY_MIN) a.min = DAILY_MIN[a.id]; });
+// ---- Training/Lernen: je Lehrer 1×, höchstens 2 am Tag ----
+function trainerId() { return (state.dialogue && state.dialogue.npcId) || (lastTalk && lastTalk.id) || null; }
+function trainSperre() {
+  const tb = state.daily.trainedBy || [], who = trainerId();
+  if (who && tb.includes(who)) return "Bei " + ((D.NPCs[who] || {}).name || who) + " habt ihr heute schon geübt.";
+  if (tb.length >= 2) return "Für heute genug geübt.";
+  return "";
+}
+// ---- Rasten mit Dauerwahl ----
+function bisMorgenMin() { return ((360 - state.min) % 1440 + 1440) % 1440 || 1440; }
+function rastChoices() {
+  return [[60, "1 Stunde"], [120, "2 Stunden"], [240, "4 Stunden"], [480, "8 Stunden"], ["morgen", "Bis zum Morgen"]].map(([m, l]) => ({ label: l, go: "rast:" + m }));
+}
+function restFor(min) {
+  const rs = Math.max(0, gearFx("restSteps") || 0), h = min / 60, f = Math.min(1, (h + rs) / 8);
+  state.hero.hp = Math.min(maxHp(), state.hero.hp + Math.round(maxHp() * f));
+  const budget = 6 + (state.location === "dorfzentrum" ? perkWkBonus("ruhe") : 0), schon = state.daily.restWk || 0;
+  const wk = Math.max(0, Math.min(budget - schon, Math.round(budget * f)));
+  if (wk) { bumpWk(wk); state.daily.restWk = schon + wk; }
+  state.daily.rest = true;
+  if (h >= 4) state.buffs = (state.buffs || []).filter((b) => b.until !== "rast");
+  advanceMin(min);
+  return wk;
+}
+CHOOSE_HOOKS.rast = (go) => {
+  const arg = go.split(":")[1], min = arg === "morgen" ? bisMorgenMin() : Math.max(60, parseInt(arg, 10) || 480);
+  restFor(min); state.dialogue = null; lastTalk = null;
+  const h = Math.round(min / 60);
+  log("Ihr ruht " + h + (h === 1 ? " Stunde." : " Stunden."));
+  return "Ihr ruht " + h + (h === 1 ? " Stunde" : " Stunden") + " und kommt wieder zu Kräften.";
+};

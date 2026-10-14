@@ -172,7 +172,13 @@ const MIGRATIONS = [
     return s;
   },
   // v12 -> v13: Werte 2 (Spec B 14.10.): Stufe = alter Wert 1:1 (max 20), Redegewandtheit, Grad aus Stufenaufstiegen, Richtung, Flüche aktiv, Ruf-Kontakt.
-  function v12to13(s) { return typeof migV13 === "function" ? migV13(s) : s; }
+  function v12to13(s) { return typeof migV13 === "function" ? migV13(s) : s; },
+  // v13 -> v14: Uhrzeit in Minuten (Spec Uhrzeit 14.10.): min = Blockbeginn der alten Tageszeit (alte Nacht = 23:00 desselben Tages), Tag unverändert.
+  function v13to14(s) {
+    if (typeof s.min !== "number") { const b = D.BLOCK_START[s.phase]; s.min = typeof b === "number" ? b : 480; }
+    if (s.daily && typeof s.daily === "object" && !Array.isArray(s.daily.trainedBy)) s.daily.trainedBy = [];
+    return s;
+  }
 ];
 const SAVE_VERSION = MIGRATIONS.length;
 function migrate(s) {
@@ -519,7 +525,7 @@ function renderTalk() {
   const npc = lastTalk;
   const node = state.dialogue && state.dialogue.node;
   // slotTalk (Hof, 14.10.): Begrüßung je Zeitfenster, "<wochentag>.<phase>" vor "<phase>", sonst talk.start.
-  const slot = node === "start" && npc.slotTalk ? (npc.slotTalk[weekday(state.day).id + "." + state.phase] || npc.slotTalk[state.phase]) : null;
+  const slot = node === "start" && npc.slotTalk ? (npc.slotTalk[weekday(typeof nightDay === "function" ? nightDay(state.day, state.min) : state.day).id + "." + state.phase] || npc.slotTalk[state.phase]) : null;
   const spoken = slot || (npc.talk && (npc.talk[node] || npc.talk.start)) || npc.text;
   showFace(npc);
   showLine(spoken, talkChoices());
@@ -582,9 +588,10 @@ function showLine(text, choices) {
 function waitFor(id) {
   const npc = D.NPCs[id];
   if (!npc) return;
+  // Uhrzeit: zum nächsten Blockbeginn springen, an dem der NPC dort ist (höchstens 24 h)
   for (let i = 0; i < D.DAY_PHASES.length; i++) {
-    advance(TIME_COST.wait);
-    if (!npc.hours || npc.hours.includes(state.phase)) break;
+    advance(1);
+    if (npc.schedule ? npcHere(npc) : (!npc.hours || npc.hours.includes(state.phase))) break;
   }
   log(npc.name + " ist " + phaseInfo(state.phase).name + " da.");
   persist(); render();
@@ -592,11 +599,8 @@ function waitFor(id) {
 function rest() {
   const loc = D.LOCATIONS[state.location];
   if (!loc || !loc.rest) return;
-  state.hero.hp = maxHp();
-  onRest();
-  advance(Math.max(1, TIME_COST.rest - gearFx("restSteps")));
-  log("Ihr ruht und kommt wieder zu Kräften.");
-  persist(); render();
+  // Uhrzeit: Dauerwahl (1 h … bis Morgen), Wirkung in restFor (systeme.js)
+  showFace(null); showLine("Wie lange wollt ihr ruhen?", rastChoices());
 }
 // ---- Ausrüstungswerte & Handel (Erweiterung) ----
 const STAT_NAMES = { atk: "Angriff", def: "Panzer", will: "Wille", hp: "Leben max", heal: "Heilt" };
@@ -1257,7 +1261,7 @@ const FX_TEXT = {
   fleePct: (v) => "Fluchtchance " + (v > 0 ? "+" : "−") + Math.abs(v) + " Prozentpunkte",
   tradePct: (v) => "Kauft " + v + " % billiger",
   travelSafePct: (v) => v + " % Chance, einer Begegnung beim Betreten auszuweichen",
-  restSteps: (v) => "Rast kostet " + v + " Tageszeit weniger",
+  restSteps: (v) => "Rast " + v + " h kürzer",
   potionHeal: (v) => "Tränke heilen +" + v + " Leben",
   bondPlus: (v) => "+" + v + " Nähe bei jedem Nähe-Gewinn"
 };
