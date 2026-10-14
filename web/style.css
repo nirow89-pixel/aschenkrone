@@ -445,3 +445,12 @@ details.bitten-abschnitt>summary{cursor:pointer;font-family:"AkSZ","Cinzel",Geor
 .trade-col .tile .tile-art{max-width:100%}
 #scene-sheet.trade-bg .trade-col{padding-right:.5%}
 #scene-sheet.trade-bg .tile-grid{padding-right:calc(1.9% + 4px)}
+
+/* Zeichen-Fenster wie der Beutel; Namen angelegter Dinge nur im Tooltip (Leitung 14.10.) */
+.eq-slot.worn span{display:none}
+.eq-slot.worn img{height:100%}
+.z-slot.worn span{display:none}
+.z-gelernt{margin-top:6px}
+.z-gelernt .tile{cursor:pointer}
+/* Beutel-Liste: dauerhaft nur Name und Anzahl, Wirkung im Tooltip (Leitung 14.10.) */
+#bag-list .tile .tiny{display:none}

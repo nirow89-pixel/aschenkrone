@@ -222,16 +222,16 @@ const SPAWN_TABLES = {
 };
 // Zeichen (grad-zeichen-kampf.md §3.4): Atem, Abklingen in Heldenschlägen.
 const ZEICHEN = {
-  schnellschlag: { id: "schnellschlag", name: "Schnellschlag", pfad: "krieger", ap: 2, cd: 3, art: "skills/schnellschlag.jpg", text: "Doppelschlag, je 60 % Schaden." },
-  eisenhaut: { id: "eisenhaut", name: "Eisenhaut", pfad: "krieger", ap: 2, cd: 8, art: "skills/eisenhaut.jpg", text: "Panzer +2 für 4 Gegnerschläge." },
-  solarplexus: { id: "solarplexus", name: "Solarplexus", pfad: "krieger", ap: 2, cd: 7, art: "skills/solarplexus.jpg", text: "80 % Schaden, der Gegner setzt einen Schlag aus." },
-  feuerball: { id: "feuerball", name: "Feuerball", pfad: "magier", ap: 1, cd: 5, magic: true, art: "skills/feuerball.jpg", text: "6–10 Schaden plus ein Drittel des Willens, ignoriert Panzer." },
-  froststachel: { id: "froststachel", name: "Froststachel", pfad: "magier", ap: 2, cd: 6, magic: true, art: "skills/froststachel.jpg", text: "4–7 Schaden, verlangsamt den Gegner." },
-  heilfunke: { id: "heilfunke", name: "Heilfunke", pfad: "magier", ap: 2, cd: 8, magic: true, art: "skills/heilfunke.jpg", text: "Heilt 6–10 plus ein Drittel des Willens (unter halber Leben)." },
-  giftklinge: { id: "giftklinge", name: "Giftklinge", pfad: "dieb", ap: 1, cd: 6, art: "skills/giftklinge.jpg", text: "Vergiftet: 2 Schaden je Schlag, 4 Schläge." },
-  schattenhieb: { id: "schattenhieb", name: "Schattenhieb", pfad: "dieb", ap: 2, cd: 6, art: "skills/schattenhieb.jpg", text: "130 % Schaden, Krit-Chance +25 %." },
-  blutung: { id: "blutung", name: "Blutung", pfad: "dieb", ap: 1, cd: 7, art: "skills/blutung.jpg", text: "Blutung über 4 Schläge." },
-  wundmal: { id: "wundmal", name: "Wundmal", pfad: "fluch", ap: 2, cd: 9, art: "skills/wundmal.jpg", text: "Voller Schaden, heilt euch um die Hälfte, kostet 2 Leben." }
+  schnellschlag: { id: "schnellschlag", name: "Schnellschlag", pfad: "krieger", ap: 2, cd: 3, art: "skills/schnellschlag.jpg", satz: "Zwei schnelle Hiebe statt eines schweren.", text: "Doppelschlag, je 60 % Schaden." },
+  eisenhaut: { id: "eisenhaut", name: "Eisenhaut", pfad: "krieger", ap: 2, cd: 8, art: "skills/eisenhaut.jpg", satz: "Eure Haut wird für kurze Zeit hart wie Eisen.", text: "Panzer +2 für 4 Gegnerschläge." },
+  solarplexus: { id: "solarplexus", name: "Solarplexus", pfad: "krieger", ap: 2, cd: 7, art: "skills/solarplexus.jpg", satz: "Ein Stoß in die Mitte raubt dem Gegner den Atem.", text: "80 % Schaden, der Gegner setzt einen Schlag aus." },
+  feuerball: { id: "feuerball", name: "Feuerball", pfad: "magier", ap: 1, cd: 5, magic: true, art: "skills/feuerball.jpg", satz: "Ein Ball aus Glut, den kein Panzer aufhält.", text: "6–10 Schaden plus ein Drittel des Willens, ignoriert Panzer." },
+  froststachel: { id: "froststachel", name: "Froststachel", pfad: "magier", ap: 2, cd: 6, magic: true, art: "skills/froststachel.jpg", satz: "Ein Splitter aus Eis, der den Gegner lähmt.", text: "4–7 Schaden, verlangsamt den Gegner." },
+  heilfunke: { id: "heilfunke", name: "Heilfunke", pfad: "magier", ap: 2, cd: 8, magic: true, art: "skills/heilfunke.jpg", satz: "Ein Funke Wärme schließt eure Wunden.", text: "Heilt 6–10 plus ein Drittel des Willens (unter halber Leben)." },
+  giftklinge: { id: "giftklinge", name: "Giftklinge", pfad: "dieb", ap: 1, cd: 6, art: "skills/giftklinge.jpg", satz: "Die Klinge trägt Gift, das nachwirkt.", text: "Vergiftet: 2 Schaden je Schlag, 4 Schläge." },
+  schattenhieb: { id: "schattenhieb", name: "Schattenhieb", pfad: "dieb", ap: 2, cd: 6, art: "skills/schattenhieb.jpg", satz: "Ein Hieb aus dem Schatten, der die Lücke sucht.", text: "130 % Schaden, Krit-Chance +25 %." },
+  blutung: { id: "blutung", name: "Blutung", pfad: "dieb", ap: 1, cd: 7, art: "skills/blutung.jpg", satz: "Ein Schnitt, der nicht aufhört zu bluten.", text: "Blutung über 4 Schläge." },
+  wundmal: { id: "wundmal", name: "Wundmal", pfad: "fluch", ap: 2, cd: 9, art: "skills/wundmal.jpg", satz: "Euer eigenes Blut nährt den Schlag.", text: "Voller Schaden, heilt euch um die Hälfte, kostet 2 Leben." }
 };
 const PFAD_ZEICHEN = { krieger: ["schnellschlag", "eisenhaut", "solarplexus"], magier: ["feuerball", "froststachel", "heilfunke"], dieb: ["giftklinge", "schattenhieb", "blutung"], diplomat: [] };
 const GRAD_STUFEN = [

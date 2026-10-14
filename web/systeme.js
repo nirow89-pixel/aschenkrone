@@ -1981,3 +1981,49 @@ function maleUmbenennen(x) {
 }
 const _loadBasisMale = load;
 load = function (n) { const r = _loadBasisMale(n); if (r) maleUmbenennen(state); return r; };
+
+// Zeichen-Fenster wie der Beutel (Leitung 14.10.): Kacheln mit Bild, Angelegtes nur im Platz, ein gemeinsamer Tooltip.
+const ZEICHEN_PLATZHALTER = "ui/schriftrolle.jpg";  // für Zeichen ohne eigenes Bild
+function zeichenBild(Z) { return art(Z.art || ZEICHEN_PLATZHALTER); }
+function zeichenTipHtml(id) {
+  const Z = D.ZEICHEN[id]; if (!Z) return "";
+  const l = (zState().learned[id] || {}).lvl || 1;
+  return "<b>" + esc(Z.name) + "</b><div class='tiny'>Stufe " + l + " · Atem " + Z.ap + " · Abklingzeit " + Z.cd + "</div><div>" + esc(Z.text) + "</div>" + (Z.satz ? "<div class='tiny'>" + esc(Z.satz) + "</div>" : "");
+}
+function zTipAttr(id) { return " data-tip='' data-ztip='" + id + "'"; }
+const _showTipBasisZ = showTip;
+showTip = function (node) {
+  if (node && node.dataset && node.dataset.ztip) {
+    if (!tipEl) { tipEl = document.createElement("div"); tipEl.id = "item-tip"; document.body.appendChild(tipEl); }
+    tipEl.innerHTML = zeichenTipHtml(node.dataset.ztip); tipEl.hidden = false;
+    const r = node.getBoundingClientRect(), w = tipEl.offsetWidth, h = tipEl.offsetHeight;
+    tipEl.style.left = clamp(r.left + r.width / 2 - w / 2, 4, window.innerWidth - w - 4) + "px";
+    tipEl.style.top = clamp(r.top - h - 8 < 4 ? r.bottom + 8 : r.top - h - 8, 4, window.innerHeight - h - 4) + "px";
+    return;
+  }
+  return _showTipBasisZ(node);
+};
+function zSlotHtml(id, tag) {
+  return "<" + tag + " class='z-slot worn' data-zeichen='" + id + "'" + zTipAttr(id) + " style=\"background-image:url('" + zeichenBild(D.ZEICHEN[id]) + "')\"><span>" + esc(D.ZEICHEN[id].name) + "</span></" + tag + ">";
+}
+zeichenSheetHtml = function () {
+  const z = zState(), n = zeichenSlots();
+  let html = "<h3>Angelegt (" + z.slots.length + "/" + n + ")</h3><div class='zeichen-row'>";
+  for (let i = 0; i < 4; i++) {
+    const id = z.slots[i];
+    if (i >= n) html += "<div class='z-slot locked' title='ab Grad " + (i === 2 ? 3 : 5) + "'>Grad " + (i === 2 ? 3 : 5) + "</div>";
+    else if (id) html += zSlotHtml(id, "button");
+    else html += "<div class='z-slot leer'>frei</div>";
+  }
+  html += "</div><h3>Gelernt</h3>";
+  const ids = Object.keys(z.learned).filter((id) => !z.slots.includes(id)), voll = z.slots.length >= n;
+  if (!Object.keys(z.learned).length) return html + "<p class='tiny'>Noch keine Zeichen. Ein Grad-Aufstieg mit Richtung Eisenwacht, Glutweber oder Nebelhand öffnet das erste.</p>";
+  if (!ids.length) return html + "<p class='tiny'>Alle gelernten Zeichen sind angelegt.</p>";
+  return html + "<div class='tile-grid z-gelernt'>" + ids.map((id) => { const Z = D.ZEICHEN[id];
+    return "<div class='card tile' data-zeichen='" + id + "'" + zTipAttr(id) + "><span class='tile-art'><img alt='' src=\"" + zeichenBild(Z) + "\" onerror=\"this.onerror=null;this.src='" + art(ZEICHEN_PLATZHALTER) + "'\"></span><b>" + esc(Z.name) + "</b><div class='tiny'>" + (voll ? "Plätze voll" : "Anlegen") + " · Atem " + Z.ap + "</div></div>"; }).join("") + "</div>";
+};
+bagZeichenHtml = function () {
+  const z = zState(), n = zeichenSlots(); let html = "<div class='zeichen-row' id='bag-zeichen'>";
+  for (let i = 0; i < n; i++) { const id = z.slots[i]; html += id ? zSlotHtml(id, "div").replace(" data-zeichen='" + id + "'", "") : "<div class='z-slot leer'>Zeichen</div>"; }
+  return html + "</div>";
+};
