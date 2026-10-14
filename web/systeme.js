@@ -2157,7 +2157,7 @@ travel = function (toId) {
   const von = state && state.location, kat = von ? wayKat(von, toId) : null, min = von ? travelMinutes(von, toId) : 0;
   wegKatJetzt = kat;
   let r; try { r = _travelBasisU(toId); } finally { wegKatJetzt = null; }
-  if (state && state.location === toId && von !== toId && min) { advanceMin(min); render(); }
+  if (state && state.location === toId && von !== toId && min) { advanceMin(min); persist(); if (HUBS.includes(toId)) autosave(); render(); }  // Fix: speichern nach dem Zeitvorschub
   return r;
 };
 // Zufallsbegegnung: Chance je Wegkategorie (kurz ×0,25, mittel ×1, weit ×1,5, fern ×2, 0 min = keine)
@@ -2180,9 +2180,9 @@ function kampfMinuten(c) {
   return Math.min(30, Math.round((15 + 0.5 * (p.hp || c.hpMax || 0)) / 5) * 5);
 }
 const _combatVictoryBasisU = combatVictory;
-combatVictory = function (c) { const r = _combatVictoryBasisU(c); advanceMin(kampfMinuten(c)); return r; };
+combatVictory = function (c) { const r = _combatVictoryBasisU(c); advanceMin(kampfMinuten(c)); persist(); return r; };
 const _sysFleeBasisU = sysFlee;
-sysFlee = function () { const war = !!state.inCombat; const r = _sysFleeBasisU(); if (war && !state.inCombat && !state.combatEnd) advanceMin(10); return r; };
+sysFlee = function () { const war = !!state.inCombat; const r = _sysFleeBasisU(); if (war && !state.inCombat && !state.combatEnd) { advanceMin(10); persist(); } return r; };
 // ---- Gespräch und Handel ----
 const TALK_FREI = /^(leave|clear|back|zurueck|endtrade|shop|rast:|daily:|story_|bitte_|quest)/;
 const _chooseBasisU = choose;
@@ -2192,8 +2192,8 @@ choose = function (go) {
   const r = _chooseBasisU(go);
   let m = 0;
   if (handel && (go === "endtrade" || go === "leave" || go === "clear")) m += 10;
-  if (offen && (go === "leave" || go === "clear")) { m += state.talkMin || 0; state.talkMin = 0; }
-  if (m) { advanceMin(m); render(); }
+  if (offen && (go === "leave" || go === "clear" || !state.dialogue)) { m += state.talkMin || 0; state.talkMin = 0; }
+  if (m) { advanceMin(m); persist(); render(); }
   return r;
 };
 // ---- Tagesaktionen: Minuten ----
@@ -2230,3 +2230,29 @@ CHOOSE_HOOKS.rast = (go) => {
   log("Ihr ruht " + h + (h === 1 ? " Stunde." : " Stunden."));
   return "Ihr ruht " + h + (h === 1 ? " Stunde" : " Stunden") + " und kommt wieder zu Kräften.";
 };
+
+// =====================================================================
+// Fix Uhrzeit (Test B, 14.10.)
+// =====================================================================
+// (1) Rast über Wirt (Jorun, Mära): nach „Einkehren“ die Dauerwahl zeigen, nicht die Gesprächsoptionen; nach der Rast „Weiter“.
+let naechsteWahl = null;
+const _talkChoicesBasisF = talkChoices;
+talkChoices = function () { if (naechsteWahl) { const c = naechsteWahl; naechsteWahl = null; return c; } return _talkChoicesBasisF.apply(this, arguments); };
+const _dailyHookBasisF = CHOOSE_HOOKS.daily;
+CHOOSE_HOOKS.daily = (go, npc) => {
+  const id = go.split(":")[1], vor = state.daily.tavern;
+  const r = _dailyHookBasisF(go, npc);
+  if (id === "tavern" && !vor && state.daily.tavern) naechsteWahl = rastChoices();
+  return r;
+};
+const _rastHookBasisF = CHOOSE_HOOKS.rast;
+CHOOSE_HOOKS.rast = (go, npc) => { const r = _rastHookBasisF(go, npc); naechsteWahl = [{ label: "Weiter", go: "clear" }]; return r; };
+// (2) Grad-Fenster erst, wenn alle Kampffenster zu sind: während des Kampfabschlusses (vor endSnap) gesperrt.
+let kampfEndeLaeuft = false;
+const _gradFensterFreiBasisF = gradFensterFrei;
+gradFensterFrei = function () { return !kampfEndeLaeuft && _gradFensterFreiBasisF(); };
+function gradFensterVerstecken() { const w = document.getElementById("grad-win"); if (w && !gradSperre()) w.hidden = true; }
+["combatVictory", "combatDefeat"].forEach((fn) => {
+  const basis = window[fn];
+  window[fn] = function (...a) { kampfEndeLaeuft = true; try { return basis.apply(this, a); } finally { kampfEndeLaeuft = false; gradFensterVerstecken(); } };
+});
