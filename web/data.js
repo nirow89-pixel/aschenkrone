@@ -858,8 +858,10 @@ const LOCATIONS = {
     exits: [ { id: "dorfzentrum", label: "Zum Brunnen", x: 50, y: 90, arch: true } ] },
   schenke: { id: "schenke", name: "Schenke", region: "unterorten", blurb: "Die Schenke ist wärmer als der Brunnenplatz. Krüge stehen, auch wenn wenig gesprochen wird.", art: "locations/schenke.jpg",
     exits: [ { id: "dorfzentrum", label: "Zum Brunnen", x: 50, y: 90, arch: true },
-      // Hinterzimmer (Leitung 13.10.): Ortsbild fehlt noch -> Torbogen sichtbar, aber gesperrt; pass am Ausgang, noch kein Ort-Datensatz.
-      { id: "schenke_hinterzimmer", label: "Hinterzimmer", x: 18, y: 58, arch: true, pass: "ui/pass_hinterzimmer.jpg", locked: "Die Tür zum Hinterzimmer ist verriegelt. Dahinter hört man gedämpfte Stimmen." } ] },
+      { id: "schenke_hinterzimmer", label: "Hinterzimmer", x: 18, y: 58, arch: true } ] },
+  // Kleine Nebenorte (Leitung 14.10.; Texte PLATZHALTER für Ext Text)
+  schenke_hinterzimmer: { id: "schenke_hinterzimmer", name: "Hinterzimmer", region: "unterorten", parent: "schenke", pass: "ui/pass_hinterzimmer.jpg", back: "Zurück in den Schankraum", blurb: "Ein enger Raum hinter dem Vorhang, ein Tisch, ein paar Stühle, eine Kerze. Wer hier sitzt, will nicht vom Schankraum aus gesehen werden.", art: "locations/schenke_hinterzimmer.jpg",
+    exits: [ { id: "schenke", label: "Zurück in den Schankraum" } ] },
   alter_baum: { id: "alter_baum", name: "Alter Baum", region: "duesterwald", blurb: "Der Baum ist älter als der Pfad. Von hier gehen die Wege zur Hütte, zum Teich und in den Sumpf.", art: "locations/alter_baum.jpg",
     exits: [
       { id: "hexenhuette", label: "Hexenhütte" },
@@ -953,10 +955,16 @@ const LOCATIONS = {
     exits: [ { id: "lotfild_bauernhaus", label: "Bauernhaus außen", x: 50, y: 90, arch: true } ] },
   lotfild_apfelbaeume: { id: "lotfild_apfelbaeume", name: "Apfelbäume", region: "lotfild", blurb: "Die Äste hängen schwer von roten Äpfeln. Im Gras liegt Fallobst, und Wespen sind schneller als ihr.", art: "locations/lotfild_apfelbaeume.jpg",
     exits: [ { id: "lotfild_bauernhaus", label: "Bauernhaus außen", x: 50, y: 90, arch: true } ] },
+  lotfild_scheune_innen: { id: "lotfild_scheune_innen", name: "In der Scheune", region: "lotfild", parent: "lotfild_scheune", pass: "ui/pass_scheune.jpg", back: "Zurück vor die Scheune", blurb: "Heu bis unter die Balken, eine Laterne am Haken. Zwischen den Ballen ist es still und warm.", art: "locations/lotfild_scheune_innen.jpg",
+    exits: [ { id: "lotfild_scheune", label: "Zurück vor die Scheune" } ] },
+  lotfild_werkstatt_innen: { id: "lotfild_werkstatt_innen", name: "In der Werkstatt", region: "lotfild", parent: "lotfild_werkstatt", pass: "ui/pass_werkstatt.jpg", back: "Zurück vor die Werkstatt", blurb: "Werkzeug hängt in Reihen an der Wand, es riecht nach Holz und Öl. Auf der Bank liegt eine Arbeit, die keiner zu Ende gebracht hat.", art: "locations/lotfild_werkstatt_innen.jpg",
+    exits: [ { id: "lotfild_werkstatt", label: "Zurück vor die Werkstatt" } ] },
   lotfild_scheune: { id: "lotfild_scheune", name: "Scheune", region: "lotfild", blurb: "Das Tor steht halb offen, drinnen riecht es nach Heu und altem Holz. Werkzeug lehnt an der Wand.", art: "locations/lotfild_scheune.jpg",
-    exits: [ { id: "lotfild_bauernhaus", label: "Bauernhaus außen", x: 50, y: 90, arch: true } ] },
+    exits: [ { id: "lotfild_bauernhaus", label: "Bauernhaus außen", x: 50, y: 90, arch: true },
+      { id: "lotfild_scheune_innen", label: "In die Scheune", x: 54, y: 67, arch: true } ] },
   lotfild_werkstatt: { id: "lotfild_werkstatt", name: "Werkstatt", region: "lotfild", blurb: "Aus dem Schornstein steigt Rauch. Auf der Werkbank liegen Späne, und ein halb fertiger Zaunpfahl wartet.", art: "locations/lotfild_werkstatt.jpg",
-    exits: [ { id: "lotfild_bauernhaus", label: "Bauernhaus außen", x: 50, y: 90, arch: true } ] },
+    exits: [ { id: "lotfild_bauernhaus", label: "Bauernhaus außen", x: 50, y: 90, arch: true },
+      { id: "lotfild_werkstatt_innen", label: "In die Werkstatt", x: 44, y: 73, arch: true } ] },
   // ---- Bauernhaus innen (Ortstexte: PLATZHALTER für Ext Text) ----
   bauernhaus_diele: { id: "bauernhaus_diele", name: "Diele", region: "bauernhaus_innen", pass: "ui/pass_bauernhaus.jpg", blurb: "Lehm von den Feldern klebt an der Schwelle, Stiefel stehen nach Größe gereiht. Sechs Türen, und jede hört, wer durch die Diele geht.", art: "locations/bauernhaus_diele.jpg",
     exits: [
