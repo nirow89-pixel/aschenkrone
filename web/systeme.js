@@ -289,7 +289,7 @@ onNewDay((day) => {
   v.wk = Math.min(wkMax(), (v.wk || 0) + Math.round(wkMax() * wkRegenPct() / 100));
   if (Math.abs(v.haltung) > 15 && day - (v.lastHaltDelta || day) >= 3 && (day - v.lastHaltDelta) % 3 === 0) v.haltung += v.haltung > 0 ? -1 : 1;
   ["atk", "def", "will"].forEach((k) => {
-    if (k === "will" && (state.hero.will || 0) >= STAT_CAP_WILL) return;
+    if (k === "will" && (state.hero.will || 0) >= D.STUFE_MAX) return;  // Wille-Verfall: Schwelle 20 (Leitung 14.10.)
     const last = (v.lastTrain && v.lastTrain[k]) || day;
     if (day - last > 5 && state.statXp[k] && state.statXp[k].xp > 0) state.statXp[k].xp -= 1;
   });
@@ -1596,8 +1596,8 @@ const VALUE_TIPS = {
   wk: "Willenskraft. Wird durch Arbeit und Training verbraucht, durch Beten, Ruhe und Einkehr aufgefüllt. Wenig Willenskraft schwächt euch.",
   korr: "Korruption. Wächst durch harte Entscheidungen. Höhere Stufen senken die Willenskraft und verändern, wie man euch begegnet.",
   haltung: "Haltung. Ob ihr nachgebt oder standhaltet; färbt euren Titel.",
-  ausweichen: "Ausweichen. Chance, einem gegnerischen Treffer ganz zu entgehen: 3 % + Glück/3 + 2 je Dieb-Stufe, höchstens 25 %.",
-  parade: "Parade. Chance, einen Treffer zu halbieren (mindestens 1): 3 % + Panzer/3 + 6 mit Schild + 2 je Krieger-Stufe + 5 unter Eisenhaut, höchstens 30 %. Braucht Waffe oder Schild."
+  ausweichen: "Ausweichen. Chance, einem gegnerischen Treffer ganz zu entgehen: 3 % + Glück/3 + 2 je Nebelhand-Stufe, höchstens 25 %.",
+  parade: "Parade. Chance, einen Treffer zu halbieren (mindestens 1): 3 % + Panzer/3 + 6 mit Schild + 2 je Eisenwacht-Stufe + 5 unter Eisenhaut, höchstens 30 %. Braucht Waffe oder Schild."
 };
 function valueTip(k) { return "<div class='tip-fx'>" + esc(VALUE_TIPS[k] || "") + "</div>"; }
 
@@ -1970,3 +1970,14 @@ renderCombatWin = function () {
   a.innerHTML = "<span class='cw-atem-wert'>Atem " + cur + " / " + max + "</span>" + "<span class='cw-atem-pips'>" + Array.from({ length: Math.max(max, cur) }, (_, i) => "<i class='" + (i < cur ? "voll" : "") + "'></i>").join("") + "</span>" +
     (c && c.atemLetzt ? "<span class='cw-atem-verbrauch'>−" + c.atemLetzt.cost + " " + esc(c.atemLetzt.name) + "</span>" : "");
 };
+
+// Male nach Richtungen benannt (Leitung 14.10.): IDs bleiben; gespeicherte Anzeigenamen (Log, Fenster) beim Laden umschreiben.
+const MAL_ALTNAMEN = { "Mal des Kriegers": "Mal der Eisenwacht", "Mal des Magiers": "Mal des Glutwebers", "Mal des Diebes": "Mal der Nebelhand", "Mal des Diplomaten": "Mal des Eidwahrers" };
+function maleUmbenennen(x) {
+  if (typeof x === "string") return Object.keys(MAL_ALTNAMEN).reduce((t, a) => t.split(a).join(MAL_ALTNAMEN[a]), x);
+  if (Array.isArray(x)) { for (let i = 0; i < x.length; i++) x[i] = maleUmbenennen(x[i]); return x; }
+  if (x && typeof x === "object") { Object.keys(x).forEach((k) => { x[k] = maleUmbenennen(x[k]); }); return x; }
+  return x;
+}
+const _loadBasisMale = load;
+load = function (n) { const r = _loadBasisMale(n); if (r) maleUmbenennen(state); return r; };
