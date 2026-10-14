@@ -454,3 +454,10 @@ details.bitten-abschnitt>summary{cursor:pointer;font-family:"AkSZ","Cinzel",Geor
 .z-gelernt .tile{cursor:pointer}
 /* Beutel-Liste: dauerhaft nur Name und Anzahl, Wirkung im Tooltip (Leitung 14.10.) */
 #bag-list .tile .tiny{display:none}
+/* Zeichen-Fenster: Name auf angelegten Zeichen dauerhaft sichtbar (Rest im Tooltip); im Beutel bleibt er verborgen */
+#sheet-body .zeichen-row .z-slot.worn span{display:block;width:100%;background:rgba(7,4,5,.78);padding:2px 0;line-height:1.2}
+#sheet-body #bag-zeichen.zeichen-row .z-slot.worn span{display:none}
+/* Handel: zu teure Ware bleibt erkennbar (dunkle Bilder verschwanden bei Deckkraft .42) */
+.trade-col .tile.poor{opacity:1}
+.trade-col .tile.poor .tile-art img{opacity:.75;filter:grayscale(.5)}
+.trade-col .tile.poor b,.trade-col .tile.poor .tiny{opacity:.55}
