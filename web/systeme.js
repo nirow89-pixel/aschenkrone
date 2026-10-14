@@ -261,7 +261,18 @@ function confess() {
   if (typeof confessionRuf === "function" && (v.lastRufConfession === null || state.day - v.lastRufConfession >= 2)) { if (confessionRuf(p.who)) v.lastRufConfession = state.day; }
   return txt;
 }
-function npcAvailableNow(id) { const n = D.NPCs[id]; return !!n && n.location === state.location && (!n.hours || n.hours.includes(state.phase)) && !(state.npcEnd && state.npcEnd[id]); }
+// Wochentag + Tagesablauf (Spec 14.10.): NPCs mit schedule sind dort, wo ihr Plan sie hinstellt (Wochentag vor default, je Phase); ohne Ort = nicht da.
+function weekday(day) { return D.WEEKDAYS[((((day || 1) - 1) % 7) + 7) % 7]; }
+function weekdayLabel(day) { const w = weekday(day); return w.name + ", Tag " + (day || 1) + (w.rest ? " (Ruhetag)" : ""); }
+function npcLocationNow(n, day, phase) {
+  if (!n) return null;
+  if (!n.schedule) return n.location;
+  const w = n.schedule[weekday(day).id];
+  const t = w && phase in w ? w : n.schedule.default || {};
+  return t[phase] || null;
+}
+function npcHere(n, loc, phase) { return !!n && (n.schedule ? npcLocationNow(n, state.day, phase || state.phase) === (loc || state.location) : n.location === (loc || state.location) && (!n.hours || n.hours.includes(phase || state.phase))); }
+function npcAvailableNow(id) { const n = D.NPCs[id]; return npcHere(n) && !(state.npcEnd && state.npcEnd[id]); }
 // Rast (app.js rest): wk +6 einmal je Tag, Angeschlagen endet.
 function onRest() {
   if (!state.daily.rest) {
@@ -392,7 +403,7 @@ function remember(id, tag, weight, core) {
   } else { r.memory.push(e); r.memory = r.memory.slice(-20); }
 }
 function npcMemoryHas(id, tag) { const r = state.relations && state.relations[npcId(id)]; if (!r) return false; return r.memory.concat(r.memoryCore).some((m) => m.tag === tag || (m.tags || []).includes(tag)); }
-function npcPresent(id, loc, phase) { const n = D.NPCs[npcId(id)]; if (!n || (state.npcEnd && state.npcEnd[n.id])) return false; return n.location === (loc || state.location) && (!n.hours || n.hours.includes(phase || state.phase)); }
+function npcPresent(id, loc, phase) { const n = D.NPCs[npcId(id)]; if (!n || (state.npcEnd && state.npcEnd[n.id])) return false; return npcHere(n, loc, phase); }
 function isWitness(id, loc, phase) { return npcPresent(id, loc, phase); }
 // Gewinnkurve stückweise: bis 55 ×1, 55–80 ×½, über 80 ×⅓. raw = Rohpunkte; liefert echten Zuwachs.
 function bondCurve(cur, raw) {

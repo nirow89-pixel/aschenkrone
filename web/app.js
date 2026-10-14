@@ -81,7 +81,7 @@ function advance(steps) {
     }
   }
 }
-onNewDay((day) => log("Tag " + day + " beginnt."));
+onNewDay((day) => log(weekdayLabel(day).replace(" (Ruhetag)", "") + " beginnt." + (weekday(day).rest ? " Ruhetag." : "")));
 // Händler füllen nicht mehr täglich auf: Wochen-Sortiment und Wochen-Gold (systeme.js, merchState).
 function bondLabel(v) {
   let name = D.BOND_STEPS[0].name;  // Skala unten geschlossen (Todfeind)
@@ -182,7 +182,7 @@ function migrate(s) {
 function slotLabel(s) {
   const loc = D.LOCATIONS[s.location];
   const gold = (s.hero && typeof s.hero.gold === "number") ? s.hero.gold : D.BASE_HERO.gold;
-  return "Tag " + (s.day || 1) + " · " + phaseInfo(s.phase).name + " · " + (loc ? loc.name : "?") + " · " + gold + " Gold";
+  return weekdayLabel(s.day).replace(" (Ruhetag)", "") + " · " + phaseInfo(s.phase).name + " · " + (loc ? loc.name : "?") + " · " + gold + " Gold";
 }
 function save(n) {
   if (!state) return;
@@ -444,8 +444,8 @@ function wolfDefeat() {
 function talk(id) {
   if (state.narrator || state.inCombat) return;
   const npc = D.NPCs[id];
-  if (!npc || npc.location !== state.location) return;
-  if (npc.hours && !npc.hours.includes(state.phase)) return;
+  if (!npc || (npc.schedule ? !npcHere(npc) : npc.location !== state.location)) return;
+  if (!npc.schedule && npc.hours && !npc.hours.includes(state.phase)) return;
   state.dialogue = { npcId: id, node: "start" };
   if (!state.flags["met_" + id]) { state.flags["met_" + id] = true; rel(id); bumpBond(id, 4, { source: "first" }); }
   onTalk(id);
@@ -981,7 +981,7 @@ function render() {
     if (n && k === "will" && g > 3) n.textContent = (state.hero.will || 0) + " (+" + g + " Ausr., wirksam +3)";
   });
   setTxt("loc", loc.name); setTxt("phase", phaseInfo(state.phase).name); setTxt("day", state.day);
-  const top = { "top-day": state.day, "top-phase": phaseInfo(state.phase).name, "top-gold": state.hero.gold, "top-hp": state.hero.hp + "/" + maxHp() };
+  const top = { "top-day": weekdayLabel(state.day).replace(", Tag ", " · ").replace(/^(\S+) · (\d+)/, "$2 · $1"), "top-phase": phaseInfo(state.phase).name, "top-gold": state.hero.gold, "top-hp": state.hero.hp + "/" + maxHp() };
   Object.keys(top).forEach((id) => { const n = document.getElementById(id); if (n) n.textContent = top[id]; });
   const pa = avatarOf(state.hero); onImg(document.getElementById("portrait"), pa[0], pa.slice(1));
   const lines = state.log.length ? state.log : ["Noch keine Spuren."];
@@ -1025,11 +1025,13 @@ function render() {
     if (ex.locked) { b.classList.add("pin-locked"); b.onclick = () => showLine(ex.locked, []); }  // gesperrter Weg: nur Hinweis
     scene.appendChild(b);
   });
-  Object.values(D.NPCs).filter((n) => n.location === state.location).forEach((p) => {
-    const present = !p.hours || p.hours.includes(state.phase);
+  // Hof-NPCs (schedule): Schild nur am aktuellen Ort, abwesend = kein Schild; alle anderen wie bisher (away/waitFor).
+  Object.values(D.NPCs).filter((n) => n.schedule ? npcHere(n) : n.location === state.location).forEach((p) => {
+    const present = !!p.schedule || !p.hours || p.hours.includes(state.phase);
     const b = document.createElement("button");
     b.className = "spot" + (present ? "" : " away");
-    b.style.left = (p.pin?.x || 50) + "%"; b.style.top = (p.pin?.y || 60) + "%";
+    const pp = (p.pins && p.pins[state.location]) || p.pin;
+    b.style.left = (pp?.x || 50) + "%"; b.style.top = (pp?.y || 60) + "%";
     b.innerHTML = '<span class="shield"><img alt=""></span><span class="tag">' + p.name + "</span>";
     onImg(b.querySelector("img"), p.art, ["npcs/" + p.id + ".jpg"]);
     b.onclick = () => present ? talk(p.id) : waitFor(p.id);

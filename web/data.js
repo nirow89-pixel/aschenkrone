@@ -321,6 +321,52 @@ const NPCs = {
     art: "npcs/npc_ondine.jpg", merchant: false, pin: { x: 66, y: 84 }, faction: "",
     lines: ["Tote lügen nicht, aber sie reden ungern. Ich frage nur. Die Antworten müsst Ihr selbst ertragen."],
     talk: { start: "Ihr stört nicht. Die hier unten haben Zeit, und ich auch. Fragt, wenn Ihr etwas wissen wollt, aber fragt genau." } },
+  // ---- Hof Lotfild (Spec Wochentage 14.10.): Tagesablauf über schedule; location = Heimatort. Porträts fehlen -> Platzhalter-Schild. Texte PLATZHALTER für Ext Text ----
+  hannes: { id: "hannes", name: "Hannes", title: "Bauer", location: "bauernhaus_kueche", hof: true,
+    text: "Ein Bauer um die fünfzig, die Hände rissig vom Feld. Er nickt, bevor er etwas sagt, und sagt dann nicht viel.",
+    art: "ui/siluette_mann.jpg" /* Platzhalter, Porträt fehlt in alle-bilder */, merchant: false, pin: { x: 14, y: 86 }, faction: "",
+    lines: ["Der Hof läuft, wenn man ihn laufen lässt. Fragt, wenn Ihr den Weg nicht findet."],
+    talk: { start: "Na. Wollt Ihr helfen oder nur schauen? Beides ist erlaubt, das erste lieber." },
+    schedule: {
+      default: { morgen: "bauernhaus_kueche", vormittag: "lotfild_feld", mittag: "bauernhaus_kueche", nachmittag: "lotfild_feld", abend: "bauernhaus_wohnzimmer", nacht: "bauernhaus_elternzimmer" },
+      mittwend: { nachmittag: "lotfild_werkstatt" },
+      sonnrast: { vormittag: "lotfild_teich", nachmittag: "bauernhaus_wohnzimmer" } } },
+  ailsa: { id: "ailsa", name: "Ailsa", title: "Bäuerin", location: "bauernhaus_kueche", hof: true,
+    text: "Eine Bäuerin mit hochgesteckten Ärmeln und einem Blick, der schon weiß, was noch zu tun ist.",
+    art: "ui/siluette_frau.jpg" /* Platzhalter, Porträt fehlt in alle-bilder */, merchant: false, pin: { x: 30, y: 86 }, faction: "",
+    lines: ["Wer hier isst, packt auch mit an. Und wer geht, nimmt Brot mit."],
+    talk: { start: "Da seid Ihr ja. Setzt Euch nicht erst hin, ich hätte da eine Kleinigkeit." },
+    schedule: {
+      default: { morgen: "bauernhaus_kueche", vormittag: "lotfild_apfelbaeume", mittag: "bauernhaus_kueche", nachmittag: "lotfild_bauernhaus", abend: "bauernhaus_wohnzimmer", nacht: "bauernhaus_elternzimmer" },
+      aschtag: { vormittag: "lotfild_brunnen" },
+      sonnrast: { vormittag: "bauernhaus_wohnzimmer", nachmittag: "bauernhaus_wohnzimmer" } } },
+  lene: { id: "lene", name: "Lene", title: "Helferin", location: "lotfild_brunnen", hof: true,
+    text: "Eine junge Frau von einundzwanzig, Eimer in der Hand, Stroh im Haar. Sie hat schon gehört, wer Ihr seid, bevor Ihr es sagt.",
+    art: "ui/siluette_frau.jpg" /* Platzhalter, Porträt fehlt in alle-bilder */, merchant: false, pin: { x: 70, y: 86 }, faction: "",
+    lines: ["Die Hühner wissen mehr als der Dorfschulze. Ich höre nur zu."],
+    talk: { start: "Ihr seid neu hier. Erzählt schon, was man sich über Euch erzählen wird." },
+    schedule: {
+      default: { morgen: "lotfild_brunnen", vormittag: "lotfild_scheune_innen", mittag: "bauernhaus_kueche", nachmittag: "lotfild_apfelbaeume", abend: "lotfild_brunnen", nacht: null },
+      freyatag: { abend: "bauernhaus_kueche" },
+      sonnrast: { morgen: null, vormittag: "lotfild_teich", mittag: null, nachmittag: null, abend: null, nacht: null } } },
+  oke: { id: "oke", name: "Oke", title: "Alter Feldarbeiter", location: "lotfild_scheune", hof: true,
+    text: "Ein alter Mann mit krummem Rücken und ruhigen Händen. Er arbeitet langsam und hört trotzdem nie auf.",
+    art: "ui/siluette_mann.jpg" /* Platzhalter, Porträt fehlt in alle-bilder */, merchant: false, pin: { x: 86, y: 86 }, pins: { lotfild_bauernhaus: { x: 58, y: 88 } }, faction: "",
+    lines: ["Wer im Herbst jammert, hat im Frühjahr geschlafen."],
+    talk: { start: "Setzt Euch ruhig. Das Feld läuft nicht weg, und ich auch nicht mehr so schnell." },
+    schedule: {
+      default: { morgen: "lotfild_scheune", vormittag: "lotfild_feld", mittag: "lotfild_brunnen", nachmittag: "lotfild_feld", abend: "lotfild_scheune_innen", nacht: "lotfild_scheune_innen" },
+      sonnrast: { morgen: "lotfild_bauernhaus", vormittag: "lotfild_bauernhaus", mittag: "lotfild_bauernhaus", nachmittag: "lotfild_bauernhaus", abend: "lotfild_bauernhaus" } } },
+  brannoc: { id: "brannoc", name: "Brannoc", title: "Handwerker", location: "lotfild_werkstatt", hof: true,
+    text: "Ein kräftiger Mann um die vierzig, Späne an der Schürze, einen Hobel im Gürtel. Er sieht zuerst auf Eure Stiefel, dann erst auf Euch.",
+    art: "ui/siluette_mann.jpg" /* Platzhalter, Porträt fehlt in alle-bilder */, merchant: false, pin: { x: 30, y: 86 }, pins: { lotfild_strasse: { x: 20, y: 88 }, lotfild_werkstatt: { x: 74, y: 88 } }, faction: "",
+    lines: ["Ein Zaun hält nur so gut wie der schlechteste Pfahl."],
+    talk: { start: "Wenn Ihr was zu reparieren habt, sagt es. Wenn nicht, steht nicht im Licht." },
+    schedule: {
+      default: { morgen: "lotfild_werkstatt", vormittag: "lotfild_werkstatt_innen", mittag: "lotfild_werkstatt", nachmittag: "lotfild_scheune", abend: "lotfild_werkstatt", nacht: null },
+      mittwend: { nachmittag: "lotfild_werkstatt" },  // Annahme: Hannes bespricht dort mit ihm Reparaturen
+      aschtag: { nachmittag: "lotfild_strasse" },
+      sonnrast: { morgen: null, vormittag: null, mittag: null, nachmittag: null, abend: null, nacht: null } } },
   tamsin: {
     id: "tamsin", name: "Tamsin", title: "Jägerin", location: "schenke",
     text: "Tamsin kennt jedes Gesicht, das länger als eine Nacht bleibt.",
@@ -1000,6 +1046,10 @@ const LOCATIONS = {
 
 const BASE_HERO = { level: 1, hp: 28, hpMax: 28, atk: 4, def: 2, will: 3, fortune: 4, ansehen: 0, gold: 16, ap: 2, apMax: 2, crit: 4 };
 
+// Wochentage (Spec 14.10.): kein State-Feld, Wochentag = (Tag - 1) % 7, Tag 1 = Mondtag; passt zu weekOf() der Händler.
+const WEEKDAYS = [ { id: "mondtag", name: "Mondtag" }, { id: "siestag", name: "Siestag" }, { id: "mittwend", name: "Mittwend" }, { id: "dunstag", name: "Dunstag" },
+  { id: "freyatag", name: "Freyatag" }, { id: "aschtag", name: "Aschtag" }, { id: "sonnrast", name: "Sonnrast", rest: true } ];
+
 const WOLF_LINES = {
   wolf_niederlage: "Ihr liegt am Brunnen, nicht auf dem Pfad. Der Wolf hat euch umgeworfen und ist geblieben. Trinkt, dann entscheidet, ob ihr noch einmal hingeht."
 };
@@ -1043,7 +1093,7 @@ ausstellungNeu();
 window.D = {
   WORLD, FACTIONS, DAY_PHASES, BOND_STEPS, STAT_KEYS,
   HERKUENFTE, FLUECHE, PORTRAITS, AVATARE, START_POOL, EXT_ART, ITEMS, SKILLS, MONSTER, NPCs, QUESTS,
-  NARRATOR, REGIONS, LOCATIONS, BASE_HERO, AUSSTELLUNG, ausstellungNeu, WOLF_LINES, SPAWN_TABLES, ZEICHEN, PFAD_ZEICHEN, GRAD_STUFEN
+  NARRATOR, REGIONS, LOCATIONS, BASE_HERO, WEEKDAYS, AUSSTELLUNG, ausstellungNeu, WOLF_LINES, SPAWN_TABLES, ZEICHEN, PFAD_ZEICHEN, GRAD_STUFEN
 };
 
 // ---- Male, Flüche, Segen (male-fluche-segen.md §6, fx laut grad-zeichen-kampf.md §12.4) ----
