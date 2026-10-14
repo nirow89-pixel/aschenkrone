@@ -170,7 +170,9 @@ const MIGRATIONS = [
     const e = s.equipped || {};
     if (e.waffeR) { if (!e.schild) e.schild = e.waffeR; else (s.inventory = s.inventory || []).push(e.waffeR); delete e.waffeR; }
     return s;
-  }
+  },
+  // v12 -> v13: Werte 2 (Spec B 14.10.): Stufe = alter Wert 1:1 (max 20), Redegewandtheit, Grad aus Stufenaufstiegen, Richtung, Flüche aktiv, Ruf-Kontakt.
+  function v12to13(s) { return typeof migV13 === "function" ? migV13(s) : s; }
 ];
 const SAVE_VERSION = MIGRATIONS.length;
 function migrate(s) {
@@ -957,12 +959,7 @@ function paintSheet() {
   } else if (sheet === "quests") {
     body.innerHTML = bittenSheetHtml(); wireBittenSheet(body);  // Abschnitte Offen/Abgeschlossen/Fehlgeschlagen (systeme.js, Stufe f)
   } else if (sheet === "stats") {
-    body.innerHTML = "<h3>Leben</h3><div class='card' data-tip='' data-vtip='hp'><b>Gesundheit</b> " + state.hero.hp + "/" + maxHp() + "<div class='bar hp'><i style='width:" + Math.round(state.hero.hp / maxHp() * 100) + "%'></i></div></div><h3>Grundwerte</h3>" + D.STAT_KEYS.map((k) => {
-      const xp = state.statXp[k.id] || { xp: 0, need: 12 };
-      const value = k.id === "grad" ? state.hero.level : (state.hero[k.id] || 0);
-      const pct = Math.round((xp.xp / xp.need) * 100);
-      return "<div class='card' data-tip='' data-vtip='" + k.id + "'><b>" + k.name + "</b> " + value + "<div class='bar'><i style='width:" + pct + "%'></i></div><div class='tiny'>" + xp.xp + " / " + xp.need + "</div></div>";
-    }).join("") + valuesHtml() + relationsHtml() + (typeof sysStatsMore === "function" ? sysStatsMore() : "");
+    body.innerHTML = statsSheetHtml();  // Werte-Fenster neu (Spec B §6, systeme.js Stufe g)
     wireSheet(body);
   }
 }

@@ -1080,7 +1080,7 @@ function gradPanelHtml() {
     "<div class='tiny'>" + GROWTH_KEYS.map((k) => ({ atk: "Angriff", def: "Panzer", will: "Wille", fortune: "Glück" }[k]) + " " + (state.hero[k] || 0) + (g.statPeak[k] > (state.hero[k] || 0) ? " (Höchststand " + g.statPeak[k] + ")" : "")).join(" · ") + "</div></div>";
   if (g.pending) {
     html += "<div class='card'><b>Grad steigt – eure Wahl</b><div class='tiny'>Die Wahl kann warten, aber es bleibt nur eine offen.</div><div class='choice-grid'>" +
-      ["krieger", "magier", "dieb", "diplomat"].map((p) => "<button data-grad='pfad:" + p + "'>" + { krieger: "Krieger", magier: "Magier", dieb: "Dieb", diplomat: "Diplomat" }[p] + " · Stufe " + ((g.pfad[p] || 0) + 1) + "</button>").join("") +
+      ["krieger", "magier", "dieb", "diplomat"].map((p) => "<button data-grad='pfad:" + p + "'>" + D.RICHTUNGEN[p].name + " · Stufe " + ((g.pfad[p] || 0) + 1) + "</button>").join("") +
       (g.pending.offers || []).map((id) => "<button data-grad='perk:" + id + "'>" + esc(typeof perkName === "function" ? perkName(id) : id) + "</button>").join("") + "</div></div>";
   }
   return html;
@@ -1097,7 +1097,7 @@ function zeichenSheetHtml() {
   html += "</div><h3>Gelernt</h3>";
   const ids = Object.keys(z.learned);
   html += ids.length ? ids.map((id) => { const Z = D.ZEICHEN[id], l = z.learned[id]; return "<div class='card perk'><b>" + esc(Z.name) + "</b> · Stufe " + l.lvl + " · Atem " + Z.ap + "<div class='tiny'>" + esc(Z.text) + "</div><button data-zeichen='" + id + "'>" + (z.slots.includes(id) ? "Ablegen" : "Anlegen") + "</button></div>"; }).join("")
-    : "<p class='tiny'>Noch keine Zeichen. Ein Grad-Aufstieg mit Richtung Krieger, Magier oder Dieb öffnet das erste.</p>";
+    : "<p class='tiny'>Noch keine Zeichen. Ein Grad-Aufstieg mit Richtung Eisenwacht, Glutweber oder Nebelhand öffnet das erste.</p>";
   return html;
 }
 function bagZeichenHtml() {
@@ -1174,6 +1174,7 @@ function perkBlocked(id, opts) {
   return "";
 }
 // grantPerk: Doppelerwerb = höchste Stufe; volle Fluch-Slots -> der älteste nicht migrierte Fluch ruht.
+const FLUCH_MAX = Infinity;  // früher 3 (Spec B 14.10.)
 function grantPerkById(id, opts) {
   const P = D.PERKS[id]; if (!P) return false;
   opts = opts || {};
@@ -1183,7 +1184,7 @@ function grantPerkById(id, opts) {
   const own = ps[group].find((e) => e.id === id);
   if (own) { if (st > (own.stufe || 1)) { own.stufe = st; perkLog(P.art, id, "stufe", opts.quelle); } }
   else {
-    if (P.art === "fluch" && !opts.migriert && slotsUsed("flueche") >= 3) {
+    if (P.art === "fluch" && !opts.migriert && slotsUsed("flueche") >= FLUCH_MAX) {  // Spec B §9: Flüche ohne Maximum
       const old = ps.flueche.find((e) => !e.migriert && !e.ruht); if (old) { old.ruht = true; perkLog("fluch", old.id, "ruht", "slot"); log(perkName(old.id) + " ruht."); }
     }
     const e = { id, quelle: opts.quelle || "story", seit: state.day, stufe: st };
@@ -1344,7 +1345,7 @@ function perkRowHtml(e) {
 function perksHtml() {
   const ps = perkState();
   return "<h3>Male</h3>" + (ps.male.length ? ps.male.map(perkRowHtml).join("") : "<p class='tiny'>Keine.</p>") +
-    "<h3>Flüche " + slotsUsed("flueche") + "/3</h3>" + (ps.flueche.length ? ps.flueche.map(perkRowHtml).join("") : "<p class='tiny'>Keine.</p>") +
+    "<h3>Flüche</h3>" + (ps.flueche.length ? ps.flueche.map(perkRowHtml).join("") : "<p class='tiny'>Keine.</p>") +
     "<h3>Segen " + slotsUsed("segen") + "/3</h3>" + (ps.segen.length ? ps.segen.map(perkRowHtml).join("") : "<p class='tiny'>Keine.</p>");
 }
 STATS_MORE.splice(1, 0, perksHtml);
@@ -1514,7 +1515,7 @@ heroSwing = function (c) {
 };
 function defenseHtml() {
   return "<h3>Abwehr</h3><div class='card' data-tip='' data-vtip='ausweichen'><b>Ausweichen</b> <span class='vnum'>" + dodgeChance() + " %</span></div>" +
-    "<div class='card' data-tip='' data-vtip='parade'><b>Parade</b> <span class='vnum'>" + parryChance(null) + " %</span>" + (parryChance(null) ? "" : "<div class='tiny'>Ohne Waffe oder Schild keine Parade.</div>") + "</div>";
+    "<div class='card' data-tip='' data-vtip='parade'><b>Parade</b> <span class='vnum'>" + parryChance(null) + " %</span>" + "</div>";  // Spruch entfällt (Spec B §6.4), Tooltip bleibt
 }
 
 // ---- Kampf-Endfenster: bleibt bis „Weiter“, Gespräch zeigt nur Ergebnis und Gewinn ----
@@ -1767,3 +1768,205 @@ function wireBittenSheet(body) {
     const p = uiPrefs(); p["bitten_" + d.dataset.ui] = d.open; try { localStorage.setItem("aschenkrone-ui", JSON.stringify(p)); } catch {}
   }));
 }
+
+// =====================================================================
+// Stufe g · Werte 2 (Spec B 14.10.): fünf Grundwerte Stufe 1–20, Grad aus Stufenaufstiegen, Gradaufstieg-Fenster, Werte-Fenster neu, Ruf-Kontakt
+// =====================================================================
+/** @deprecated STAT_CAP_WILL / GRAD_STUFEN.min werden nicht mehr gelesen (Deckel 20, GRAD_AUFSTIEGE). */
+function stufeNeed(ziel) { return (D.STUFEN_KOSTEN.find((b) => ziel <= b.bis) || D.STUFEN_KOSTEN[D.STUFEN_KOSTEN.length - 1]).punkte; }
+const _statCapBasis = statCap;
+statCap = function (k) { return D.GRUNDWERTE.includes(k) ? D.STUFE_MAX : _statCapBasis(k); };
+willEff = function () {
+  if (!state) return 0;
+  return Math.min(D.STUFE_MAX, (state.hero.will || 0) + Math.min(3, perkStat("will"))) + Math.min(3, gearBonus("will"));
+};
+const _gainBasis = gain;
+gain = function (key, amount) {
+  if (!D.GRUNDWERTE.includes(key)) return _gainBasis(key, amount);
+  const row = state.statXp[key] || { xp: 0 };
+  if (amount > 0) noteTrain(key);
+  row.need = stufeNeed((state.hero[key] || 0) + 1);
+  row.xp += amount;
+  if (statCapped(key) && row.xp >= row.need) row.xp = row.need - 1;
+  while (row.xp >= row.need && !statCapped(key)) {
+    row.xp -= row.need;
+    state.hero[key] = (state.hero[key] || 0) + 1;
+    if (typeof emitDelta === "function") emitDelta({ kind: "stat", key, delta: 1 });
+    log((D.STAT_KEYS.find((s) => s.id === key) || {}).name + " steigt auf Stufe " + state.hero[key] + ".");
+    row.need = stufeNeed(state.hero[key] + 1);
+    if (statCapped(key) && row.xp >= row.need) row.xp = row.need - 1;
+  }
+  state.statXp[key] = row;
+  trackPeak();
+};
+if (!GROWTH_KEYS.includes("rede")) GROWTH_KEYS.push("rede");  // Höchststand auch für Redegewandtheit
+function aufstiege() {
+  const g = gradState(); let sum = 0;
+  D.GRUNDWERTE.forEach((k) => { sum += Math.max(0, (g.statPeak[k] || 0) - (g.statStart[k] || 0)); });  // Glück zählt voll
+  return sum;
+}
+wachstum = aufstiege;
+function gradSchwelle(n) { let cum = 0; for (let g = 2; g <= n; g++) { const x = D.GRAD_AUFSTIEGE[g]; if (x == null) return null; cum += x; } return cum; }
+gradFor = function (w) { let n = 1; for (let g = 2; g <= 10; g++) { const t = gradSchwelle(g); if (t == null || w < t) break; n = g; } return n; };
+function gradMaxErreichbar() { let n = 1; for (let g = 2; g <= 10 && gradSchwelle(g) != null; g++) n = g; return n; }
+gradOffers = function () { return []; };  // alte Segen/Fluch-Angebote je Grad entfallen vorerst (Leitung 14.10.)
+// Gradaufstieg-Fenster: modal, solange grad.pending (nach einem Kampf erst nach dem Kampf-Endfenster).
+function gradSperre() { return !!(state && state.grad && state.grad.pending && !state.inCombat && !state.combatEnd); }
+let gradWahl = null;
+function gradEntscheiden(kind, id) {
+  const g = gradState(); if (!g.pending) return false;
+  if (kind === "richtung") {
+    if (g.richtung || !D.RICHTUNGEN[id]) return false;
+    g.richtung = id; g.pfad[id] = Math.max(1, g.pfad[id] || 0);
+    const z = (D.PFAD_ZEICHEN[id] || [])[0];
+    if (z) learnZeichen(z); else { g.zeichenOffen = true; log("Euer erstes Zeichen folgt."); }
+    if (typeof grantPerk === "function") grantPerk("mal", "mal_des_" + { krieger: "kriegers", magier: "magiers", dieb: "diebes", diplomat: "diplomaten" }[id], { quelle: "grad", stufe: 1 });
+    log("Richtung gewählt: " + D.RICHTUNGEN[id].name + ".");
+  } else if (kind !== "annehmen") return false;
+  g.pending = null; gradWahl = null;
+  if (g.nachhol > 0) { g.nachhol -= 1; g.pending = { grad: state.hero.level, offers: [], nachhol: true }; }
+  persist(); render(); if (sheet) paintSheet();
+  return true;
+}
+chooseGradUp = function (kind, id) { return gradEntscheiden(kind === "pfad" ? (gradState().richtung ? "annehmen" : "richtung") : "annehmen", id); };
+function gradFensterHtml() {
+  const g = gradState(), n = g.pending.grad || state.hero.level;
+  const richtung = !g.richtung;
+  let html = "<div class='grad-titel'>Gratulation zum nächsten Grad</div><div class='grad-sub'>Grad " + n + " · " + esc(gradName(n)) + "</div>";
+  if (richtung) {
+    html += "<p>Wählt eure Richtung. Die Wahl gilt für immer.</p><div class='grad-wahl'>" + Object.entries(D.RICHTUNGEN).map(([id, r]) =>
+      "<button data-richtung='" + id + "' class='" + (gradWahl === id ? "picked" : "") + "'><b>" + esc(r.name) + "</b><span class='tiny'>" + esc(r.text) + "</span></button>").join("") + "</div>" +
+      "<button class='grad-ok' data-gradok='richtung'" + (gradWahl ? "" : " disabled") + ">Entscheiden</button>";
+  } else {
+    const bel = D.GRAD_BELOHNUNG[n];
+    html += "<p>" + (bel && bel.inhalt ? esc(bel.inhalt) : "Was dieser Grad bringt, wird noch entschieden.") + "</p><button class='grad-ok' data-gradok='annehmen'>Annehmen</button>";
+  }
+  return html;
+}
+function openGradFenster() {
+  const body = document.querySelector("#pane-scene .pane-body"); if (!body) return;
+  let w = document.getElementById("grad-win");
+  if (!w) { w = document.createElement("div"); w.id = "grad-win"; body.appendChild(w); }
+  w.hidden = false; w.innerHTML = gradFensterHtml();
+  w.querySelectorAll("[data-richtung]").forEach((b) => { b.onclick = () => { gradWahl = b.dataset.richtung; openGradFenster(); }; });
+  const ok = w.querySelector("[data-gradok]");
+  if (ok) ok.onclick = () => { if (ok.dataset.gradok === "richtung") { if (gradWahl) gradEntscheiden("richtung", gradWahl); } else gradEntscheiden("annehmen"); };
+}
+function charWkHtml() {
+  const v = state.values || { wk: 0 }, wm = wkMax();
+  return "<div class='statline' data-tip='' data-vtip='wk'><em>Willenskraft</em><span>" + v.wk + "/" + wm + "</span></div><div class='bar wk'><i style='width:" + Math.round(v.wk / wm * 100) + "%'></i></div>";
+}
+const _renderBasis = render;
+render = function () {
+  _renderBasis();
+  if (!state) return;
+  // Charakterfenster: Willenskraft unter dem Leben
+  const hp = document.getElementById("hpbar");
+  if (hp) { let wk = document.getElementById("wkbar"); if (!wk) { wk = document.createElement("div"); wk.id = "wkbar"; hp.after(wk); } wk.innerHTML = charWkHtml(); }
+  const w = document.getElementById("grad-win");
+  if (!gradSperre()) { if (w) w.hidden = true; return; }
+  openGradFenster();
+  // Karte: Gebietshintergrund ohne Knöpfe
+  const map = document.getElementById("map"), region = regionOf(D.LOCATIONS[state.location]);
+  if (map && region) { map.querySelectorAll(".pin,button").forEach((b) => b.remove()); bg(map, region.map); }
+  document.querySelectorAll("#scene .spot, #scene .arch, #scene .act-round, #scene .daily-act").forEach((b) => { b.disabled = true; });
+};
+// Sperren während des Fensters (Bögen, Karte, Gespräch, Tagesaktion, Rast, Kampfstart, Ortsaktion)
+[["travel"], ["talk"], ["doDaily"], ["engage"], ["rest"], ["sceneExtra"], ["waitFor"]].forEach(([fn]) => {
+  const basis = window[fn]; if (typeof basis !== "function") return;
+  window[fn] = function (...a) { if (gradSperre()) return; return basis.apply(this, a); };
+});
+// Debug „+1 Grad“: nicht über den höchsten festgelegten Grad.
+if (typeof debugGradUp === "function") { const _dbg = debugGradUp; debugGradUp = function () { if ((state.hero.level || 1) >= gradMaxErreichbar()) return false; return _dbg(); }; }
+// Ruf: nur Fraktionen mit Kontakt (gesetzt beim ersten Ruf-Ereignis).
+function factionSeen() { const w = state.world || (state.world = {}); return w.factionSeen || (w.factionSeen = {}); }
+const _bumpFactionBasis = bumpFaction;
+bumpFaction = function (id, axis, d, opts) { if (D.FACTIONS[id] && d) factionSeen()[id] = true; return _bumpFactionBasis(id, axis, d, opts); };
+factionsHtml = function () {
+  const ids = Object.keys(D.FACTIONS).filter((id) => factionSeen()[id]);
+  if (!ids.length) return "<h3>Ruf</h3><p class='tiny'>Noch keine Fraktion kennt euch.</p>";
+  return "<h3>Ruf</h3>" + ids.map((id) => {
+    const net = clamp(axisNet(id), -100, 100), a = axes(id), e = state.world.axesExt[id];
+    return "<div class='card ruf' data-faction='" + id + "'><b>" + esc(D.FACTIONS[id].name) + "</b> · " + esc(rufStufe(id).name) +
+      (suehneOffen(id) ? "<div class='tiny'>Sühne möglich bei " + esc(D.NPCs[FACTION_MEDIATOR[id]].name) + "</div>" : "") +
+      "<div class='bar ruf-bar'><i style='left:" + (net < 0 ? 50 + net / 2 : 50) + "%;width:" + Math.abs(net) / 2 + "%'></i></div>" +
+      dbg("gunst " + a.gunst + ", zorn " + a.zorn + ", vertrauen " + e.vertrauen + ", furcht " + e.furcht) + "</div>";
+  }).join("");
+};
+const STAT_NAMEN_G = { atk: "Angriff", def: "Panzer", will: "Wille", fortune: "Glück", rede: "Wortgewicht" };
+Object.defineProperty(VALUE_TIPS, "will_werte", { enumerable: true, get() { const v = state && state.values; return VALUE_TIPS.will + " " + VALUE_TIPS.wille + (v ? " Willenskraft " + v.wk + " / " + wkMax() + "." : ""); } });
+VALUE_TIPS.grad = "Grad. Steigt mit Stufenaufstiegen der Grundwerte.";
+VALUE_TIPS.wille = "Wille (wirksam). Grundwert plus Segen und Ausrüstung, höchstens 20 aus dem Grundwert.";
+VALUE_TIPS.rede = "Wortgewicht. Woher Punkte dafür kommen, wird noch festgelegt.";
+function statsSheetHtml() {
+  const lvl = state.hero.level || 1, w = aufstiege(), nx = gradSchwelle(lvl + 1);
+  let html = "<div class='card grad-karte' data-tip='' data-vtip='grad'><b>Grad " + lvl + "</b> · " + esc(gradName(lvl)) + dbg("Aufstiege " + w) +
+    "<div class='tiny'>" + (nx == null || lvl >= 10 ? "Weitere Grade folgen." : "noch " + Math.max(0, nx - w) + " Stufenaufstiege bis Grad " + (lvl + 1)) + "</div></div>";
+  html += "<h3>Grundwerte</h3>" + D.GRUNDWERTE.map((k) => {
+    const xp = state.statXp[k] || { xp: 0, need: stufeNeed((state.hero[k] || 0) + 1) }, st = state.hero[k] || 0, am = st >= D.STUFE_MAX;
+    const name = STAT_NAMEN_G[k] + (k === "will" ? " " + st + " · " + willTierName(willEff()) : "");
+    return "<div class='card' data-tip='' data-vtip='" + (k === "will" ? "will_werte" : k) + "' data-stat='" + k + "'><b>" + esc(name) + "</b> · Stufe " + st +
+      "<div class='bar'><i style='width:" + (am ? 100 : Math.round(xp.xp / xp.need * 100)) + "%'></i></div><div class='tiny'>" + (am ? "Höchste Stufe" : xp.xp + " / " + xp.need) + "</div></div>";
+  }).join("");
+  const v = state.values, ax = state.statXp.ansehen || { xp: 0, need: 12 }, kt = korrTierIdx();
+  html += "<h3>Haltung</h3>" +
+    "<div class='card' data-tip='' data-vtip='titel'><b>Titel</b> " + esc(titel()) + "<div class='tiny'>" + esc(KORR_TEXT[korrTier().id]) + "</div></div>" +
+    "<div class='card' data-tip='' data-vtip='korr'><b>Korruption</b> " + korrTier().name + " <span class='vnum'>" + v.korr + "</span><div class='bar korr k" + kt + "'><i style='width:" + clamp(v.korr, 0, 100) + "%'></i></div><div class='tiny'>Höchststand " + v.korrPeak + " · Buße " + v.buss + "</div></div>" +
+    "<div class='card' data-tip='' data-vtip='haltung'><b>Haltung</b> " + haltungTier().name + " <span class='vnum'>" + v.haltung + "</span></div>" +
+    "<div class='card' data-tip='' data-vtip='ansehen'><b>Ansehen</b> " + (state.hero.ansehen || 0) + "<div class='bar'><i style='width:" + Math.round(ax.xp / ax.need * 100) + "%'></i></div><div class='tiny'>" + ax.xp + " / " + ax.need + "</div></div>";
+  html += atemHtml() + defenseHtml() + relationsHtml() + perksHtml() + factionsHtml();
+  html += STATS_MORE.filter((fn) => fn !== gradPanelHtml && fn !== perksHtml && fn !== factionsHtml && fn !== factionsHtmlAlt).map((fn) => fn()).join("");
+  return html;
+}
+const factionsHtmlAlt = STATS_MORE.find((fn) => fn.toString().includes("<h3>Ruf</h3>") && fn !== factionsHtml);
+// Migration v12 -> v13
+function migV13(s) {
+  if (!s || !s.hero) return s;  // Teilstände (z. B. Tests) ohne Held: nichts zu tun
+  const prev = state; state = s;
+  try {
+    const h = s.hero, g = gradState(); s.statXp = s.statXp || {};
+    D.GRUNDWERTE.forEach((k) => { if ((h[k] || 0) > D.STUFE_MAX) { log(STAT_NAMEN_G[k] + " auf Stufe " + D.STUFE_MAX + " begrenzt."); h[k] = D.STUFE_MAX; } });
+    if (typeof h.rede !== "number") h.rede = D.BASE_HERO.rede;
+    if (typeof g.statStart.rede !== "number") g.statStart.rede = h.rede;
+    g.statPeak.rede = Math.max(g.statPeak.rede || 0, h.rede);
+    D.GRUNDWERTE.forEach((k) => { const r = s.statXp[k] || { xp: 0 }; r.need = stufeNeed((h[k] || 0) + 1); r.xp = Math.max(0, Math.min(r.xp || 0, r.need - 1)); s.statXp[k] = r; });
+    const alt = h.level || 1, calc = gradFor(aufstiege());
+    if (calc > alt) for (let n = alt + 1; n <= calc; n++) { h.level = n; h.hpMax += 4; h.hp = Math.min(h.hpMax, (h.hp || 0) + 4); if (n === 4 || n === 7) h.apMax = (h.apMax || 2) + 1; }
+    h.level = Math.max(alt, calc);
+    const soll = gradSchwelle(alt); if (soll != null && aufstiege() < soll) g.bonusAufstiege = soll - aufstiege();
+    if (!g.richtung) { const best = Object.keys(g.pfad || {}).filter((p) => g.pfad[p] > 0).sort((a, b) => g.pfad[b] - g.pfad[a])[0]; if (best) g.richtung = best; }
+    g.nachhol = 0;
+    g.pending = h.level >= 2 && !g.richtung ? { grad: 2, art: "richtung", offers: [] } : null;
+    if (s.perks) (s.perks.flueche || []).forEach((e) => { if (e.ruht) { delete e.ruht; perkLog("fluch", e.id, "aktiv", "migration"); } });
+    if (s.world) { const seen = s.world.factionSeen || (s.world.factionSeen = {});
+      Object.keys(D.FACTIONS).forEach((id) => { const a = (s.world.axes || {})[id], e = (s.world.axesExt || {})[id];
+        if ((a && (a.gunst || a.zorn)) || (e && (e.furcht || (e.vertrauen !== undefined && e.vertrauen !== 20)))) seen[id] = true; }); }
+  } finally { state = prev; }
+  return s;
+}
+// Mehrere Grade auf einmal: je Grad ein Fenster (Nachhol-Zähler), nichts geht verloren.
+const _trackPeakBasis = trackPeak;
+trackPeak = function () {
+  if (!state || !state.grad) return _trackPeakBasis();
+  const vor = state.hero.level || 1, hatte = !!state.grad.pending;
+  _trackPeakBasis();
+  const neu = (state.hero.level || 1) - vor;
+  if (neu > 0) state.grad.nachhol = (state.grad.nachhol || 0) + neu - (hatte ? 0 : 1);
+};
+
+// Addendum Spec B (Nico 14.10.): Atem im Werteblatt und im Kampf (aktuell/max + Verbrauch durch Zeichen).
+VALUE_TIPS.atem = "Atem. Zeichen kosten im Kampf Atem; jeder Kampf beginnt mit vollem Atem. Mehr Atem bringen Grad 4 und Grad 7.";
+function atemHtml() { return "<div class='card' data-tip='' data-vtip='atem' data-stat='atem'><b>Atem</b> " + (state.hero.apMax || 2) + "</div>"; }
+const _useZeichenBasis = useZeichen;
+useZeichen = function (c, id, cost) { const r = _useZeichenBasis(c, id, cost); c.atemLetzt = { name: D.ZEICHEN[id].name, cost }; return r; };
+const _renderCombatWinBasis = renderCombatWin;
+renderCombatWin = function () {
+  _renderCombatWinBasis();
+  const win = document.getElementById("combat-win"); if (!win || win.hidden) return;
+  const hero = win.querySelector(".cw-hero"); if (!hero) return;
+  let a = hero.querySelector(".cw-atem");
+  if (!a) { a = document.createElement("div"); a.className = "cw-atem"; a.dataset.tip = ""; a.dataset.vtip = "atem"; hero.appendChild(a); }
+  const c = state.inCombat && state.combat, max = state.hero.apMax || 2, cur = c ? Math.max(0, c.ap) : max;
+  a.innerHTML = "<span class='cw-atem-wert'>Atem " + cur + " / " + max + "</span>" + "<span class='cw-atem-pips'>" + Array.from({ length: Math.max(max, cur) }, (_, i) => "<i class='" + (i < cur ? "voll" : "") + "'></i>").join("") + "</span>" +
+    (c && c.atemLetzt ? "<span class='cw-atem-verbrauch'>−" + c.atemLetzt.cost + " " + esc(c.atemLetzt.name) + "</span>" : "");
+};

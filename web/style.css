@@ -406,3 +406,26 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .seal-act.blink{animation:bitteblink .5s ease-in-out 4}
 @keyframes bitteblink{50%{color:#120a0b;background:linear-gradient(#e0b45a,#a87a32)}}
 details.bitten-abschnitt>summary{cursor:pointer;font-family:"AkSZ","Cinzel",Georgia,serif;letter-spacing:.08em;margin:10px 0 6px}
+/* Spec B 14.10.: Gradaufstieg-Fenster, Grad-Karte, Korruption-/Ruf-Leiste */
+#grad-win{position:absolute;inset:10% 14%;z-index:14;background:linear-gradient(#1c1013,#0b0607);border:1px solid #c7a056;outline:1px solid #3a2614;outline-offset:3px;box-shadow:0 8px 30px rgba(0,0,0,.85);padding:22px 26px;overflow:auto;color:#f3e2b6;text-align:center}
+#grad-win[hidden]{display:none!important}
+#grad-win .grad-titel{font-family:"AkSZ","Cinzel",Georgia,serif;font-size:22px;letter-spacing:.12em;color:#e0b45a}
+#grad-win .grad-sub{margin:6px 0 14px;letter-spacing:.08em}
+#grad-win .grad-wahl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+#grad-win .grad-wahl button{display:flex;flex-direction:column;gap:4px;padding:10px}
+#grad-win .grad-wahl button.picked{background:linear-gradient(#e0b45a,#a87a32);color:#120a0b}
+#grad-win .grad-ok{margin-top:10px;padding:8px 26px}
+.card.grad-karte{border:1px solid #c7a056;margin-bottom:14px;padding:10px 12px}
+.bar.korr.k3 i,.bar.korr.k4 i{background:linear-gradient(90deg,#7a4a18,#c87a2e)}
+.bar.korr.k5 i,.bar.korr.k6 i{background:linear-gradient(90deg,#5a1414,#a02020)}
+.bar.ruf-bar{position:relative}
+.bar.ruf-bar i{position:absolute;top:0}
+.bar.ruf-bar::after{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:#c7a056}
+#wkbar{margin-top:6px}
+
+/* Atem im Kampf (Addendum Spec B) */
+.cw-atem { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 8px; margin-top: 16px; font-size: 12px; line-height: 1.2; }
+.cw-atem-pips { display: inline-flex; gap: 3px; }
+.cw-atem-pips i { width: 9px; height: 9px; border-radius: 50%; border: 1px solid #7fb6d8; background: transparent; }
+.cw-atem-pips i.voll { background: #7fb6d8; }
+.cw-atem-verbrauch { color: #c9a66b; white-space: nowrap; }

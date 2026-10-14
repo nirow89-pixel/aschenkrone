@@ -60,8 +60,37 @@ const STAT_KEYS = [
   { id: "def", name: "Panzer" },
   { id: "will", name: "Wille" },
   { id: "fortune", name: "Glück" },
-  { id: "ansehen", name: "Ansehen" }
+  { id: "ansehen", name: "Ansehen" },
+  { id: "rede", name: "Wortgewicht" }  // Feld bleibt "rede" (Spec B 14.10., Name Nico)
 ];
+// ---- Werte 2 (Spec B 14.10.) ----
+const GRUNDWERTE = ["atk", "def", "will", "fortune", "rede"];
+const STUFE_MAX = 20;
+// Punktekosten je Stufenaufstieg (Ziel-Stufe): auf 2–5 je 8, 6–10 je 12, 11–14 je 16, 15–18 je 20, 19–20 je 26 (Summe 1→20 = 288).
+const STUFEN_KOSTEN = [ { bis: 5, punkte: 8 }, { bis: 10, punkte: 12 }, { bis: 14, punkte: 16 }, { bis: 18, punkte: 20 }, { bis: 20, punkte: 26 } ];
+// Benötigte Stufenaufstiege (Summe aller 5 Grundwerte) je Grad-Schritt; null = noch nicht festgelegt (Grad 8–10 gesperrt).
+const GRAD_AUFSTIEGE = { 2: 2, 3: 4, 4: 6, 5: 6, 6: 6, 7: 10, 8: null, 9: null, 10: null };
+// Richtungswahl bei Grad 2 (Namen offen, nur hier ändern).
+const RICHTUNGEN = {
+  krieger: { name: "Eisenwacht", text: "Stahl, Schild und Standhalten." },
+  magier: { name: "Glutweber", text: "Zeichen aus Feuer, Frost und Licht." },
+  dieb: { name: "Nebelhand", text: "Gift, Schatten und der schnelle Schnitt." },
+  diplomat: { name: "Eidwahrer", text: "Worte, die Klingen stumpf machen." }
+};
+// Was ein Grad ab 3 bringt: nur Struktur, Inhalt noch offen (inhalt null -> Platzhalter-Fenster).
+// art: "zeichenwahl" (neues Zeichen wählen), "aufwertung" (Zeichen verbessern), "nebenrichtung" (ab Grad 5, gegen Preis).
+// preis (nur nebenrichtung): mögliche Bezahlarten, noch ohne Werte.
+const GRAD_BELOHNUNG = {
+  3: { art: "zeichenwahl", inhalt: null },
+  4: { art: "aufwertung", inhalt: null },
+  5: { art: "nebenrichtung", preis: ["preis", "ruf", "segen"], inhalt: null },
+  6: { art: "zeichenwahl", inhalt: null },
+  7: { art: "aufwertung", inhalt: null },
+  8: { art: "nebenrichtung", preis: ["preis", "ruf", "segen"], inhalt: null },
+  9: { art: "zeichenwahl", inhalt: null },
+  10: { art: "aufwertung", inhalt: null }
+};
+const NEBENRICHTUNG_AB = 5;
 
 const HERKUENFTE = {
   ascheadel: { id: "ascheadel", name: "Ascheadel", text: "Dein Haus hat den Brand überlebt. Man kennt den Namen und erwartet Haltung.", mods: { hp: 8, atk: 1, def: 3, gold: 40, will: 1 } },
@@ -1098,7 +1127,7 @@ const LOCATIONS = {
     exits: [ { id: "alter_baum", label: "Alter Baum", x: 50, y: 90, arch: true } ] }
 };
 
-const BASE_HERO = { level: 1, hp: 28, hpMax: 28, atk: 4, def: 2, will: 3, fortune: 4, ansehen: 0, gold: 16, ap: 2, apMax: 2, crit: 4 };
+const BASE_HERO = { level: 1, hp: 28, hpMax: 28, atk: 4, def: 2, will: 3, fortune: 4, ansehen: 0, rede: 1, gold: 16, ap: 2, apMax: 2, crit: 4 };
 
 // Wochentage (Spec 14.10.): kein State-Feld, Wochentag = (Tag - 1) % 7, Tag 1 = Mondtag; passt zu weekOf() der Händler.
 const WEEKDAYS = [ { id: "mondtag", name: "Mondtag" }, { id: "siestag", name: "Siestag" }, { id: "mittwend", name: "Mittwend" }, { id: "dunstag", name: "Dunstag" },
@@ -1176,7 +1205,7 @@ ausstellungNeu();
 window.D = {
   WORLD, FACTIONS, DAY_PHASES, BOND_STEPS, STAT_KEYS,
   HERKUENFTE, FLUECHE, PORTRAITS, AVATARE, START_POOL, EXT_ART, ITEMS, SKILLS, MONSTER, NPCs, QUESTS, BITTEN, STORY, ANREDE,
-  NARRATOR, REGIONS, LOCATIONS, BASE_HERO, WEEKDAYS, AUSSTELLUNG, ausstellungNeu, WOLF_LINES, SPAWN_TABLES, ZEICHEN, PFAD_ZEICHEN, GRAD_STUFEN
+  NARRATOR, REGIONS, LOCATIONS, BASE_HERO, WEEKDAYS, AUSSTELLUNG, ausstellungNeu, WOLF_LINES, SPAWN_TABLES, ZEICHEN, PFAD_ZEICHEN, GRAD_STUFEN, GRUNDWERTE, STUFE_MAX, STUFEN_KOSTEN, GRAD_AUFSTIEGE, RICHTUNGEN, GRAD_BELOHNUNG, NEBENRICHTUNG_AB
 };
 
 // ---- Male, Flüche, Segen (male-fluche-segen.md §6, fx laut grad-zeichen-kampf.md §12.4) ----
