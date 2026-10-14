@@ -1811,7 +1811,10 @@ gradFor = function (w) { let n = 1; for (let g = 2; g <= 10; g++) { const t = gr
 function gradMaxErreichbar() { let n = 1; for (let g = 2; g <= 10 && gradSchwelle(g) != null; g++) n = g; return n; }
 gradOffers = function () { return []; };  // alte Segen/Fluch-Angebote je Grad entfallen vorerst (Leitung 14.10.)
 // Gradaufstieg-Fenster: modal, solange grad.pending (nach einem Kampf erst nach dem Kampf-Endfenster).
-function gradSperre() { return !!(state && state.grad && state.grad.pending && !state.inCombat && !state.combatEnd); }
+// Grad-Warteschlange (Leitung 14.10.): grad.pending + grad.nachhol (im Spielstand). Das Fenster kommt erst, wenn kein anderes Fenster offen ist
+// (Kampf, Kampfergebnis mit Beute, Gespräch/Story, Erzähler-Rolle auch angekündigt, Handel), immer nur ein Grad zur Zeit.
+function gradFensterFrei() { return !!state && !state.inCombat && !state.combatEnd && !state.dialogue && !state.narrator && !state.pendingNarrator && !state.trading; }
+function gradSperre() { return !!(state && state.grad && state.grad.pending && gradFensterFrei()); }
 let gradWahl = null;
 function gradEntscheiden(kind, id) {
   const g = gradState(); if (!g.pending) return false;
@@ -2040,7 +2043,11 @@ waitFor = function (id) {
 const _travelBasisS = travel;
 travel = function (toId) {
   const L = D.LOCATIONS, here = state && L[state.location], dest = L[toId];
-  const innen = here && dest && here.region === "lotfild" && dest.region === "lotfild" && (dest.parent === here.id || here.parent === toId);
+  // Leitung 14.10.: Hinein/Hinaus über Torbögen (arch-Ausgänge) kostet überall keine Zeit; normale Kartenreise unverändert.
+  const archTo = (von, nach) => ((L[von] || {}).exits || []).some((e) => e.id === nach && e.arch && !e.locked);
+  // Nebenort = Ort mit Torbogen-Bild (pass), erreicht über einen Torbogen-Ausgang; Rückweg ebenso. Kartenpins kosten weiter Zeit.
+  const nebenort = (von, nach) => !!(L[nach] && L[nach].pass && archTo(von, nach));
+  const innen = here && dest && (nebenort(here.id, toId) || nebenort(toId, here.id));
   if (!innen) return _travelBasisS(toId);
   const alt = TIME_COST.travel; TIME_COST.travel = 0;
   try { return _travelBasisS(toId); } finally { TIME_COST.travel = alt; }
