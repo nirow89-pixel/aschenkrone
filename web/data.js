@@ -131,6 +131,7 @@ const FLUECHE = {
 // Ext-Art-Dateien, die schon im Repo liegen (assets/…). Optionale Bilder werden nur geladen, wenn sie hier stehen,
 // sonst greift der Ersatz (keine 404). Neue Lieferungen aus Drive hier eintragen.
 const EXT_ART = [
+  "locations/saffi_akt_bestimmen_m.jpg", "locations/saffi_akt_bestimmen_w.jpg", "locations/saffi_akt_halsband_m.jpg", "locations/saffi_akt_halsband_w.jpg",
   "ui/intro_welt.jpg",
   "questgegenstaende/quest_eimer_leer.jpg",
   "questgegenstaende/quest_aschenkrone.jpg",
@@ -1221,11 +1222,11 @@ const SAFFI = {
   },
   t: {
     start: "Hallo {anrede}, du siehst aus, als könntest du etwas Ablenkung vertragen!",
-    name: "hmmm es wird dir gefallen… Wie heißt du {huebsch}?",
+    name: "Hmmm, es wird dir gefallen… Wie heißt du, {huebsch}?",
     antwort: "{username}, was für ein schöner Name! Wollen wir gemeinsam nach hinten gehen?",
-    weigern: "Ohh das ist schade, dann nenne ich dich einfach {spitzname}. Wollen wir gemeinsam nach hinten gehen? Sie zwinkert schelmisch.",
+    weigern: "Ohh, das ist schade, dann nenne ich dich einfach {spitzname}. Wollen wir gemeinsam nach hinten gehen? Sie zwinkert schelmisch.",
     gerne: "Sehr schön, komm mit!",
-    zimmer: "So mein Schatz, wie magst du es denn. Willst du bestimmen oder soll ich? Glaub mir ich hab da schon ein paar Ideen, die dir gefallen werden.",
+    zimmer: "So, mein Schatz, wie magst du es denn? Willst du bestimmen oder soll ich? Glaub mir, ich hab da schon ein paar Ideen, die dir gefallen werden.",
     bestimmen: "Uhmmm, ich liebe es kontrolliert zu werden…",
     abschied: "Das hat Spaß gemacht, ich hoffe wir sehen uns bald wieder! Sie haucht einen Kuss zu und geht.",
     wieder: "Hallo {name}, ich wusste, dass du wiederkommen würdest. Wollen wir gemeinsam nach hinten gehen? Sie zwinkert schelmisch.",
@@ -1233,18 +1234,20 @@ const SAFFI = {
     einlassen: "So ein {gut}. Ich hab hier was für dich. Und da du wolltest, dass ich bestimme, trägst du ihn heute für mich. Sagt sie mit einem süffisanten Lächeln.",
     halsWeigern: "Nicht brav... Aber du hast mir erlaubt zu bestimmen, also tue ich es auch…",
     halsAnlegen: "So ist es brav, {gut}. Saffi stellt sich hinter dich und legt dir den Choker an, dann macht es „klick“, sie hat ein Schloss drangehängt und verschlossen, keine Möglichkeit ihn abzulegen!",
-    halsKomm: "Komm jetzt her mein gehorsames Ding, du darfst mich heute ausnahmsweise anfassen.",
-    halsWieder: "Da ist ja mein {brav}. Zeit da weiterzumachen, wo wir aufgehört haben, nicht wahr {name}! Ich hoffe du hast dein Halsband dabei."
+    halsKomm: "Komm jetzt her, mein gehorsames Ding, du darfst mich heute ausnahmsweise anfassen.",
+    halsWieder: "Da ist ja mein {brav}. Zeit da weiterzumachen, wo wir aufgehört haben, nicht wahr, {name}! Ich hoffe du hast dein Halsband dabei."
   },
   kosten: { weigern: 10, neinDanke: 10, willNicht: 25, bestimmen: 25, halsWeigern: 40 }, halsAufschlag: 0.75,
   preis: 100, abklingTage: 2,
-  // Bilder: Halsband vorhanden; Szenenbilder (m/w) erscheinen automatisch, sobald sie in EXT_ART eingetragen sind.
+  // Bilder: Halsband vorhanden; Szenenbilder (m/w) in EXT_ART eingetragen (15.10.).
   bild: { halsband: "items/lackchoker.jpg", bestimmen: { m: "locations/saffi_akt_bestimmen_m.jpg", w: "locations/saffi_akt_bestimmen_w.jpg" },
     halsbandAkt: { m: "locations/saffi_akt_halsband_m.jpg", w: "locations/saffi_akt_halsband_w.jpg" } }
 };
 const SAFFI_KORRUPTION_HALSBAND = 5;  // Korruption für den Halsband-Pfad: +5 (Nico 15.10., vorläufig)
 // Schulden bei Vessa
-const SCHULD = { zinsProTag: 0.05, gefallenAb: 500, gefallenText: "Gold allein reicht mir bei dir nicht mehr. Ich werde einen Gefallen von dir verlangen." };  // gefallenText PLATZHALTER
+const SCHULD = { zinsProTag: 0.05, gefallenAb: 500, gefallenText: 'Vessa klappt das Buch zu. "Fünfhundert. Deine Münzen will ich nicht mehr. Irgendwann bitte ich dich um einen Gefallen, und dann sagst du nicht nein."',
+  teilText: 'Vessa zählt nach und streicht eine Zeile. "Ein Anfang. Der Rest steht noch da."',
+  allesText: 'Vessa streicht deinen Namen ganz durch. "Wir sind quitt. Bis zum nächsten Mal."' };  // Texte Nico 15.10.
 const WEEKDAYS = [ { id: "mondtag", name: "Mondtag" }, { id: "siestag", name: "Siestag" }, { id: "mittwend", name: "Mittwend" }, { id: "dunstag", name: "Dunstag" },
   { id: "freyatag", name: "Freyatag" }, { id: "aschtag", name: "Aschtag" }, { id: "sonnrast", name: "Sonnrast", rest: true } ];
 

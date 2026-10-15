@@ -2437,7 +2437,7 @@ function textfensterSync() {
   const st = state.dialogue && state.dialogue.story && D.STORY[state.dialogue.story], bild = anzeigen ? ((st && st.bild) || (state.dialogue && lastTalk && lastTalk.textBild) || null) : null;
   const slot = w.querySelector(".tf-bild-slot"); if (slot) { slot.hidden = !bild; if (bild) { if (slot.getAttribute("src") !== art(bild)) slot.src = art(bild); } else slot.removeAttribute("src"); }
   w.classList.toggle("mit-bild", !!bild);
-  if (anzeigen) { w.querySelector(".tf-who").textContent = who ? who.textContent : ""; w.querySelector(".tf-text").innerHTML = line.innerHTML; }
+  if (anzeigen) { w.querySelector(".tf-who").textContent = who ? who.textContent : ""; const tt = w.querySelector(".tf-text"); if ([...line.children].some((e) => e.tagName !== "BR")) tt.innerHTML = line.innerHTML; else tt.textContent = satzZeilen([...line.childNodes].map((n) => n.nodeName === "BR" ? "\n" : n.textContent).join("")); }
 }
 // Erzähler (Rollen, Vater-Start über openStory = Gesprächszeile) im selben Fensterbild
 function erzaehlerBild() {
@@ -2552,8 +2552,8 @@ function saffiWahl() {
     }
     case "bestimmt": case "halsKomm": c.push({ label: "Verabschieden", go: "saffi:abschied" }); break;
     case "einlassen": c.push(saffiWahlKosten({ label: "Weigern", go: "saffi:halsweigern" }, "halsWeigern"), { label: "Halsband anlegen", go: "saffi:anlegen" }); break;
-    case "halsWeigern": case "halsAnlegen": c.push({ label: "Weiter", go: d.schritt === "halsWeigern" ? "saffi:anlegen" : "saffi:komm" }); break;
-    case "gerne": c.push({ label: "Weiter", go: "saffi:mit" }); break;
+    case "halsWeigern": case "halsAnlegen": c.push({ label: "Weiter", go: d.schritt === "halsWeigern" ? "saffi:w_anlegen" : "saffi:w_komm" }); break;
+    case "gerne": c.push({ label: "Weiter", go: "saffi:w_mit" }); break;
     case "ende": break;
   }
   return c;
@@ -2602,7 +2602,9 @@ function halsbandAnlegen() {
 }
 function schuldZu(n) { if (!state.schulden) state.schulden = { vesse: 0 }; const alt = state.schulden.vesse || 0; state.schulden.vesse = Math.max(0, alt + n); wertDelta("Schulden bei Vessa", state.schulden.vesse - alt); if (state.schulden.vesse >= D.SCHULD.gefallenAb) state.flags.vessa_gefallen = true; }
 CHOOSE_HOOKS.saffi = (go) => {
-  const a = go.split(":")[1], d = state.dialogue, sf = saffiState(), g = heroGender();
+  let a = go.split(":")[1]; const d = state.dialogue, sf = saffiState(), g = heroGender();
+  // Gesprächszeit (Nico 15.10.): jede Entscheidung 5 min (Standard), „Weiter“ und das automatische Mitgehen zählen nicht.
+  if (a.startsWith("w_") || a === "mit") { state.talkMin = Math.max(0, (state.talkMin || 0) - 5); if (a.startsWith("w_")) a = a.slice(2); }
   const zu = (schritt, key, extra) => { saffiDialog(schritt, Object.assign({ wieder: d && d.wieder }, extra || {})); return saffiText(key); };
   switch (a) {
     case "eingehen": return zu("name", "name");
@@ -2615,7 +2617,7 @@ CHOOSE_HOOKS.saffi = (go) => {
       const p = D.SAFFI.preis, bezahlt = Math.min(state.hero.gold, p);
       state.hero.gold -= bezahlt; wertDelta("Gold", -bezahlt); if (p - bezahlt > 0) schuldZu(p - bezahlt);
       const t = zu("gerne", "gerne");
-      setTimeout(() => { if (state.dialogue && state.dialogue.node === "saffi" && state.dialogue.schritt === "gerne") choose("saffi:mit"); }, SAFFI_ZEIT.mitgehen);
+      setTimeout(() => { if (state.dialogue && state.dialogue.node === "saffi" && state.dialogue.schritt === "gerne") choose("saffi:w_mit"); }, SAFFI_ZEIT.mitgehen);
       return t;
     }
     case "mit": {
@@ -2695,7 +2697,7 @@ CHOOSE_HOOKS.schuld = (go) => {
   if (!n || state.hero.gold < n) return false;
   state.hero.gold -= n; wertDelta("Gold", -n); schuldZu(-n);
   if (!state.schulden.vesse && state.flags.vessa_gefallen) state.flags.vessa_gefallen_offen = true;  // Gefallen bleibt fällig (Folgen später)
-  return "Vessa streicht " + n + " Gold aus ihrem Buch." + (state.schulden.vesse ? " Offen: " + state.schulden.vesse + " Gold." : " Ihr seid schuldenfrei.");  // PLATZHALTER-Text
+  return state.schulden.vesse ? D.SCHULD.teilText : D.SCHULD.allesText;
 };
 const _talkVessa = talk;
 talk = function (id) {
@@ -2740,5 +2742,53 @@ textfensterSync = function () {
   const d = state.dialogue, ok = d.immerBild || hasArt(d.bild), slot = w.querySelector(".tf-bild-slot");
   if (slot && ok) { slot.hidden = false; if (slot.getAttribute("src") !== art(d.bild)) slot.src = art(d.bild); w.classList.add("mit-bild"); }
   w.classList.toggle("bild-rechts", ok && d.bildSeite === "rechts");
+  return r;
+};
+
+// Textfenster in Zeilen (Leitung/Nico 15.10.): jedes Satzende = neue Zeile, Absätze (Leerzeile) bleiben Leerzeile.
+// Nicht getrennt: Abkürzungen (z.B., d.h., Nr., St., Einzelbuchstaben), Ziffern vor Punkt, Auslassungen (… / ...),
+// Satzzeichen innerhalb von Anführungszeichen; nach einem schließenden Anführungszeichen mit Satzende davor wird getrennt.
+const SATZ_ABK = ["z", "b", "d", "h", "nr", "st", "usw", "bzw", "ca", "dr", "hr", "fr", "evtl", "ggf", "vgl", "etc", "bspw", "u", "a", "s", "o", "jh", "str", "abs", "min", "std"];
+function satzZeilen(text) {
+  if (!text) return text;
+  return String(text).split(/\n[ \t]*\n/).map((abs) => satzAbsatz(abs.trim())).join("\n\n");
+}
+function satzAbsatz(t) {
+  const AUF = "„«‚", ZU = "“»‘", GROSS = /[A-ZÄÖÜ„"«]/;
+  let out = "", tief = 0;
+  const endeOk = (i) => {  // i = Index des Satzzeichens
+    const c = t[i];
+    if (c === "…") return false;
+    if (c === "." && (t[i - 1] === "." || t[i + 1] === ".")) return false;  // ...
+    if (c === ".") {
+      if (/\d/.test(t[i - 1] || "")) return false;
+      const m = t.slice(0, i).match(/([A-Za-zÄÖÜäöüß]+)$/);
+      if (m && (m[1].length === 1 || SATZ_ABK.includes(m[1].toLowerCase()))) return false;
+    }
+    return true;
+  };
+  const folgtSatz = (j) => { let k = j; if (!/\s/.test(t[k] || "")) return false; while (/\s/.test(t[k] || "")) k++; return k < t.length && GROSS.test(t[k]) ? k : false; };
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    out += c;
+    if (AUF.includes(c)) { tief++; continue; }
+    if (ZU.includes(c)) { tief = Math.max(0, tief - 1); }
+    else if (c === '"') { const oeffnet = tief === 0 && !(/[.!?…,;:\w]/.test(t[i - 1] || "") && !/\s/.test(t[i - 1] || "")); if (oeffnet) { tief++; continue; } tief = Math.max(0, tief - 1); }
+    if (tief > 0) continue;
+    let p = i;
+    if (ZU.includes(c) || c === '"') { p = i - 1; if (!/[.!?…]/.test(t[p] || "")) continue; }
+    else if (!/[.!?]/.test(c)) continue;
+    if (/[.!?]/.test(t[i + 1] || "")) continue;  // ?! / !! zusammen
+    if (t[i + 1] === '"' || ZU.includes(t[i + 1] || "")) continue;  // schließendes Anführungszeichen gehört noch dazu
+    if (!endeOk(p)) continue;
+    const k = folgtSatz(i + 1); if (k === false) continue;
+    out += "\n"; i = k - 1;
+  }
+  return out;
+}
+const _renderZeilen = render;
+render = function () {
+  const r = _renderZeilen.apply(this, arguments);
+  const nt = document.getElementById("narr-text"); if (nt && state && state.narrator && state.narrator.text && !nt.children.length) { const z = satzZeilen(state.narrator.text); if (nt.textContent !== z) nt.textContent = z; }
   return r;
 };
