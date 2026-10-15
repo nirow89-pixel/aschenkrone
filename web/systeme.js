@@ -2330,3 +2330,21 @@ Object.values(D.LOCATIONS).filter((l) => l.klickbild).forEach((l) => {
   klickbildVorladen(l.klickbild);
   Object.defineProperty(l, "art", { configurable: true, enumerable: true, get() { return state && state.location === l.id ? klickbildArt(l.klickbild) : l.klickbild.art; } });
 });
+
+// =====================================================================
+// Bordell (15.10.): Themenräume (loc.thema) über Schalter D.BORDELL_THEMENRAEUME_OFFEN (data.js).
+// Geschlossen = „nur mit Begleitung“ (Begleitung folgt später) → kein Zutritt, Hinweis; Kartenknopf als gesperrt markiert.
+// =====================================================================
+function themaGesperrt(id) { const l = D.LOCATIONS[id]; return !!(l && l.thema && !D.BORDELL_THEMENRAEUME_OFFEN); }
+const _travelThemaBasis = travel;
+travel = function (toId) {
+  if (state && themaGesperrt(toId) && !(state.narrator || state.dialogue || state.inCombat || state.trading)) { showFace(null); showLine("Dieser Raum ist nur mit Begleitung zugänglich.", [{ label: "Weiter", go: "clear" }]); return; }
+  return _travelThemaBasis.apply(this, arguments);
+};
+const _renderThemaBasis = render;
+render = function () {
+  const r = _renderThemaBasis.apply(this, arguments);
+  const map = document.getElementById("map");
+  if (map && state && (D.LOCATIONS[state.location] || {}).region === "bordell") map.querySelectorAll(".pin").forEach((b) => { const l = Object.values(D.LOCATIONS).find((x) => x.region === "bordell" && x.thema && (D.REGIONS.bordell.pins.find((p) => p.id === x.id) || {}).label === b.textContent.trim()); if (l) b.classList.toggle("pin-locked", themaGesperrt(l.id)); });
+  return r;
+};

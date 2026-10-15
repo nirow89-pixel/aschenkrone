@@ -206,6 +206,9 @@ const ITEMS = {
   kussphiole: { id: "kussphiole", img: "items/kussphiole.jpg", name: "Kussphiole", type: "verbrauch", heal: 10, price: 12, sell: 6, text: "Ein rosa Trank in einer kleinen Flasche mit Korken." },
   spiegeltrank: { id: "spiegeltrank", img: "items/spiegeltrank.jpg", name: "Spiegeltrank", type: "verbrauch", heal: 14, price: 16, sell: 8, text: "Ein klarer Trank in einer verzierten Silberflasche." },
   wein_der_stunde: { id: "wein_der_stunde", img: "items/wein_der_stunde.jpg", name: "Wein der Stunde", type: "verbrauch", heal: 5, price: 6, sell: 3, text: "Ein Glas Rotwein neben einer brennenden Kerze." },
+  // PLATZHALTER-Waren für Corin (Bordell, 15.10.) – Name, Bild und Werte werden später ersetzt
+  platzhalter_hauswein: { id: "platzhalter_hauswein", img: "items/wein_der_stunde.jpg", name: "Hauswein (Platzhalter)", type: "verbrauch", heal: 3, price: 4, sell: 2, text: "PLATZHALTER: Wein von Corins Tresen." },
+  platzhalter_brotteller: { id: "platzhalter_brotteller", img: "items/wein_der_stunde.jpg", name: "Brot und Käse (Platzhalter)", type: "verbrauch", heal: 4, price: 5, sell: 2, text: "PLATZHALTER: Speise von Corins Tresen." },
   teichbluete: { id: "teichbluete", img: "items/teichbluete.jpg", name: "Teichblüte", type: "ware", price: 8, sell: 4, text: "Eine helle, rosa Blüte vom Teich. Händler kaufen sie an." },
   leder_hose: { id: "leder_hose", img: "items/leder_hose.jpg", name: "Lederhose", type: "ruestung", slot: "beine", hp: 2, price: 14, sell: 7, text: "Eine dunkle, abgetragene Lederhose mit Kniebesatz und Ziernähten." },
   fangzahn_kampfrock: { id: "fangzahn_kampfrock", img: "items/fangzahn_kampfrock.jpg", name: "Fangzahn-Kampfrock", type: "ruestung", slot: "beine", def: 1, atk: 1, fx: { vsMonster: { raeuber: 1 } }, price: 32, sell: 16, text: "Ein Kampfrock aus zerrissenem schwarzem Stoff und Lederplatten, mit roter Mittelbahn, Tierzähnen und Knochenzier am Gürtel." },
@@ -517,14 +520,22 @@ const NPCs = {
     merchant: true, buys: true, hours: ["nachmittag","abend","nacht"], pin: { x: 20, y: 86 }, faction: "gasse",
     lines: ["Wer hier trinkt, zahlt vorher."],
     talk: { start: "Tretet ein. Hier redet man leise, und man zahlt, bevor man geht." }
+ ,
+    // Bordell 15.10.: Tagesablauf in den Räumen (schlägt hours/location)
+    schedule: { default: { nachmittag: "bordell_buero", abend: "bordell", nacht: "bordell_buero" }, dunstag: { abend: "bordell_lounge" }, freyatag: { nacht: "bordell_lounge" } }
   },
   corin: {
     id: "corin", name: "Corin", title: "", location: "bordell",
     text: "Corin lehnt am Vorhang und zählt die Gäste.",
     art: "npcs/corin.jpg",
-    merchant: false, hours: ["nachmittag","abend","nacht"], pin: { x: 34, y: 87 }, faction: "gasse",
+    merchant: true, buys: false, hours: ["nachmittag","abend","nacht"], pin: { x: 34, y: 87 }, faction: "gasse",
+    // Bordell 15.10.: Barmann in der Bar/Lounge, Wein und Speisen – PLATZHALTER-Waren
+    shop: ["platzhalter_hauswein","platzhalter_brotteller"], stock: { platzhalter_hauswein: 6, platzhalter_brotteller: 6 },
     lines: ["Ich sehe, wer kommt. Das reicht mir."],
     talk: { start: "Ihr seid nicht von hier. Das sieht man an den Schuhen." }
+ ,
+    // Bordell 15.10.: Tagesablauf in den Räumen (schlägt hours/location)
+    schedule: { default: { nachmittag: "bordell_lounge", abend: "bordell_lounge", nacht: "bordell_lounge" } }
   },
   ila: {
     id: "ila", name: "Ila", title: "", location: "bordell",
@@ -533,6 +544,9 @@ const NPCs = {
     merchant: false, hours: ["nachmittag","abend","nacht"], pin: { x: 47, y: 89 }, faction: "gasse",
     lines: ["Fragt Vesse, nicht mich."],
     talk: { start: "Setzt euch, wenn ihr wollt. Reden kostet hier nichts. Noch nicht." }
+ ,
+    // Bordell 15.10.: Tagesablauf in den Räumen (schlägt hours/location)
+    schedule: { default: { nachmittag: "bordell_lounge", abend: "bordell_lounge", nacht: "bordell_lounge" } }
   },
   kes: {
     id: "kes", name: "Kes", title: "", location: "bordell",
@@ -541,6 +555,9 @@ const NPCs = {
     merchant: false, hours: ["nachmittag","abend","nacht"], pin: { x: 60, y: 97 }, faction: "gasse",
     lines: ["Gold redet lauter als ihr."],
     talk: { start: "Ihr sucht jemanden? Dann sucht leiser." }
+ ,
+    // Bordell 15.10.: Tagesablauf in den Räumen (schlägt hours/location)
+    schedule: { default: { nachmittag: "bordell_lounge", abend: "bordell_lounge", nacht: "bordell_lounge" } }
   },
   nim: {
     id: "nim", name: "Nim", title: "", location: "bordell",
@@ -549,6 +566,9 @@ const NPCs = {
     merchant: false, hours: ["nachmittag","abend","nacht"], pin: { x: 74, y: 96 }, faction: "gasse",
     lines: ["Die Nacht ist lang genug für alle."],
     talk: { start: "Guten Abend. Bleibt oder geht, aber steht nicht im Licht." }
+ ,
+    // Bordell 15.10.: Tagesablauf in den Räumen (schlägt hours/location)
+    schedule: { default: { nachmittag: "bordell", abend: "bordell_lounge", nacht: "bordell_lounge" } }
   },
   saffi: {
     id: "saffi", name: "Saffi", title: "", location: "bordell",
@@ -557,6 +577,9 @@ const NPCs = {
     merchant: false, hours: ["nachmittag","abend","nacht"], pin: { x: 88, y: 97 }, faction: "gasse",
     lines: ["Hier hört jeder alles. Sagt also nichts Dummes."],
     talk: { start: "Ihr seht müde aus. Hier wird man das nicht los, nur leichter." }
+ ,
+    // Bordell 15.10.: Tagesablauf in den Räumen (schlägt hours/location)
+    schedule: { default: { nachmittag: "bordell_lounge", abend: "bordell", nacht: "bordell_lounge" } }
   },
   edrik: {
     id: "edrik", name: "Edrik", title: "Hauptmann der königlichen Garde", location: "platz",
@@ -751,6 +774,16 @@ const REGIONS = {
   // Große Nebenorte (Datenmodell, noch ohne Inhalt): Region mit sideArea: true hat eigene Karte, Orte, wait/idle wie ein Gebiet,
   // erscheint aber auf keiner anderen Karte und ist nur über einen Torbogen (exit mit arch + Hub-Ort mit pass) erreichbar.
   // Beispiel später: bauernhaus_innen: { id, name, hub, map, wait, idle, sideArea: true, pins: [...] } mit Torbogen am Bauernhaus.
+  // Bordell (Leitung 15.10.): großer Nebenort (sideArea) der Gassen, Eingang über die Rote Tür, Zentralort Empfang (Ort-ID „bordell“ bleibt).
+  bordell: { id: "bordell", name: "Bordell", hub: "bordell", back: "Zurück in den Empfang", map: "maps/bordell.jpg", wait: "ui/wait_bordell.jpg", idle: "ui/idle_bordell.jpg", sideArea: true, pins: [
+    { id: "bordell", label: "Empfang", x: 50, y: 52 },
+    { id: "bordell_lounge", label: "Bar/Lounge", x: 16, y: 32 },
+    { id: "bordell_buero", label: "Büro", x: 50, y: 22 },
+    { id: "bordell_rotes_zimmer", label: "Rotes Zimmer", x: 84, y: 32 },
+    { id: "bordell_schwarze_kammer", label: "Schwarze Kammer", x: 16, y: 72 },
+    { id: "bordell_prinzessinnenraum", label: "Prinzessinnenraum", x: 85, y: 72 },
+    { id: "gassen", label: "Rote Tür", x: 50, y: 80 }
+  ]},
   // Bauernhaus innen (Leitung 13.10.): großer Nebenort (sideArea) von „Bauernhaus außen“, Torbogen an der Haustür. Zentralort Diele.
   bauernhaus_innen: { id: "bauernhaus_innen", name: "Bauernhaus innen", hub: "bauernhaus_diele", back: "Zurück in die Diele", map: "maps/bauernhaus_innen.jpg", wait: "ui/wait_bauernhaus_innen.jpg", idle: "ui/idle_bauernhaus_innen.jpg", sideArea: true, pins: [
     { id: "bauernhaus_diele", label: "Diele", x: 49, y: 64 },
@@ -937,10 +970,21 @@ const LOCATIONS = {
       { id: "gasthaus", label: "Gasthaus", x: 22, y: 72, arch: true },  // Tür links in der Gasse
       { id: "platz", label: "Zum Platz", x: 28, y: 88, arch: true }
     ] },
-  bordell: { id: "bordell", name: "Bordell", region: "stadt", blurb: "Die rote Tür lässt Licht auf die Schwelle. Drinnen redet man leiser als auf dem Platz.", art: "locations/bordell.jpg",
-    // Nebenort: nicht auf der Karte, nur über parent erreichbar; Kartenfenster zeigt pass.
-    parent: "gassen", pass: "ui/pass_rotetuer.jpg",
-    exits: [ { id: "gassen", label: "Zurück nach Gassen" } ] },
+  // Bordell (15.10.): Empfang = Zentralort des großen Nebenorts „bordell“; Außenbild locations/bordell.jpg bleibt unverändert im Ordner.
+  bordell: { id: "bordell", name: "Empfang", region: "bordell", blurb: "Die rote Tür lässt Licht auf die Schwelle. Drinnen redet man leiser als auf dem Platz.", art: "locations/bordell_empfang.jpg",
+    pass: "ui/pass_rotetuer.jpg",
+    exits: [ { id: "bordell_lounge", label: "Bar/Lounge" }, { id: "bordell_buero", label: "Büro" }, { id: "bordell_rotes_zimmer", label: "Rotes Zimmer" }, { id: "bordell_schwarze_kammer", label: "Schwarze Kammer" }, { id: "bordell_prinzessinnenraum", label: "Prinzessinnenraum" }, { id: "gassen", label: "Rote Tür (hinaus)" } ] },
+  // Räume (Ortstexte: PLATZHALTER für Ext Text); Durchgänge kosten 0 min (gleicher großer Nebenort).
+  bordell_lounge: { id: "bordell_lounge", name: "Bar/Lounge", region: "bordell", blurb: "Gedämpftes Licht, ein langer Tresen, weiche Sessel. Hier wird getrunken, bevor man redet.", art: "locations/bordell_lounge.jpg",
+    exits: [ { id: "bordell", label: "Empfang" }, { id: "bordell_buero", label: "Büro" }, { id: "bordell_rotes_zimmer", label: "Rotes Zimmer" }, { id: "bordell_schwarze_kammer", label: "Schwarze Kammer" }, { id: "bordell_prinzessinnenraum", label: "Prinzessinnenraum" } ] },
+  bordell_buero: { id: "bordell_buero", name: "Büro", region: "bordell", blurb: "Vesses Schreibtisch, Bücher und Rechnungen. Wer hier steht, wird gezählt.", art: "locations/bordell_buero.jpg",
+    exits: [ { id: "bordell", label: "Empfang" }, { id: "bordell_lounge", label: "Bar/Lounge" }, { id: "bordell_rotes_zimmer", label: "Rotes Zimmer" }, { id: "bordell_schwarze_kammer", label: "Schwarze Kammer" }, { id: "bordell_prinzessinnenraum", label: "Prinzessinnenraum" } ] },
+  bordell_rotes_zimmer: { id: "bordell_rotes_zimmer", name: "Rotes Zimmer", region: "bordell", thema: true, blurb: "Rote Vorhänge, rotes Licht, ein breites Bett.", art: "locations/bordell_rotes_zimmer.jpg",
+    exits: [ { id: "bordell", label: "Empfang" }, { id: "bordell_lounge", label: "Bar/Lounge" }, { id: "bordell_buero", label: "Büro" }, { id: "bordell_schwarze_kammer", label: "Schwarze Kammer" }, { id: "bordell_prinzessinnenraum", label: "Prinzessinnenraum" } ] },
+  bordell_schwarze_kammer: { id: "bordell_schwarze_kammer", name: "Schwarze Kammer", region: "bordell", thema: true, blurb: "Dunkles Holz, Kerzen, kaum ein Laut dringt hinaus.", art: "locations/bordell_schwarze_kammer.jpg",
+    exits: [ { id: "bordell", label: "Empfang" }, { id: "bordell_lounge", label: "Bar/Lounge" }, { id: "bordell_buero", label: "Büro" }, { id: "bordell_rotes_zimmer", label: "Rotes Zimmer" }, { id: "bordell_prinzessinnenraum", label: "Prinzessinnenraum" } ] },
+  bordell_prinzessinnenraum: { id: "bordell_prinzessinnenraum", name: "Prinzessinnenraum", region: "bordell", thema: true, blurb: "Rosa Seide, Spitze und ein Bett wie eine Torte.", art: "locations/bordell_prinzessinnenraum.jpg",
+    exits: [ { id: "bordell", label: "Empfang" }, { id: "bordell_lounge", label: "Bar/Lounge" }, { id: "bordell_buero", label: "Büro" }, { id: "bordell_rotes_zimmer", label: "Rotes Zimmer" }, { id: "bordell_schwarze_kammer", label: "Schwarze Kammer" } ] },
   gasthaus: { id: "gasthaus", name: "Gasthaus", region: "stadt", blurb: "Tische, Rauch, ein Tresen. Wer zahlt, bekommt einen Platz, der nicht der Markt ist.", art: "locations/gasthaus.jpg",
     // Nebenort der Gassen: nur über die Tür in den Gassen, keine Schnellreise.
     parent: "gassen", pass: "ui/pass_gasthaus.jpg", back: "Zurück in die Gassen",
@@ -1158,6 +1202,9 @@ const LOCATIONS = {
 const BASE_HERO = { level: 1, hp: 28, hpMax: 28, atk: 4, def: 2, will: 3, fortune: 4, ansehen: 0, rede: 1, gold: 16, ap: 2, apMax: 2, crit: 4 };
 
 // Wochentage (Spec 14.10.): kein State-Feld, Wochentag = (Tag - 1) % 7, Tag 1 = Mondtag; passt zu weekOf() der Händler.
+// Bordell (15.10.): Themenräume (Rotes Zimmer, Schwarze Kammer, Prinzessinnenraum) verlangen später Begleitung.
+// Schalter: true = offen (Testbetrieb), false = nur mit Begleitung (noch nicht gebaut → gesperrt).
+const BORDELL_THEMENRAEUME_OFFEN = true;
 const WEEKDAYS = [ { id: "mondtag", name: "Mondtag" }, { id: "siestag", name: "Siestag" }, { id: "mittwend", name: "Mittwend" }, { id: "dunstag", name: "Dunstag" },
   { id: "freyatag", name: "Freyatag" }, { id: "aschtag", name: "Aschtag" }, { id: "sonnrast", name: "Sonnrast", rest: true } ];
 
@@ -1233,7 +1280,7 @@ ausstellungNeu();
 window.D = {
   WORLD, FACTIONS, DAY_PHASES, BOND_STEPS, STAT_KEYS,
   HERKUENFTE, FLUECHE, PORTRAITS, AVATARE, START_POOL, EXT_ART, ITEMS, SKILLS, MONSTER, NPCs, QUESTS, BITTEN, STORY, ANREDE,
-  NARRATOR, REGIONS, LOCATIONS, BASE_HERO, WEEKDAYS, AUSSTELLUNG, ausstellungNeu, WOLF_LINES, SPAWN_TABLES, ZEICHEN, PFAD_ZEICHEN, GRAD_STUFEN, GRUNDWERTE, STUFE_MAX, STUFEN_KOSTEN, GRAD_AUFSTIEGE, RICHTUNGEN, GRAD_BELOHNUNG, NEBENRICHTUNG_AB, BLOCK_START, WAY_MIN, WAYS
+  NARRATOR, REGIONS, LOCATIONS, BASE_HERO, WEEKDAYS, AUSSTELLUNG, ausstellungNeu, WOLF_LINES, SPAWN_TABLES, ZEICHEN, PFAD_ZEICHEN, GRAD_STUFEN, GRUNDWERTE, STUFE_MAX, STUFEN_KOSTEN, GRAD_AUFSTIEGE, RICHTUNGEN, GRAD_BELOHNUNG, NEBENRICHTUNG_AB, BLOCK_START, WAY_MIN, WAYS, BORDELL_THEMENRAEUME_OFFEN
 };
 
 // ---- Male, Flüche, Segen (male-fluche-segen.md §6, fx laut grad-zeichen-kampf.md §12.4) ----
@@ -1275,6 +1322,7 @@ window.D.MERCHANT_ECON = {
   marktfrau: { gold: 120, size: 5, pool: ["glutphiole","nebeltrank","aschesalbe","wein_der_stunde","teichbluete","waldphiole","kussphiole"] },
   hella: { gold: 90, size: 3, pool: ["waldphiole","nebeltrank","aschesalbe","teichbluete","spiegeltrank","glutphiole"] },
   branna: { gold: 220, size: 5, pool: ["dorfstahl","aschenklinge","aschenschild","eisen_beinschienen","hohe_panzerstiefel","knochenhandschuh","zweihander","schnallen_lederstiefel","leder_hose"] },
+  corin: { gold: 60, size: 2, pool: ["platzhalter_hauswein","platzhalter_brotteller"] },  // PLATZHALTER
   vesse: { gold: 100, size: 3, pool: ["wein_der_stunde","kussphiole","spiegeltrank","seidenhand","samtbrust"] },
   iven: { gold: 200, size: 4, pool: ["glutring","nebelamulett","kronenring","ascheohr","teichbluete"] },
   jorun: { gold: 80, size: 2, pool: ["wein_der_stunde","teichbluete","aschesalbe","glutphiole"] },
