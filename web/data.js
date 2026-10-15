@@ -210,6 +210,8 @@ const ITEMS = {
   // PLATZHALTER-Waren für Corin (Bordell, 15.10.) – Name, Bild und Werte werden später ersetzt
   platzhalter_hauswein: { id: "platzhalter_hauswein", img: "items/wein_der_stunde.jpg", name: "Hauswein (Platzhalter)", type: "verbrauch", heal: 3, price: 4, sell: 2, text: "PLATZHALTER: Wein von Corins Tresen." },
   platzhalter_brotteller: { id: "platzhalter_brotteller", img: "items/wein_der_stunde.jpg", name: "Brot und Käse (Platzhalter)", type: "verbrauch", heal: 4, price: 5, sell: 2, text: "PLATZHALTER: Speise von Corins Tresen." },
+  // Saffi-Interaktion (Nico, 15.10.): Questgegenstand im Amulett-Platz, nicht verkäuflich (kein Preis). Text PLATZHALTER.
+  saffis_halsband: { id: "saffis_halsband", img: "items/lackchoker.jpg", name: "Saffis Halsband", type: "schmuck", slot: "amulett", questItem: true, text: "Schwarzer Lack und ein kleines Schloss. Saffi hat es dir angelegt." },
   teichbluete: { id: "teichbluete", img: "items/teichbluete.jpg", name: "Teichblüte", type: "ware", price: 8, sell: 4, text: "Eine helle, rosa Blüte vom Teich. Händler kaufen sie an." },
   leder_hose: { id: "leder_hose", img: "items/leder_hose.jpg", name: "Lederhose", type: "ruestung", slot: "beine", hp: 2, price: 14, sell: 7, text: "Eine dunkle, abgetragene Lederhose mit Kniebesatz und Ziernähten." },
   fangzahn_kampfrock: { id: "fangzahn_kampfrock", img: "items/fangzahn_kampfrock.jpg", name: "Fangzahn-Kampfrock", type: "ruestung", slot: "beine", def: 1, atk: 1, fx: { vsMonster: { raeuber: 1 } }, price: 32, sell: 16, text: "Ein Kampfrock aus zerrissenem schwarzem Stoff und Lederplatten, mit roter Mittelbahn, Tierzähnen und Knochenzier am Gürtel." },
@@ -1210,6 +1212,39 @@ const BASE_HERO = { level: 1, hp: 28, hpMax: 28, atk: 4, def: 2, will: 3, fortun
 // Bordell (15.10.): Themenräume (Rotes Zimmer, Schwarze Kammer, Prinzessinnenraum) verlangen später Begleitung.
 // Schalter: true = offen (Testbetrieb), false = nur mit Begleitung (noch nicht gebaut → gesperrt).
 const BORDELL_THEMENRAEUME_OFFEN = true;
+// ---- Saffi-Interaktion (Nicos Spezifikation 15.10., Texte wörtlich; {anrede}/{name}/... werden je Geschlecht/Name ersetzt) ----
+const SAFFI = {
+  spitzname: { m: "Ulfi", w: "Ylva" },
+  wort: {
+    anrede: { m: "Süßer", w: "Süße" }, huebsch: { m: "mein Hübscher", w: "meine Hübsche" },
+    gut: { m: "guter Junge", w: "gutes Mädchen" }, brav: { m: "braver Junge", w: "braves Mädchen" }
+  },
+  t: {
+    start: "Hallo {anrede}, du siehst aus, als könntest du etwas Ablenkung vertragen!",
+    name: "hmmm es wird dir gefallen… Wie heißt du {huebsch}?",
+    antwort: "{username}, was für ein schöner Name! Wollen wir gemeinsam nach hinten gehen?",
+    weigern: "Ohh das ist schade, dann nenne ich dich einfach {spitzname}. Wollen wir gemeinsam nach hinten gehen? Sie zwinkert schelmisch.",
+    gerne: "Sehr schön, komm mit!",
+    zimmer: "So mein Schatz, wie magst du es denn. Willst du bestimmen oder soll ich? Glaub mir ich hab da schon ein paar Ideen, die dir gefallen werden.",
+    bestimmen: "Uhmmm, ich liebe es kontrolliert zu werden…",
+    abschied: "Das hat Spaß gemacht, ich hoffe wir sehen uns bald wieder! Sie haucht einen Kuss zu und geht.",
+    wieder: "Hallo {name}, ich wusste, dass du wiederkommen würdest. Wollen wir gemeinsam nach hinten gehen? Sie zwinkert schelmisch.",
+    richtig: "{username}, was für ein schöner Name! Willst du oder nicht?",
+    einlassen: "So ein {gut}. Ich hab hier was für dich. Und da du wolltest, dass ich bestimme, trägst du ihn heute für mich. Sagt sie mit einem süffisanten Lächeln.",
+    halsWeigern: "Nicht brav... Aber du hast mir erlaubt zu bestimmen, also tue ich es auch…",
+    halsAnlegen: "So ist es brav, {gut}. Saffi stellt sich hinter dich und legt dir den Choker an, dann macht es „klick“, sie hat ein Schloss drangehängt und verschlossen, keine Möglichkeit ihn abzulegen!",
+    halsKomm: "Komm jetzt her mein gehorsames Ding, du darfst mich heute ausnahmsweise anfassen.",
+    halsWieder: "Da ist ja mein {brav}. Zeit da weiterzumachen, wo wir aufgehört haben, nicht wahr {name}! Ich hoffe du hast dein Halsband dabei."
+  },
+  kosten: { weigern: 10, neinDanke: 10, willNicht: 25, bestimmen: 25, halsWeigern: 40 }, halsAufschlag: 0.75,
+  preis: 100, abklingTage: 2,
+  // Bilder: Halsband vorhanden; Szenenbilder (m/w) erscheinen automatisch, sobald sie in EXT_ART eingetragen sind.
+  bild: { halsband: "items/lackchoker.jpg", bestimmen: { m: "locations/saffi_akt_bestimmen_m.jpg", w: "locations/saffi_akt_bestimmen_w.jpg" },
+    halsbandAkt: { m: "locations/saffi_akt_halsband_m.jpg", w: "locations/saffi_akt_halsband_w.jpg" } }
+};
+const SAFFI_KORRUPTION_HALSBAND = 5;  // Korruption für den Halsband-Pfad: +5 (Nico 15.10., vorläufig)
+// Schulden bei Vessa
+const SCHULD = { zinsProTag: 0.05, gefallenAb: 500, gefallenText: "Gold allein reicht mir bei dir nicht mehr. Ich werde einen Gefallen von dir verlangen." };  // gefallenText PLATZHALTER
 const WEEKDAYS = [ { id: "mondtag", name: "Mondtag" }, { id: "siestag", name: "Siestag" }, { id: "mittwend", name: "Mittwend" }, { id: "dunstag", name: "Dunstag" },
   { id: "freyatag", name: "Freyatag" }, { id: "aschtag", name: "Aschtag" }, { id: "sonnrast", name: "Sonnrast", rest: true } ];
 
@@ -1285,7 +1320,7 @@ ausstellungNeu();
 window.D = {
   WORLD, FACTIONS, DAY_PHASES, BOND_STEPS, STAT_KEYS,
   HERKUENFTE, FLUECHE, PORTRAITS, AVATARE, START_POOL, EXT_ART, ITEMS, SKILLS, MONSTER, NPCs, QUESTS, BITTEN, STORY, ANREDE,
-  NARRATOR, REGIONS, LOCATIONS, BASE_HERO, WEEKDAYS, AUSSTELLUNG, ausstellungNeu, WOLF_LINES, SPAWN_TABLES, ZEICHEN, PFAD_ZEICHEN, GRAD_STUFEN, GRUNDWERTE, STUFE_MAX, STUFEN_KOSTEN, GRAD_AUFSTIEGE, RICHTUNGEN, GRAD_BELOHNUNG, NEBENRICHTUNG_AB, BLOCK_START, WAY_MIN, WAYS, BORDELL_THEMENRAEUME_OFFEN
+  NARRATOR, REGIONS, LOCATIONS, BASE_HERO, WEEKDAYS, AUSSTELLUNG, ausstellungNeu, WOLF_LINES, SPAWN_TABLES, ZEICHEN, PFAD_ZEICHEN, GRAD_STUFEN, GRUNDWERTE, STUFE_MAX, STUFEN_KOSTEN, GRAD_AUFSTIEGE, RICHTUNGEN, GRAD_BELOHNUNG, NEBENRICHTUNG_AB, BLOCK_START, WAY_MIN, WAYS, BORDELL_THEMENRAEUME_OFFEN, SAFFI, SAFFI_KORRUPTION_HALSBAND, SCHULD
 };
 
 // ---- Male, Flüche, Segen (male-fluche-segen.md §6, fx laut grad-zeichen-kampf.md §12.4) ----
@@ -1316,6 +1351,8 @@ window.D.PERKS = {
   segen_der_esse: { art: "segen", name: "Segen der Esse", sichtbar: "offen", grad: true, ortSegen: true, text: "Die Esse kennt eure Hände.", wirkung: "mehr Lohn und bessere Preise in der Schmiede", stufen: [{ workGold: 2, tradePct: { schmied: 5 } }, { workGold: 3, tradePct: { schmied: 8 } }] },
   segen_rote_gunst: { art: "segen", name: "Gunst der Roten Tür", sichtbar: "spuerbar", geber: "gasse", text: "Das Haus hinter der roten Tür hält zu euch, solange ihr schweigt.", wirkung: "bessere Preise in der Gasse", bedingung: "Kein Plaudern, keine Gewalt im Haus", stufen: [{ tradePct: { gasse: 6 } }, { tradePct: { gasse: 8 } }] },
   // nur noch für Altstände (nicht mehr erwerbbar, Leitung 13.10.): Anzeige und Wirkung bleiben, damit alte Saves laden.
+  // Saffi (15.10.): zeitlich begrenzter Segen, 2 Spieltage
+  segen_beglueckt: { art: "segen", name: "Beglückt", sichtbar: "offen", text: "Saffis Nähe wirkt nach.", wirkung: "+10 Leben, +1 Kraft für 2 Tage", stufen: [{ hp: 10, atk: 1 }] },
   segen_tamsins_tisch: { art: "segen", name: "Tamsins Tisch", sichtbar: "offen", text: "An Tamsins Tisch ist ein Platz für euch.", wirkung: "Einkehr in der Schenke bringt mehr Kraft", stufen: [{ wkAktion: { schenke: 1 } }, { wkAktion: { schenke: 1 } }] },
   segen_brot_und_dach: { art: "segen", name: "Brot und Dach", sichtbar: "offen", geber: "rat", text: "Unterorten gibt euch Brot und ein Dach.", wirkung: "Ruhe im Dorfzentrum bringt mehr Kraft", stufen: [{ wkAktion: { ruhe: 1 } }, { wkAktion: { ruhe: 2 } }] },
   segen_zweiter_atem: { art: "segen", name: "Zweiter Atem", sichtbar: "offen", grad: true, ortSegen: true, text: "Wenn ihr fallt, steht ihr noch einmal auf.", wirkung: "einmal am Tag im Kampf, kurz vor dem Fall, etwas Leben zurück", stufen: [{ zweiterAtem: 20 }, { zweiterAtem: 25 }] },

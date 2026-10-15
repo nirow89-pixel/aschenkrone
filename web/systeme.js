@@ -6,10 +6,11 @@
 // Stufe a · Werte: Wille, Willenskraft, Korruption, Haltung, Tagesaktionen (werte.md Rev. 9)
 // =====================================================================
 const KORR_TIERS = [
-  { min: 0, id: "k0", name: "Unberührt" }, { min: 5, id: "k1", name: "Angekratzt" }, { min: 12, id: "k2", name: "Nachgiebig" },
-  { min: 20, id: "k3", name: "Berechnend" }, { min: 30, id: "k4", name: "Verstrickt" }, { min: 40, id: "k5", name: "Abgebrüht" },
-  { min: 52, id: "k6", name: "Skrupellos" }, { min: 64, id: "k7", name: "Verdorben" }, { min: 76, id: "k8", name: "Zerfressen" },
-  { min: 88, id: "k9", name: "Ascheherz" }
+  // 15.10. (Nico): Skala 0–200, Schwellen verdoppelt (vorher 0/5/12/20/30/40/52/64/76/88)
+  { min: 0, id: "k0", name: "Unberührt" }, { min: 10, id: "k1", name: "Angekratzt" }, { min: 24, id: "k2", name: "Nachgiebig" },
+  { min: 40, id: "k3", name: "Berechnend" }, { min: 60, id: "k4", name: "Verstrickt" }, { min: 80, id: "k5", name: "Abgebrüht" },
+  { min: 104, id: "k6", name: "Skrupellos" }, { min: 128, id: "k7", name: "Verdorben" }, { min: 152, id: "k8", name: "Zerfressen" },
+  { min: 176, id: "k9", name: "Ascheherz" }
 ];
 const KORR_TEXT = {
   k0: "Nichts an euch hat sich gebogen.", k1: "Ein Kratzer, den nur ihr kennt.", k2: "Ihr gebt nach, wenn es sich lohnt.",
@@ -27,7 +28,8 @@ const WILL_TIERS = [
   [13, "Unbeugsam"], [15, "Eisern"], [17, "Unerschütterlich"], [19, "Aschefest"]
 ];
 const STAT_CAP_WILL = 18;
-const KORR_RATE = { soft: 1, medium: 2, hard: 4 };
+const KORR_BUSS_ABSTAND = 40;  // Buße senkt höchstens bis Höchststand − 40 (vorher − 20)
+const KORR_RATE = { soft: 2, medium: 4, hard: 8 };  // Skala 0–200 (vorher 1/2/4)
 
 function tierOf(list, v) { let t = list[0]; for (const x of list) if (v >= x.min) t = x; return t; }
 function korrTier(v) { return tierOf(KORR_TIERS, v === undefined ? state.values.korr : v); }
@@ -70,14 +72,14 @@ function bumpKorr(d, opts) {
   const v = state.values; opts = opts || {};
   if (!d) return 0;
   if (d > 0) {
-    const cap = (opts.grad === "hard" ? 8 : 6) - (v.korrHeute || 0);
+    const cap = (opts.grad === "hard" ? 16 : 12) - (v.korrHeute || 0);  // Tagesdeckel Skala 0–200 (vorher 8/6)
     d = Math.max(0, Math.min(d, cap));
     if (!d) return 0;
-    v.korr = clamp(v.korr + d, 0, 100); v.korrHeute = (v.korrHeute || 0) + d; v.bussHeute = (v.bussHeute || 0) + d;
+    v.korr = clamp(v.korr + d, 0, KORR_MAX); v.korrHeute = (v.korrHeute || 0) + d; v.bussHeute = (v.bussHeute || 0) + d;  // 15.10.: Höchstwert 200 (Nico)
     v.korrPeak = Math.max(v.korrPeak || 0, v.korr);
     if (opts.tag && typeof tempelZeuge === "function") tempelZeuge(opts.tag);
   } else {
-    const floor = Math.max(0, (v.korrPeak || 0) - 20);
+    const floor = Math.max(0, (v.korrPeak || 0) - KORR_BUSS_ABSTAND);
     const before = v.korr; v.korr = Math.max(floor, v.korr + d); d = v.korr - before;
   }
   syncValueFlags();
@@ -128,7 +130,7 @@ function syncValueFlags() {
   if (!state || !state.values) return;
   const f = state.flags, v = state.values, ki = korrTierIdx();
   for (let i = 1; i <= 9; i++) f["korr_ab_k" + i] = ki >= i;
-  f.korr_peak_ueber_k4 = (v.korrPeak || 0) >= 40;
+  f.korr_peak_ueber_k4 = (v.korrPeak || 0) >= 80;  // Skala 0–200 (vorher 40)
   const ht = haltungTier().id; HALT_TIERS.forEach((t) => { f["haltung_" + t.id] = t.id === ht; });
   const we = willEff(); for (let n = 4; n <= 18; n += 2) f["wille_ab_" + n] = we >= n;
   f.wk_erschoepft = (v.wk || 0) <= 0;
@@ -144,11 +146,11 @@ function confessor() {
 }
 function confessionPreview() {
   const v = state.values, who = confessor();
-  const max = who === "ilwe" ? 1 : 2;
+  const max = who === "ilwe" ? 2 : 4;  // Skala 0–200 (vorher 1/2)
   const base = Math.min(max, Math.floor((v.buss || 0) / 2));
   const recent = (v.confessions || []).filter((d) => d >= state.day - 6).length;
   const faktor = recent === 0 ? 1 : recent === 1 ? 0.5 : 0.25;
-  const floor = Math.max(0, (v.korrPeak || 0) - 20);
+  const floor = Math.max(0, (v.korrPeak || 0) - KORR_BUSS_ABSTAND);
   const room = Math.max(0, v.korr - floor);
   const abbau = Math.min(room, Math.floor(base * faktor));
   let reason = "";
@@ -979,7 +981,7 @@ CHOOSE_HOOKS.ergeben = (go) => {
   let line = "";
   if (art === "laufen") line = "Ihr lasst ihn laufen. Er verschwindet zwischen den Büschen.";
   else if (art === "rauben") { const g = rnd(5, 10); state.hero.gold += g; applyChoiceEffects({ grad: "soft", richtung: "yield", origin: "player", tag: "ausgeraubt" }); line = "Ihr nehmt ihm den Beutel ab. +" + g + " Gold."; }
-  else if (art === "gnade") { applyChoiceEffects({ grad: "medium", richtung: "yield", origin: "player", tag: "gnadenstoss", effects: { korr: 2, haltung: 2 } }); state.hero.gold += c.gold[0]; line = "Ihr beendet es. Es ist still danach."; }
+  else if (art === "gnade") { applyChoiceEffects({ grad: "medium", richtung: "yield", origin: "player", tag: "gnadenstoss", effects: { korr: 4, haltung: 2 } }); state.hero.gold += c.gold[0]; line = "Ihr beendet es. Es ist still danach."; }
   state.inCombat = false; state.combat = null; combatXp("atk", 2);
   lastTalk = null; persist(); render(); showFace(null); showLine(line, [{ label: "Weiter", go: "clear" }]);
   return true;
@@ -1230,7 +1232,7 @@ function sysWhenPerk(w) {
 // ---- Erwerb im bestehenden Inhalt (Act 1, klein) ----
 TALK_HOOKS.push((npc, c) => {
   // S7 „Tamsins Tisch“ nicht mehr erwerbbar: Tamsin ist Jägerin und Gast, die Schenke gehört Maera (Einkehr bleibt bei Maera). Altstände behalten den Segen.
-  if (npc.id === "priester" && !perkEntry("segen_der_glocke") && rel("priester").trust >= 40 && state.values.korrPeak <= 39 && !perkBlocked("segen_der_glocke", { npc: "priester" }))
+  if (npc.id === "priester" && !perkEntry("segen_der_glocke") && rel("priester").trust >= 40 && state.values.korrPeak <= 79 && !perkBlocked("segen_der_glocke", { npc: "priester" }))
     c.push({ label: "Um den Segen der Glocke bitten", go: "perk:segen_der_glocke" });
   if (npc.id === "priester" && !perkEntry("segen_des_zuhoerens") && (state.values.rufBeichten || 0) >= 3 && !perkBlocked("segen_des_zuhoerens", { npc: "priester" }))
     c.push({ label: "Eld fragen, wie er zuhört", go: "perk:segen_des_zuhoerens" });
@@ -1918,7 +1920,7 @@ function statsSheetHtml() {
   const v = state.values, ax = state.statXp.ansehen || { xp: 0, need: 12 }, kt = korrTierIdx();
   html += "<h3>Haltung</h3>" +
     "<div class='card' data-tip='' data-vtip='titel'><b>Titel</b> " + esc(titel()) + "<div class='tiny'>" + esc(KORR_TEXT[korrTier().id]) + "</div></div>" +
-    "<div class='card' data-tip='' data-vtip='korr'><b>Korruption</b> " + korrTier().name + " <span class='vnum'>" + v.korr + "</span><div class='bar korr k" + kt + "'><i style='width:" + clamp(v.korr, 0, 100) + "%'></i></div><div class='tiny'>Höchststand " + v.korrPeak + " · Buße " + v.buss + "</div></div>" +
+    "<div class='card' data-tip='' data-vtip='korr'><b>Korruption</b> " + korrTier().name + " <span class='vnum'>" + v.korr + "</span><div class='bar korr k" + kt + "'><i style='width:" + clamp(v.korr / KORR_MAX * 100, 0, 100) + "%'></i></div><div class='tiny'>Höchststand " + v.korrPeak + " · Buße " + v.buss + "</div></div>" +
     "<div class='card' data-tip='' data-vtip='haltung'><b>Haltung</b> " + haltungTier().name + " <span class='vnum'>" + v.haltung + "</span></div>" +
     "<div class='card' data-tip='' data-vtip='ansehen'><b>Ansehen</b> " + (state.hero.ansehen || 0) + "<div class='bar'><i style='width:" + Math.round(ax.xp / ax.need * 100) + "%'></i></div><div class='tiny'>" + ax.xp + " / " + ax.need + "</div></div>";
   html += atemHtml() + defenseHtml() + relationsHtml() + perksHtml() + factionsHtml();
@@ -2492,4 +2494,251 @@ spreadSpots = function (scene) {
   const S = state && (D.LOCATIONS[state.location] || {}).sitze;
   if (S && scene && [...scene.querySelectorAll(".spot")].every((b) => S[b.dataset.npc])) return;
   return _spreadSpotsBasis.apply(this, arguments);
+};
+
+// =====================================================================
+// Saffi-Interaktion (Nicos Spezifikation 15.10.) · Schulden bei Vessa · Korruption im Charakterfenster · Segen „Beglückt“
+// =====================================================================
+const KORR_MAX = 200;
+const SAFFI_ZEIT = { mitgehen: 2000, auto: 3000, schliessen: 3000, teleport: 2000 };
+function saffiState(s) { s = s || state; if (!s.saffi) s.saffi = { name: null, pfad: null, bis: 0, imZimmer: false, laeuft: false, kosten: false }; return s.saffi; }
+function saffiGrund(s) { saffiState(s); if (!s.schulden || typeof s.schulden !== "object") s.schulden = { vesse: 0 }; return s; }
+function migV16(s) {
+  if (!s || typeof s !== "object") return s;
+  saffiGrund(s);
+  // Korruption auf Skala 0–200 (Nico 15.10.): alle Korruptionsmengen ×2
+  const v = s.values; if (v) ["korr", "korrPeak", "korrHeute", "buss", "bussHeute"].forEach((k) => { if (typeof v[k] === "number") v[k] = Math.min(KORR_MAX, v[k] * 2); });
+  return s;
+}
+const _loadSaffi = load;
+load = function (n) { const r = _loadSaffi.apply(this, arguments); if (r !== false && state) { saffiGrund(state); const sf = saffiState(); sf.laeuft = false; sf.imZimmer = false; } return r; };
+const _newGameSaffi = newGame;
+newGame = function () { const r = _newGameSaffi.apply(this, arguments); if (state) { saffiGrund(state); persist(); } return r; };
+function absMin() { return ((state.day || 1) - 1) * 1440 + (state.min || 0); }
+function wertDelta(label, d) { if (typeof emitDelta === "function" && d) emitDelta({ kind: "wert", key: label, label, delta: d }); }
+function saffiText(key) {
+  const g = heroGender(), sf = saffiState(), S = D.SAFFI;
+  const name = sf.name === "spitz" ? S.spitzname[g] : state.hero.name;
+  return S.t[key].replace(/\{(\w+)\}/g, (_, k) => k === "username" ? state.hero.name : k === "name" ? name : k === "spitzname" ? S.spitzname[g] : (S.wort[k] ? S.wort[k][g] : ""));
+}
+// Willenskraft-Kosten: Halsband-Wiederholung +75 % (aufgerundet) und nie blockierend (auf 0 setzen).
+function saffiKosten(k) { const sf = saffiState(), c = D.SAFFI.kosten[k] || 0; return sf.halsRunde ? Math.ceil(c * (1 + D.SAFFI.halsAufschlag)) : c; }
+function saffiWahlKosten(c, k) {
+  const sf = saffiState(), n = saffiKosten(k); c.wkKosten = n;
+  if (!sf.halsRunde && (state.values.wk || 0) < n) c.gesperrt = { text: "Willenskraft " + n, title: "Benötigt " + n + " Willenskraft" };
+  return c;
+}
+function saffiZahlWk(k) { const n = saffiKosten(k), v = state.values, alt = v.wk || 0; v.wk = Math.max(0, alt - n); syncValueFlags(); wertDelta("Willenskraft", v.wk - alt); }
+function saffiHatHalsband() { return state.inventory.includes("saffis_halsband") || state.equipped.amulett === "saffis_halsband"; }
+function saffiBereit() { return absMin() >= (saffiState().bis || 0); }
+function saffiDialog(schritt, extra) { state.dialogue = Object.assign({ npcId: "saffi", node: "saffi", schritt }, extra || {}); lastTalk = D.NPCs.saffi; }
+function saffiWahl() {
+  const d = state.dialogue, sf = saffiState(), c = [];
+  switch (d.schritt) {
+    case "start": c.push({ label: "Darauf eingehen", go: "saffi:eingehen" }, { label: "Nein danke", go: "leave" }); break;
+    case "name": c.push({ label: "Antworten", go: "saffi:antworten" }, saffiWahlKosten({ label: "Weigern", go: "saffi:weigern" }, "weigern"), { label: "Auf Wiedersehen", go: "leave" }); break;
+    case "frage": {
+      const g = { label: "Gerne", go: "saffi:gerne" };
+      if (sf.halsRunde && !saffiHatHalsband()) g.gesperrt = { text: "", title: "Du hast dein Halsband nicht dabei" };
+      c.push(saffiWahlKosten({ label: "Nein danke", go: "saffi:neindanke" }, "neinDanke"), g);
+      if (sf.name === "spitz" && d.wieder && !sf.halsRunde) c.push({ label: "Richtigstellen", go: "saffi:richtig" });
+      break;
+    }
+    case "zimmer": {
+      const b = saffiWahlKosten({ label: "Bestimmen", go: "saffi:bestimmen" }, "bestimmen");
+      if (sf.pfad === "halsband") b.gesperrt = { text: "", title: "Bereits entschieden" };
+      c.push(saffiWahlKosten({ label: "Ich will doch nicht.", go: "saffi:willnicht" }, "willNicht"), b, { label: "Drauf einlassen", go: "saffi:einlassen" });
+      break;
+    }
+    case "bestimmt": case "halsKomm": c.push({ label: "Verabschieden", go: "saffi:abschied" }); break;
+    case "einlassen": c.push(saffiWahlKosten({ label: "Weigern", go: "saffi:halsweigern" }, "halsWeigern"), { label: "Halsband anlegen", go: "saffi:anlegen" }); break;
+    case "halsWeigern": case "halsAnlegen": c.push({ label: "Weiter", go: d.schritt === "halsWeigern" ? "saffi:anlegen" : "saffi:komm" }); break;
+    case "gerne": c.push({ label: "Weiter", go: "saffi:mit" }); break;
+    case "ende": break;
+  }
+  return c;
+}
+const _talkChoicesSaffi = talkChoices;
+talkChoices = function () { if (state && state.dialogue && state.dialogue.node === "saffi") return saffiWahl(); return _talkChoicesSaffi.apply(this, arguments); };
+function saffiZeigen(key) { const sf = saffiState(); sf.laeuft = true; render(); showFace(D.NPCs.saffi); showLine(saffiText(key), talkChoices()); persist(); }
+function saffiBegruessung() {
+  const sf = saffiState(); sf.halsRunde = sf.pfad === "halsband";
+  if (sf.halsRunde) { saffiDialog("frage", { wieder: true }); return saffiZeigen("halsWieder"); }
+  if (sf.name) { saffiDialog("frage", { wieder: true }); return saffiZeigen("wieder"); }
+  saffiDialog("start"); saffiZeigen("start");
+}
+function saffiZimmerStart() {
+  const sf = saffiState(); if (!sf.imZimmer || state.location !== "bordell_rotes_zimmer" || sf.zimmerAn) return;
+  sf.zimmerAn = true; state.narrator = null; saffiDialog("zimmer"); saffiZeigen("zimmer");
+}
+function saffiNachEmpfang(ms) {
+  setTimeout(() => { if (state && state.location === "bordell_rotes_zimmer" && !state.dialogue && !state.narrator) { state.location = "bordell"; clearInteractionView && clearInteractionView(); log("Ihr steht wieder im Empfang."); persist(); render(); } }, ms);
+}
+function saffiEnde(abschluss) {
+  const sf = saffiState(); sf.laeuft = false; sf.imZimmer = false; sf.zimmerAn = false; sf.halsRunde = false;
+  if (abschluss) sf.bis = absMin() + D.SAFFI.abklingTage * 1440;
+}
+function beglueckt() {
+  const ps = perkState(); let e = ps.segen.find((x) => x.id === "segen_beglueckt");
+  if (!e) { e = { id: "segen_beglueckt", quelle: "npc:saffi", seit: state.day, stufe: 1 }; ps.segen.push(e); perkLog("segen", e.id, "erhalten", "npc:saffi"); log("Ein Segen: Beglückt."); }
+  e.bisAbs = absMin() + 2 * 1440; syncPerkFlags();
+  state.hero.hp = Math.min(maxHp(), state.hero.hp + 10);
+  wertDelta("Leben (Beglückt)", 10); wertDelta("Kraft (Beglückt)", 1);
+}
+function beglueckungPruefen() { const e = state && state.perks && perkState().segen.find((x) => x.id === "segen_beglueckt"); if (e && absMin() >= (e.bisAbs || 0)) removePerk("segen_beglueckt", "abgelaufen"); }
+function saffiBelohnung(hals) {
+  const xr = state.statXp.beweg || { xp: 0 }; gain("beweg", 2); wertDelta("Übung Beweglichkeit", 2);
+  beglueckt();
+  if (hals && D.SAFFI_KORRUPTION_HALSBAND) {  // fester Betrag, nicht vom Tagesdeckel gekürzt; sichtbarer +N-Hinweis
+    const v = state.values, alt = v.korr || 0; v.korr = clamp(alt + D.SAFFI_KORRUPTION_HALSBAND, 0, KORR_MAX); v.korrPeak = Math.max(v.korrPeak || 0, v.korr);
+    syncValueFlags(); wertDelta("Korruption", v.korr - alt);
+  }
+}
+function halsbandAnlegen() {
+  const i = state.inventory.indexOf("saffis_halsband"); if (i >= 0) state.inventory.splice(i, 1);
+  const prev = state.equipped.amulett;
+  if (prev && prev !== "saffis_halsband") { state.inventory.push(prev); log((D.ITEMS[prev] || {}).name + " in den Beutel gelegt."); }
+  state.equipped.amulett = "saffis_halsband"; log("Saffis Halsband angelegt.");
+}
+function schuldZu(n) { if (!state.schulden) state.schulden = { vesse: 0 }; const alt = state.schulden.vesse || 0; state.schulden.vesse = Math.max(0, alt + n); wertDelta("Schulden bei Vessa", state.schulden.vesse - alt); if (state.schulden.vesse >= D.SCHULD.gefallenAb) state.flags.vessa_gefallen = true; }
+CHOOSE_HOOKS.saffi = (go) => {
+  const a = go.split(":")[1], d = state.dialogue, sf = saffiState(), g = heroGender();
+  const zu = (schritt, key, extra) => { saffiDialog(schritt, Object.assign({ wieder: d && d.wieder }, extra || {})); return saffiText(key); };
+  switch (a) {
+    case "eingehen": return zu("name", "name");
+    case "antworten": sf.name = "echt"; return zu("frage", "antwort", { wieder: false });
+    case "weigern": saffiZahlWk("weigern"); sf.name = "spitz"; return zu("frage", "weigern", { wieder: false });
+    case "richtig": sf.name = "echt"; return zu("frage", "richtig", { wieder: false });
+    case "neindanke": saffiZahlWk("neinDanke"); saffiEnde(false); choose("leave"); return "";
+    case "gerne": {
+      if (sf.halsRunde && !saffiHatHalsband()) return false;
+      const p = D.SAFFI.preis, bezahlt = Math.min(state.hero.gold, p);
+      state.hero.gold -= bezahlt; wertDelta("Gold", -bezahlt); if (p - bezahlt > 0) schuldZu(p - bezahlt);
+      const t = zu("gerne", "gerne");
+      setTimeout(() => { if (state.dialogue && state.dialogue.node === "saffi" && state.dialogue.schritt === "gerne") choose("saffi:mit"); }, SAFFI_ZEIT.mitgehen);
+      return t;
+    }
+    case "mit": {
+      if (!d || d.schritt !== "gerne") return "";
+      sf.imZimmer = true; sf.zimmerAn = false; sf.laeuft = true; state.dialogue = null; lastTalk = null; showLine("", []);
+      state.location = "bordell_rotes_zimmer"; clearInteractionView(); log("Saffi nimmt euch mit ins Rote Zimmer.");  // Begleitung: Themenraum-Schalter gilt hier nicht
+      persist(); render();
+      setTimeout(saffiZimmerStart, SAFFI_ZEIT.auto); return "";
+    }
+    case "willnicht": saffiZahlWk("willNicht"); saffiEnde(true); choose("leave"); saffiNachEmpfang(SAFFI_ZEIT.teleport); return "";
+    case "bestimmen": if (sf.pfad === "halsband") return false; saffiZahlWk("bestimmen"); sf.pfad = sf.pfad || "bestimmen"; return zu("bestimmt", "bestimmen", { bild: D.SAFFI.bild.bestimmen[g] });
+    case "einlassen": return zu("einlassen", "einlassen", { bild: D.SAFFI.bild.halsband, bildSeite: "rechts", immerBild: true });
+    case "halsweigern": saffiZahlWk("halsWeigern"); return zu("halsWeigern", "halsWeigern");
+    case "anlegen": halsbandAnlegen(); return zu("halsAnlegen", "halsAnlegen");
+    case "komm": sf.pfad = "halsband"; return zu("halsKomm", "halsKomm", { bild: D.SAFFI.bild.halsbandAkt[g] });
+    case "abschied": {
+      const hals = d && d.schritt === "halsKomm"; saffiBelohnung(hals); saffiEnde(true);
+      const t = zu("ende", "abschied");
+      setTimeout(() => { if (state.dialogue && state.dialogue.node === "saffi" && state.dialogue.schritt === "ende") { choose("clear"); } saffiNachEmpfang(SAFFI_ZEIT.teleport); }, SAFFI_ZEIT.schliessen);
+      return t;
+    }
+  }
+  return "";
+};
+// Gespräch mit Saffi startet die Interaktion (Lounge oder Empfang), im Roten Zimmer den Raumteil; während der Abklingzeit normales Gespräch.
+const _talkSaffi = talk;
+talk = function (id) {
+  if (id === "saffi" && state && !state.narrator && !state.inCombat) {
+    const sf = saffiState();
+    if (sf.imZimmer && state.location === "bordell_rotes_zimmer") { saffiZimmerStart(); return; }
+    if (npcAvailableNow("saffi") && saffiBereit() && ["bordell", "bordell_lounge"].includes(state.location)) { saffiBegruessung(); return; }
+  }
+  return _talkSaffi.apply(this, arguments);
+};
+const _chooseSaffi = choose;
+choose = function (go) {
+  const warSaffi = state && state.dialogue && state.dialogue.node === "saffi";
+  const r = _chooseSaffi.apply(this, arguments);
+  if (warSaffi && (go === "leave" || go === "clear") && !state.dialogue && !saffiState().imZimmer) saffiState().laeuft = false;
+  return r;
+};
+// Saffi im Roten Zimmer, solange sie euch begleitet
+const _npcLocSaffi = npcLocationNow;
+npcLocationNow = function (n) { if (n && n.id === "saffi" && state && state.saffi && state.saffi.imZimmer) return "bordell_rotes_zimmer"; return _npcLocSaffi.apply(this, arguments); };
+const _travelSaffi = travel;
+travel = function (toId) {
+  const von = state && state.location, r = _travelSaffi.apply(this, arguments);
+  if (state && von === "bordell_rotes_zimmer" && state.location !== von) { const sf = saffiState(); if (sf.imZimmer) { sf.imZimmer = false; sf.laeuft = false; sf.zimmerAn = false; } }
+  return r;
+};
+// Halsband verschlossen, solange die Interaktion läuft
+function halsbandZu() { return !!(state && state.saffi && state.saffi.laeuft && state.equipped && state.equipped.amulett === "saffis_halsband"); }
+function halsbandHinweis() { bitteToast("Verschlossen, nicht ablegbar"); }
+const _unequipSaffi = unequip;
+unequip = function (slot) { if (slot === "amulett" && halsbandZu()) { halsbandHinweis(); return; } return _unequipSaffi.apply(this, arguments); };
+const _equipSaffi = equip;
+equip = function (id) { const it = D.ITEMS[id]; if (it && it.slot === "amulett" && halsbandZu()) { halsbandHinweis(); return; } return _equipSaffi.apply(this, arguments); };
+// Schulden: Zins je Spieltag (5 %, aufgerundet), Gefallen ab 500, Rückzahlung bei Vessa
+onNewDay(() => {
+  if (!state || !state.schulden || !(state.schulden.vesse > 0)) return;
+  const alt = state.schulden.vesse; state.schulden.vesse = Math.ceil(alt * (1 + D.SCHULD.zinsProTag));
+  if (state.schulden.vesse >= D.SCHULD.gefallenAb) state.flags.vessa_gefallen = true;
+});
+onNewDay(() => { if (state) beglueckungPruefen(); });
+TALK_HOOKS.push((npc, c) => {
+  if (npc.id !== "vesse" || !state.schulden || !(state.schulden.vesse > 0)) return;
+  const s = state.schulden.vesse;
+  [[10, "10 Gold"], [50, "50 Gold"], [s, "Alles (" + s + " Gold)"]].forEach(([n, l], i) => {
+    if (i < 2 && n >= s) return;
+    const o = { label: "Schulden zahlen: " + l, go: "schuld:" + (i === 2 ? "alle" : n) };
+    if (state.hero.gold < Math.min(n, s)) o.gesperrt = { text: "Zu wenig Gold", title: "Offen: " + s + " Gold" };
+    c.push(o);
+  });
+});
+CHOOSE_HOOKS.schuld = (go) => {
+  const a = go.split(":")[1], s = (state.schulden && state.schulden.vesse) || 0, n = Math.min(a === "alle" ? s : parseInt(a, 10) || 0, s);
+  if (!n || state.hero.gold < n) return false;
+  state.hero.gold -= n; wertDelta("Gold", -n); schuldZu(-n);
+  if (!state.schulden.vesse && state.flags.vessa_gefallen) state.flags.vessa_gefallen_offen = true;  // Gefallen bleibt fällig (Folgen später)
+  return "Vessa streicht " + n + " Gold aus ihrem Buch." + (state.schulden.vesse ? " Offen: " + state.schulden.vesse + " Gold." : " Ihr seid schuldenfrei.");  // PLATZHALTER-Text
+};
+const _talkVessa = talk;
+talk = function (id) {
+  const r = _talkVessa.apply(this, arguments);
+  if (id === "vesse" && state && state.dialogue && state.dialogue.npcId === "vesse" && state.flags.vessa_gefallen) {
+    const l = document.getElementById("talk-line"); showLine((l ? l.textContent + "\n" : "") + D.SCHULD.gefallenText, talkChoices());
+  }
+  return r;
+};
+// Gesperrte Wahl (generisch): { gesperrt: { text, title } } → grau, nicht wählbar
+const _showLineGesperrt = showLine;
+showLine = function (text, choices) {
+  const r = _showLineGesperrt.apply(this, arguments);
+  const btns = document.querySelectorAll("#talk-choices button");
+  (choices || []).forEach((c, i) => { const b = btns[i]; if (!b || !c || !c.gesperrt) return; b.disabled = true; b.classList.add("probe-fehlt"); if (c.gesperrt.text) b.textContent = c.label + " (" + c.gesperrt.text + ")"; if (c.gesperrt.title) b.title = c.gesperrt.title; });
+  letzteGesperrt = (choices || []).filter((c) => c && c.gesperrt).map((c) => c.go);
+  return r;
+};
+let letzteGesperrt = [];
+const _chooseGesperrt = choose;
+choose = function (go) { if (letzteGesperrt.includes(go)) return; return _chooseGesperrt.apply(this, arguments); };
+// Korruption im Charakterfenster: Balken unter der Willenskraft (Gold bleibt letztes), nur aktueller Wert
+function korrStufeName(v) { return korrTier(v).name; }  // bestehende Stufennamen (KORR_TIERS)
+function korrBalkenMalen() {
+  const wk = document.getElementById("wkbar"); if (!wk || !state) return;
+  let k = document.getElementById("korrbar"); if (!k) { k = document.createElement("div"); k.id = "korrbar"; }
+  if (wk.nextElementSibling !== k) wk.after(k);
+  const v = Math.round((state.values && state.values.korr) || 0), n = korrStufeName(v);
+  k.innerHTML = "<div class='statline' data-tip='' data-vtip='korr'><em>Korruption</em><span>" + (n ? esc(n) + " · " : "") + v + "</span></div><div class='bar korrbar'><i style='width:" + clamp(v / KORR_MAX * 100, 0, 100) + "%'></i></div>";
+}
+const _renderSaffi = render;
+render = function () {
+  const r = _renderSaffi.apply(this, arguments);
+  if (state) { beglueckungPruefen(); korrBalkenMalen(); heldGoldMalen(); }
+  return r;
+};
+// Textfenster: Bild aus dem Dialog (state.dialogue.bild, Seite „rechts“); Szenenbilder nur, wenn vorhanden (EXT_ART)
+const _tfSyncSaffi = textfensterSync;
+textfensterSync = function () {
+  const r = _tfSyncSaffi.apply(this, arguments);
+  const w = document.getElementById("textfenster"); if (!w || w.hidden || !state || !state.dialogue || !state.dialogue.bild) { if (w) w.classList.remove("bild-rechts"); return r; }
+  const d = state.dialogue, ok = d.immerBild || hasArt(d.bild), slot = w.querySelector(".tf-bild-slot");
+  if (slot && ok) { slot.hidden = false; if (slot.getAttribute("src") !== art(d.bild)) slot.src = art(d.bild); w.classList.add("mit-bild"); }
+  w.classList.toggle("bild-rechts", ok && d.bildSeite === "rechts");
+  return r;
 };

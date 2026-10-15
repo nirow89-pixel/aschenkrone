@@ -180,7 +180,9 @@ const MIGRATIONS = [
     return s;
   },
   // v14 -> v15 (Liste 8, 15.10.): neuer Grundwert Beweglichkeit (beweg), Altstände beginnen mit Stufe 1.
-  function v14to15(s) { return typeof migV15 === "function" ? migV15(s) : s; }
+  function v14to15(s) { return typeof migV15 === "function" ? migV15(s) : s; },
+  // v15 -> v16 (Saffi, 15.10.): Saffi-Zustand, Schulden bei Vessa.
+  function v15to16(s) { return typeof migV16 === "function" ? migV16(s) : s; }
 ];
 const SAVE_VERSION = MIGRATIONS.length;
 function migrate(s) {

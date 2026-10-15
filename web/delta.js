@@ -24,6 +24,7 @@ function deltaText(ev, sum) {
   if (ev.kind === "korr") return deltaDbg ? "Korruption " + sg + n : (sum > 0 ? KORR_HINT.up : KORR_HINT.down);
   if (ev.kind === "stat") { const s = (D.STAT_KEYS.find((k) => k.id === ev.key) || {}).name || ev.key; return sg + n + " " + s; }
   if (ev.kind === "ruf") { const f = (D.FACTIONS[ev.key] || {}).name || ev.key; return (deltaDbg ? sg + n : sg) + " " + f + (ev.rang ? " – " + ev.rang : ""); }
+  if (ev.kind === "wert") { const n = Math.round(Math.abs(ev.delta)); return (ev.delta > 0 ? "+" : "−") + n + " " + (ev.label || ev.key); }
   if (ev.kind === "bond") { const p = (D.NPCs[ev.key] || {}).name || ev.key; return p + " " + (deltaDbg ? sg + n : sg) + (ev.rang ? " – " + ev.rang : ""); }
   return sg + n;
 }

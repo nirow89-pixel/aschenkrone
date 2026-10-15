@@ -497,3 +497,7 @@ body.tf-aktiv #talk-line{display:none!important}
 #narrator .scroll.tf-bild{background:rgba(10,6,7,.82)!important}
 /* Während einer Interaktion: Schilder, Torbögen, Durchgänge, Hotspots, Ortsaktionen auf dem Bild ausblenden */
 body.interaktion #scene .spot,body.interaktion #scene .arch,body.interaktion #scene .act-round,body.interaktion #scene svg.klickbild,body.interaktion #daily-acts,body.interaktion #scene .daily-act,body.interaktion .place-blurb,body.interaktion .place-name{visibility:hidden!important}
+/* Saffi (15.10.): Bild rechts im Textfenster, Korruptionsbalken */
+#textfenster.bild-rechts{display:block}
+#textfenster.bild-rechts .tf-bild-slot{float:right;margin:0 0 12px 18px;max-width:36%;max-height:80%}
+.bar.korrbar i{background:linear-gradient(90deg,#5a1a2a,#a0304a)}
