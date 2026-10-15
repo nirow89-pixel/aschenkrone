@@ -2266,3 +2266,67 @@ SCENE_EXTRAS.push(() => {
   return loc && loc.rest ? [{ label: "Im eigenen Bett ruhen", go: "bett" }] : [];
 });
 SCENE_HANDLERS.bett = () => { rest(); return ""; };
+
+// =====================================================================
+// Klickbild (15.10.): Ortsbild mit Hotspots statt Schild/Torbogen – allgemein über loc.klickbild:
+//   { art: Bild leer, size: [b, h], varianten: [{ npc, art }] (erste anwesende Person gewinnt),
+//     hotspots: [{ type: "npc"|"pass", target, label, poly: [[x%, y%], …] | rect: [x%, y%, b%, h%] }] }
+// Hotspots liegen in einem SVG mit gleichem Ausschnitt wie das Bild (object-fit: cover ≙ xMidYMid slice).
+// Für npc/pass-Ziele mit Hotspot entfällt dort das alte Schild bzw. der Torbogen.
+// =====================================================================
+const KLICK_GELADEN = {};
+function klickbildVorladen(kb) {
+  [kb.art].concat((kb.varianten || []).map((v) => v.art)).forEach((a) => { if (!KLICK_GELADEN[a]) { const i = new Image(); i.src = art(a); KLICK_GELADEN[a] = i; } });
+}
+function klickbildArt(kb) { const v = (kb.varianten || []).find((x) => npcHere(D.NPCs[x.npc])); return v ? v.art : kb.art; }
+function klickbildAktiv(h) { return h.type === "npc" ? npcHere(D.NPCs[h.target]) : !!D.LOCATIONS[h.target]; }
+function klickbildPunkte(h, W, H) {
+  const pts = h.poly || (h.rect ? [[h.rect[0], h.rect[1]], [h.rect[0] + h.rect[2], h.rect[1]], [h.rect[0] + h.rect[2], h.rect[1] + h.rect[3]], [h.rect[0], h.rect[1] + h.rect[3]]] : []);
+  return pts.map(([x, y]) => [x * W / 100, y * H / 100]);
+}
+function klickbildMalen(scene, loc) {
+  const kb = loc.klickbild; klickbildVorladen(kb);
+  const img = document.getElementById("scene-art"), soll = art(klickbildArt(kb));
+  if (img && img.getAttribute("src") !== soll) {  // ohne Leerbild: vorgeladen, Wechsel erst nach decode
+    const pre = KLICK_GELADEN[klickbildArt(kb)];
+    if (pre && pre.complete && pre.naturalWidth) img.src = soll;
+    else if (pre && pre.decode) pre.decode().then(() => { if (state && state.location === loc.id) img.src = soll; }).catch(() => { img.src = soll; });
+    else img.src = soll;
+  }
+  const [W, H] = kb.size || [1000, 671], NS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("class", "klickbild"); svg.setAttribute("viewBox", "0 0 " + W + " " + H); svg.setAttribute("preserveAspectRatio", "xMidYMid slice");
+  const gesperrt = !!(state.narrator || state.dialogue || state.inCombat || state.trading || (typeof gradSperre === "function" && gradSperre()));
+  (kb.hotspots || []).filter(klickbildAktiv).forEach((h) => {
+    const pts = klickbildPunkte(h, W, H); if (!pts.length) return;
+    const g = document.createElementNS(NS, "g"); g.setAttribute("class", "hs hs-" + h.type); g.dataset.type = h.type; g.dataset.target = h.target;
+    const poly = document.createElementNS(NS, "polygon"); poly.setAttribute("points", pts.map((p) => p.join(",")).join(" "));
+    const t = document.createElementNS(NS, "text"); t.textContent = h.label || h.target;
+    const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+    t.setAttribute("x", (Math.min(...xs) + Math.max(...xs)) / 2); t.setAttribute("y", Math.min(...ys) - 10); t.setAttribute("text-anchor", "middle");
+    const titel = document.createElementNS(NS, "title"); titel.textContent = h.label || h.target;
+    g.append(titel, poly, t);
+    if (!gesperrt) g.addEventListener("click", () => { if (h.type === "npc") talk(h.target); else travel(h.target); });
+    svg.appendChild(g);
+  });
+  if (gesperrt) svg.classList.add("gesperrt");
+  scene.appendChild(svg);
+  // altes Schild / alter Torbogen für Hotspot-Ziele entfernen (nur hier)
+  (kb.hotspots || []).forEach((h) => {
+    if (h.type === "npc") scene.querySelectorAll('.spot[data-npc="' + h.target + '"]').forEach((n) => n.remove());
+    else scene.querySelectorAll(".arch").forEach((n) => { if (n.dataset.sub === h.target) n.remove(); });
+  });
+}
+const _renderKlickBasis = render;
+render = function () {
+  const r = _renderKlickBasis.apply(this, arguments);
+  const scene = document.getElementById("scene"); if (scene) scene.querySelectorAll("svg.klickbild").forEach((n) => n.remove());
+  const loc = state && D.LOCATIONS[state.location];
+  if (scene && loc && loc.klickbild) klickbildMalen(scene, loc);
+  return r;
+};
+// render() setzt zuerst loc.art: für Klickbild-Orte gleich das passende Bild nehmen (kein Zwischenbild)
+Object.values(D.LOCATIONS).filter((l) => l.klickbild).forEach((l) => {
+  klickbildVorladen(l.klickbild);
+  Object.defineProperty(l, "art", { configurable: true, enumerable: true, get() { return state && state.location === l.id ? klickbildArt(l.klickbild) : l.klickbild.art; } });
+});

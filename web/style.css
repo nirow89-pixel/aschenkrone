@@ -461,3 +461,12 @@ details.bitten-abschnitt>summary{cursor:pointer;font-family:"AkSZ","Cinzel",Geor
 .trade-col .tile.poor{opacity:1}
 .trade-col .tile.poor .tile-art img{opacity:.75;filter:grayscale(.5)}
 .trade-col .tile.poor b,.trade-col .tile.poor .tiny{opacity:.55}
+/* Klickbild (15.10.): Hotspots unsichtbar, beim Überfahren goldener Schimmer + Name */
+svg.klickbild{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none}
+svg.klickbild .hs{pointer-events:auto;cursor:pointer}
+svg.klickbild.gesperrt .hs{pointer-events:none}
+svg.klickbild .hs polygon{fill:rgba(224,180,90,0);stroke:rgba(224,180,90,0);stroke-width:2;transition:fill .25s,stroke .25s}
+svg.klickbild .hs:hover polygon{fill:rgba(224,180,90,.13);stroke:rgba(240,205,120,.75);filter:drop-shadow(0 0 6px rgba(224,180,90,.8));animation:hsSchimmer 1.6s ease-in-out infinite}
+svg.klickbild .hs text{opacity:0;fill:#e0b45a;font-family:"AkSZ","Cinzel",Georgia,serif;font-size:22px;letter-spacing:2px;paint-order:stroke;stroke:#0b0607;stroke-width:5px;transition:opacity .25s;pointer-events:none}
+svg.klickbild .hs:hover text{opacity:1}
+@keyframes hsSchimmer{0%,100%{fill:rgba(224,180,90,.08)}50%{fill:rgba(224,180,90,.2)}}

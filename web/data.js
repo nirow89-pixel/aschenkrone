@@ -1009,7 +1009,13 @@ const LOCATIONS = {
     exits: [ { id: "dorfzentrum", label: "Zum Brunnen", x: 50, y: 90, arch: true } ] },
   schenke: { id: "schenke", name: "Schenke", region: "unterorten", blurb: "Die Schenke ist wärmer als der Brunnenplatz. Krüge stehen, auch wenn wenig gesprochen wird.", art: "locations/schenke.jpg",
     exits: [ { id: "dorfzentrum", label: "Zum Brunnen", x: 50, y: 90, arch: true },
-      { id: "schenke_hinterzimmer", label: "Hinterzimmer", x: 18, y: 58, arch: true } ] },
+      { id: "schenke_hinterzimmer", label: "Hinterzimmer", x: 18, y: 58, arch: true } ],
+    // Klickbild (15.10., Test): Bild je nach Anwesenheit, Hotspots in Prozent des Bildes (x, y von links oben).
+    klickbild: { art: "locations/test_schankraum_leer.jpg", size: [1000, 671],
+      varianten: [ { npc: "marktfrau", art: "locations/test_schankraum_maera.jpg" } ],
+      hotspots: [
+        { type: "npc", target: "marktfrau", label: "Maera", poly: [[27, 33], [33.5, 32.5], [35.5, 44], [37.8, 55.8], [22.5, 55.8], [24, 44]] },
+        { type: "pass", target: "schenke_hinterzimmer", label: "Hinterzimmer", poly: [[68.5, 32], [82.2, 30.6], [82.2, 70], [70, 68.6]] } ] } },
   // Kleine Nebenorte (Leitung 14.10.; Texte PLATZHALTER für Ext Text)
   schenke_hinterzimmer: { id: "schenke_hinterzimmer", name: "Hinterzimmer", region: "unterorten", parent: "schenke", pass: "ui/pass_hinterzimmer.jpg", back: "Zurück in den Schankraum", blurb: "Ein enger Raum hinter dem Vorhang, ein Tisch, ein paar Stühle, eine Kerze. Wer hier sitzt, will nicht vom Schankraum aus gesehen werden.", art: "locations/schenke_hinterzimmer.jpg",
     exits: [ { id: "schenke", label: "Zurück in den Schankraum" } ] },

@@ -1034,6 +1034,7 @@ function render() {
     const present = !!p.schedule || !p.hours || p.hours.includes(state.phase);
     const b = document.createElement("button");
     b.className = "spot" + (present ? "" : " away");
+    b.dataset.npc = p.id;
     const pp = (p.pins && p.pins[state.location]) || p.pin;
     b.style.left = (pp?.x || 50) + "%"; b.style.top = (pp?.y || 60) + "%";
     b.innerHTML = '<span class="shield"><img alt=""></span><span class="tag">' + p.name + "</span>";
