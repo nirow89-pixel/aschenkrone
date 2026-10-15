@@ -2697,7 +2697,7 @@ CHOOSE_HOOKS.schuld = (go) => {
   if (!n || state.hero.gold < n) return false;
   state.hero.gold -= n; wertDelta("Gold", -n); schuldZu(-n);
   if (!state.schulden.vesse && state.flags.vessa_gefallen) state.flags.vessa_gefallen_offen = true;  // Gefallen bleibt fällig (Folgen später)
-  return state.schulden.vesse ? D.SCHULD.teilText : D.SCHULD.allesText;
+  return state.schulden.vesse ? D.SCHULD.teilText : state.flags.vessa_gefallen ? D.SCHULD.allesGefallenText : D.SCHULD.allesText;  // Gefallen bleibt offen (Nico 15.10.)
 };
 const _talkVessa = talk;
 talk = function (id) {

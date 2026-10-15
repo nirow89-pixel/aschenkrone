@@ -527,7 +527,7 @@ const NPCs = {
     talk: { start: "Tretet ein. Hier redet man leise, und man zahlt, bevor man geht." }
  ,
     // Bordell 15.10.: Tagesablauf in den Räumen (schlägt hours/location)
-    schedule: { default: { nachmittag: "bordell_buero", abend: "bordell", nacht: "bordell_buero" }, dunstag: { abend: "bordell_lounge" }, freyatag: { nacht: "bordell_lounge" } }
+    schedule: { default: { nachmittag: "bordell_buero", abend: "bordell", nacht: "bordell" }, dunstag: { abend: "bordell_lounge" }, freyatag: { nacht: "bordell_lounge" } }  // Fix 15.10.: nachts am Empfang (vorher Büro)
   },
   corin: {
     id: "corin", name: "Corin", title: "", location: "bordell",
@@ -540,7 +540,7 @@ const NPCs = {
     talk: { start: "Ihr seid nicht von hier. Das sieht man an den Schuhen." }
  ,
     // Bordell 15.10.: Tagesablauf in den Räumen (schlägt hours/location)
-    schedule: { default: { nachmittag: "bordell_lounge", abend: "bordell_lounge", nacht: "bordell_lounge" } }
+    schedule: { default: { nachmittag: "bordell_lounge", abend: "bordell_lounge", nacht: "bordell_lounge" }, freyatag: { nacht: "bordell" } }  // Fix 15.10.: Freyatag nachts Empfang (Vessa dann in der Lounge)
   },
   ila: {
     id: "ila", name: "Ila", title: "", location: "bordell",
@@ -573,7 +573,7 @@ const NPCs = {
     talk: { start: "Guten Abend. Bleibt oder geht, aber steht nicht im Licht." }
  ,
     // Bordell 15.10.: Tagesablauf in den Räumen (schlägt hours/location)
-    schedule: { default: { nachmittag: "bordell", abend: "bordell_lounge", nacht: "bordell_lounge" } }
+    schedule: { default: { morgen: "bordell", vormittag: "bordell", mittag: "bordell", nachmittag: "bordell", abend: "bordell_lounge", nacht: "bordell_lounge" } }  // Fix 15.10.: tagsüber am Empfang (vorher 3–14 Uhr niemand)
   },
   saffi: {
     id: "saffi", name: "Saffi", title: "", location: "bordell",
@@ -1245,7 +1245,8 @@ const SAFFI = {
 };
 const SAFFI_KORRUPTION_HALSBAND = 5;  // Korruption für den Halsband-Pfad: +5 (Nico 15.10., vorläufig)
 // Schulden bei Vessa
-const SCHULD = { zinsProTag: 0.05, gefallenAb: 500, gefallenText: 'Vessa klappt das Buch zu. "Fünfhundert. Deine Münzen will ich nicht mehr. Irgendwann bitte ich dich um einen Gefallen, und dann sagst du nicht nein."',
+const SCHULD = { zinsProTag: 0.05, gefallenAb: 500, gefallenText: 'Vessa klappt das Buch zu. "Fünfhundert. Zahlen wirst du trotzdem, und dazu schuldest du mir jetzt einen Gefallen. Irgendwann bitte ich dich darum, und dann sagst du nicht nein."',
+  allesGefallenText: 'Vessa streicht die Summe durch. "Das Geld ist beglichen. Der Gefallen steht noch aus."',
   teilText: 'Vessa zählt nach und streicht eine Zeile. "Ein Anfang. Der Rest steht noch da."',
   allesText: 'Vessa streicht deinen Namen ganz durch. "Wir sind quitt. Bis zum nächsten Mal."' };  // Texte Nico 15.10.
 const WEEKDAYS = [ { id: "mondtag", name: "Mondtag" }, { id: "siestag", name: "Siestag" }, { id: "mittwend", name: "Mittwend" }, { id: "dunstag", name: "Dunstag" },
