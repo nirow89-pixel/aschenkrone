@@ -178,7 +178,9 @@ const MIGRATIONS = [
     if (typeof s.min !== "number") { const b = D.BLOCK_START[s.phase]; s.min = typeof b === "number" ? b : 480; }
     if (s.daily && typeof s.daily === "object" && !Array.isArray(s.daily.trainedBy)) s.daily.trainedBy = [];
     return s;
-  }
+  },
+  // v14 -> v15 (Liste 8, 15.10.): neuer Grundwert Beweglichkeit (beweg), Altstände beginnen mit Stufe 1.
+  function v14to15(s) { return typeof migV15 === "function" ? migV15(s) : s; }
 ];
 const SAVE_VERSION = MIGRATIONS.length;
 function migrate(s) {
@@ -232,7 +234,7 @@ function createHero(name, gender, portraitId, points) {
   const hero = { name: (name || "Namenlos").slice(0, 18), gender, portraitId: av.id, startMods: pts, fluchId: null, fluch: "", ...D.BASE_HERO };
   const apply = (mods = {}) => {
     if (mods.hp) { hero.hp += mods.hp; hero.hpMax += mods.hp; }
-    ["atk", "def", "will", "gold", "fortune", "crit"].forEach((k) => { if (mods[k]) hero[k] = (hero[k] || 0) + mods[k]; });
+    ["atk", "def", "will", "gold", "fortune", "crit", "beweg"].forEach((k) => { if (mods[k]) hero[k] = (hero[k] || 0) + mods[k]; });
     if (mods.ap) { hero.ap += mods.ap; hero.apMax += mods.ap; }  // Atem: Nebelwanderer +1
   };
   apply(h.mods); apply(f.mods);
@@ -603,7 +605,7 @@ function rest() {
   showFace(null); showLine("Wie lange wollt ihr ruhen?", rastChoices());
 }
 // ---- Ausrüstungswerte & Handel (Erweiterung) ----
-const STAT_NAMES = { atk: "Angriff", def: "Panzer", will: "Wille", hp: "Leben max", heal: "Heilt" };
+const STAT_NAMES = { atk: "Kraft", def: "Panzer", will: "Wille", hp: "Leben max", heal: "Heilt" };
 function gearBonus(key) {
   if (!state || !state.equipped) return 0;
   return Object.values(state.equipped).reduce((sum, id) => sum + ((D.ITEMS[id] && D.ITEMS[id][key]) || 0), 0);

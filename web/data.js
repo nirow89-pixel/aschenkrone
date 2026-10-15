@@ -77,15 +77,16 @@ const BOND_STEPS = [
 
 const STAT_KEYS = [
   { id: "grad", name: "Grad" },
-  { id: "atk", name: "Angriff" },
+  { id: "atk", name: "Kraft" },
   { id: "def", name: "Panzer" },
+  { id: "beweg", name: "Beweglichkeit" },  // Liste 8 (15.10.): Ausweichen und Parade
   { id: "will", name: "Wille" },
   { id: "fortune", name: "Glück" },
   { id: "ansehen", name: "Ansehen" },
   { id: "rede", name: "Wortgewicht" }  // Feld bleibt "rede" (Spec B 14.10., Name Nico)
 ];
 // ---- Werte 2 (Spec B 14.10.) ----
-const GRUNDWERTE = ["atk", "def", "will", "fortune", "rede"];
+const GRUNDWERTE = ["atk", "def", "beweg", "will", "fortune", "rede"];  // beweg: Liste 8 (15.10.)
 const STUFE_MAX = 20;
 // Punktekosten je Stufenaufstieg (Ziel-Stufe): auf 2–5 je 8, 6–10 je 12, 11–14 je 16, 15–18 je 20, 19–20 je 26 (Summe 1→20 = 288).
 const STUFEN_KOSTEN = [ { bis: 5, punkte: 8 }, { bis: 10, punkte: 12 }, { bis: 14, punkte: 16 }, { bis: 18, punkte: 20 }, { bis: 20, punkte: 26 } ];
@@ -167,8 +168,8 @@ const AVATARE = {
   avatar_w2: { id: "avatar_w2", g: "w", name: "II", art: "avatars/avatar_w2.jpg", fb: "portraits/tempelkind.jpg" },
   avatar_w3: { id: "avatar_w3", g: "w", name: "III", art: "avatars/avatar_w3.jpg", fb: "portraits/nebelwanderer.jpg" }
 };
-// Startpunkte (werte.md: Wille-Start 3–7, Deckel Angriff/Panzer = Startwert + 14): 4 Punkte, je Wert höchstens +3.
-const START_POOL = { punkte: 4, max: 3, keys: [{ id: "atk", name: "Angriff" }, { id: "def", name: "Panzer" }, { id: "will", name: "Wille" }], gold: 20, hp: 4 };
+// Startpunkte (werte.md: Wille-Start 3–7, Deckel Kraft/Panzer = Startwert + 14): 4 Punkte, je Wert höchstens +3.
+const START_POOL = { punkte: 4, max: 3, keys: [{ id: "atk", name: "Kraft" }, { id: "def", name: "Panzer" }, { id: "beweg", name: "Beweglichkeit" }, { id: "will", name: "Wille" }], gold: 20, hp: 4 };
 const PORTRAITS = {
   ascheadel: { id: "ascheadel", name: "Ascheadel", art: "portraits/ascheadel.jpg" },
   gossenschatten: { id: "gossenschatten", name: "Gossenschatten", art: "portraits/gossenschatten.jpg" },
@@ -976,7 +977,10 @@ const LOCATIONS = {
     pass: "ui/pass_rotetuer.jpg",
     exits: [ { id: "bordell_lounge", label: "Bar/Lounge" }, { id: "bordell_buero", label: "Büro" }, { id: "bordell_rotes_zimmer", label: "Rotes Zimmer" }, { id: "bordell_schwarze_kammer", label: "Schwarze Kammer" }, { id: "bordell_prinzessinnenraum", label: "Prinzessinnenraum" }, { id: "gassen", label: "Rote Tür (hinaus)" } ] },
   // Räume (Ortstexte 15.10. von Nico); Durchgänge kosten 0 min (gleicher großer Nebenort).
-  bordell_lounge: { id: "bordell_lounge", name: "Bar/Lounge", region: "bordell", blurb: "Laternen über tiefen Samtpolstern, hinter der Theke schenkt Corin aus, ohne viel zu sagen. Auf den Sofas sitzen Ila, Kes, Nim und Saffi, und sie sehen genau, wer hereinkommt.", art: "locations/bordell_lounge.jpg",
+  bordell_lounge: { id: "bordell_lounge", name: "Bar/Lounge", region: "bordell",
+    // Feste Sitzplätze (15.10.) in % des Ortsfensters (x Mitte, y Unterkante des Schilds); gilt nur für Anwesende.
+    sitze: { corin: { x: 22, y: 50 }, saffi: { x: 11, y: 80 }, ila: { x: 50, y: 76 }, kes: { x: 67, y: 76 }, nim: { x: 84, y: 76 } },
+    blurb: "Laternen über tiefen Samtpolstern, hinter der Theke schenkt Corin aus, ohne viel zu sagen. Auf den Sofas sitzen Ila, Kes, Nim und Saffi, und sie sehen genau, wer hereinkommt.", art: "locations/bordell_lounge.jpg",
     exits: [ { id: "bordell", label: "Empfang" }, { id: "bordell_buero", label: "Büro" }, { id: "bordell_rotes_zimmer", label: "Rotes Zimmer" }, { id: "bordell_schwarze_kammer", label: "Schwarze Kammer" }, { id: "bordell_prinzessinnenraum", label: "Prinzessinnenraum" } ] },
   bordell_buero: { id: "bordell_buero", name: "Büro", region: "bordell", blurb: "Ein Schreibtisch mit offenem Buch, Feder und Karaffe, dahinter Regale voller Rechnungsbücher. Hier steht, wer im Haus was schuldet, und Vessa liest es selbst.", art: "locations/bordell_buero.jpg",
     exits: [ { id: "bordell", label: "Empfang" }, { id: "bordell_lounge", label: "Bar/Lounge" }, { id: "bordell_rotes_zimmer", label: "Rotes Zimmer" }, { id: "bordell_schwarze_kammer", label: "Schwarze Kammer" }, { id: "bordell_prinzessinnenraum", label: "Prinzessinnenraum" } ] },
@@ -1200,7 +1204,7 @@ const LOCATIONS = {
     exits: [ { id: "alter_baum", label: "Alter Baum", x: 50, y: 90, arch: true } ] }
 };
 
-const BASE_HERO = { level: 1, hp: 28, hpMax: 28, atk: 4, def: 2, will: 3, fortune: 4, ansehen: 0, rede: 1, gold: 16, ap: 2, apMax: 2, crit: 4 };
+const BASE_HERO = { level: 1, hp: 28, hpMax: 28, atk: 4, def: 2, will: 3, fortune: 4, ansehen: 0, rede: 1, beweg: 2, gold: 16, ap: 2, apMax: 2, crit: 4 };
 
 // Wochentage (Spec 14.10.): kein State-Feld, Wochentag = (Tag - 1) % 7, Tag 1 = Mondtag; passt zu weekOf() der Händler.
 // Bordell (15.10.): Themenräume (Rotes Zimmer, Schwarze Kammer, Prinzessinnenraum) verlangen später Begleitung.
@@ -1287,7 +1291,7 @@ window.D = {
 // ---- Male, Flüche, Segen (male-fluche-segen.md §6, fx laut grad-zeichen-kampf.md §12.4) ----
 // fx je Stufe als Gesamtwert; gerichtete Werte als Objekt { ziel: zahl }. wirkung = Wirkung in Worten (Zahlen nur mit ?debug=1).
 window.D.PERKS = {
-  mal_des_kriegers: { art: "mal", name: "Mal der Eisenwacht", sichtbar: "offen", text: "Eine Narbe, die nicht heilt, sondern hart wird.", wirkung: "stärkt Angriff und Deckung etwas, Flucht fällt schwerer", stufen: [{ atk: 1, def: 1, fleePct: -3 }, { atk: 1, def: 2, fleePct: -3 }, { atk: 1, def: 3, fleePct: -5 }], oeffnet: ["schnellschlag", "eisenhaut", "solarplexus"] },
+  mal_des_kriegers: { art: "mal", name: "Mal der Eisenwacht", sichtbar: "offen", text: "Eine Narbe, die nicht heilt, sondern hart wird.", wirkung: "stärkt Kraft und Deckung etwas, Flucht fällt schwerer", stufen: [{ atk: 1, def: 1, fleePct: -3 }, { atk: 1, def: 2, fleePct: -3 }, { atk: 1, def: 3, fleePct: -5 }], oeffnet: ["schnellschlag", "eisenhaut", "solarplexus"] },
   mal_des_magiers: { art: "mal", name: "Mal des Glutwebers", sichtbar: "spuerbar", text: "Eine Aschezeichnung unter der Haut, sichtbar bei Kerzenlicht.", wirkung: "Zeichen treffen und heilen stärker", stufen: [{ zauberPct: 10, heilPct: 10 }, { zauberPct: 15, heilPct: 15 }, { zauberPct: 20, heilPct: 20 }], oeffnet: ["feuerball", "froststachel", "heilfunke"] },
   mal_des_diebes: { art: "mal", name: "Mal der Nebelhand", sichtbar: "spuerbar", text: "Ein Fingerzeichen, das Gassenleute kennen.", wirkung: "häufiger harte Treffer, leichtere Flucht, bessere Preise in der Gasse", stufen: [{ crit: 2, fleePct: 3, tradePct: { gasse: 3 } }, { crit: 3, fleePct: 4, tradePct: { gasse: 4 } }, { crit: 5, fleePct: 5, tradePct: { gasse: 5 } }], oeffnet: ["giftklinge", "schattenhieb", "blutung"] },
   mal_des_diplomaten: { art: "mal", name: "Mal des Eidwahrers", sichtbar: "offen", text: "Kein Körpermal, sondern ein Siegelwort, das man trägt.", wirkung: "erste Begegnungen wärmer, etwas bessere Preise", stufen: [{ bondErstPlus: 1, tradePct: { alle: 2 } }, { bondErstPlus: 1, tradePct: { alle: 3 } }, { bondErstPlus: 2, tradePct: { alle: 4 } }] },

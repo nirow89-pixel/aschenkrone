@@ -470,3 +470,23 @@ svg.klickbild .hs:hover polygon{fill:rgba(224,180,90,.13);stroke:rgba(240,205,12
 svg.klickbild .hs text{opacity:0;fill:#e0b45a;font-family:"AkSZ","Cinzel",Georgia,serif;font-size:22px;letter-spacing:2px;paint-order:stroke;stroke:#0b0607;stroke-width:5px;transition:opacity .25s;pointer-events:none}
 svg.klickbild .hs:hover text{opacity:1}
 @keyframes hsSchimmer{0%,100%{fill:rgba(224,180,90,.08)}50%{fill:rgba(224,180,90,.2)}}
+/* Liste 8 (15.10.) */
+/* (1) Textfenster über dem Ortsfenster (Bild je Geschlecht), Text nur hier; Wahl bleibt im Gesprächsfenster */
+#textfenster{position:absolute;left:5%;right:5%;bottom:5%;max-height:46%;z-index:11;overflow:auto;background:#140b0c center/cover no-repeat;border:1px solid #c7a056;outline:1px solid #3a2614;outline-offset:3px;box-shadow:0 8px 24px rgba(0,0,0,.8);padding:22px 30px;color:#f3e2b6}
+#textfenster[hidden]{display:none!important}
+#textfenster .tf-who{font-family:"AkSZ","Cinzel",Georgia,serif;color:#e0b45a;letter-spacing:.1em;font-size:15px;margin-bottom:8px}
+#textfenster .tf-who:empty{display:none}
+#textfenster .tf-text{font-size:18px;line-height:1.45;white-space:pre-wrap;text-shadow:0 1px 3px #000}
+body.tf-aktiv #talk-line{display:none!important}
+#narrator .scroll.tf-bild{color:#f3e2b6;border:1px solid #c7a056;background-size:cover;background-position:center}
+#narrator .scroll.tf-bild .scroll-title{color:#e0b45a}
+#narrator .scroll.tf-bild #narr-text{text-shadow:0 1px 3px #000}
+/* (2) „Neue Bitte erhalten“: unteres Drittel, langsames Blinken */
+.bitte-toast{top:auto;bottom:22%;animation:bitteBlinken 1s ease-in-out infinite}
+@keyframes bitteBlinken{0%,100%{opacity:1}50%{opacity:.35}}
+.bitte-toast.aus{animation:none}
+/* (5) Werteprobe */
+#talk-choices button.probe-fehlt{opacity:.5;filter:grayscale(1);cursor:not-allowed}
+/* (8) Gold unter den Balken */
+.hero-gold{margin-top:6px}
+.hero-gold span{color:#e0b45a}

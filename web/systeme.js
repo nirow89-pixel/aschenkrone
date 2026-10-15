@@ -180,7 +180,7 @@ const DAILY_ACTIONS = [
   // npcs: nur über diese NPCs (Gesprächsoption), nicht mehr im Ortsfenster (Korrekturliste Nico).
   { id: "work", label: "Arbeiten", locs: ["schmied", "markt", "gasthaus"], steps: 2, flag: "work", npcs: ["branna", "kraemerin", "jorun"] },
   // Training bei Harn (Burg) und Edrik (Platz) gegen Gold, wie Lernen bei Selene/Rorik.
-  { id: "train_atk", label: "Trainieren: Angriff (14 Gold)", locs: ["burg", "platz"], steps: 2, flag: "train", gold: 14, npcs: ["burgvogt", "edrik"] },
+  { id: "train_atk", label: "Trainieren: Kraft (14 Gold)", locs: ["burg", "platz"], steps: 2, flag: "train", gold: 14, npcs: ["burgvogt", "edrik"] },
   { id: "train_def", label: "Trainieren: Panzer (12 Gold)", locs: ["burg", "platz"], steps: 2, flag: "train", gold: 12, npcs: ["burgvogt", "edrik"] },
   { id: "pray", label: "Beten", locs: ["tempel"], steps: 1, flag: "pray" },
   { id: "confess", label: "Beichten", locs: ["tempel"], steps: 1, flag: "pray" },
@@ -952,7 +952,8 @@ function combatVictory(c) {
   }
   if (c.unique || c.quest) state.flags["cleared_" + c.id] = true;
   const xp = [];
-  const a = combatXp("atk", 2); if (a) xp.push("Angriff +" + a);
+  const a = combatXp("atk", 2); if (a) xp.push("Kraft +" + a);
+  if ((c.heroDodges || 0) + (c.heroParries || 0) >= 2) { const b = combatXp("beweg", 1); if (b) xp.push("Beweglichkeit +" + b); }  // Liste 8
   if (c.foeHits >= 3) { const d = combatXp("def", 2); if (d) xp.push("Panzer +" + d); }
   if (c.lastMagic && (gradState().pfad.magier || 0) > 0) { const w = combatXp("will", 1); if (w) xp.push("Wille +" + w); }
   Object.keys(c.used).forEach(zeichenXp);
@@ -1079,7 +1080,7 @@ function gradPanelHtml() {
   const next = D.GRAD_STUFEN.find((s) => s.grad === lvl + 1);
   let html = "<h3>Grad</h3><div class='card'><b>Grad " + lvl + "</b> · " + gradName(lvl) + dbg("Wachstum " + w) +
     "<div class='tiny'>" + (next ? "Bis " + next.name + ": noch " + (next.min - w) + " Wachstum" + (lvl >= 7 ? ". Weiteres Wachstum nur noch über Glück." : "") : "Höchster Grad erreicht.") + "</div>" +
-    "<div class='tiny'>" + GROWTH_KEYS.map((k) => ({ atk: "Angriff", def: "Panzer", will: "Wille", fortune: "Glück" }[k]) + " " + (state.hero[k] || 0) + (g.statPeak[k] > (state.hero[k] || 0) ? " (Höchststand " + g.statPeak[k] + ")" : "")).join(" · ") + "</div></div>";
+    "<div class='tiny'>" + GROWTH_KEYS.map((k) => ({ atk: "Kraft", def: "Panzer", will: "Wille", fortune: "Glück" }[k]) + " " + (state.hero[k] || 0) + (g.statPeak[k] > (state.hero[k] || 0) ? " (Höchststand " + g.statPeak[k] + ")" : "")).join(" · ") + "</div></div>";
   if (g.pending) {
     html += "<div class='card'><b>Grad steigt – eure Wahl</b><div class='tiny'>Die Wahl kann warten, aber es bleibt nur eine offen.</div><div class='choice-grid'>" +
       ["krieger", "magier", "dieb", "diplomat"].map((p) => "<button data-grad='pfad:" + p + "'>" + D.RICHTUNGEN[p].name + " · Stufe " + ((g.pfad[p] || 0) + 1) + "</button>").join("") +
@@ -1483,17 +1484,18 @@ const _setShopStock = setShopStock;
 setShopStock = function (npc, id, n) { const m = merchState(npc); if (m) { m.stock[id] = Math.max(0, n); if (!m.stock[id]) delete m.stock[id]; return; } _setShopStock(npc, id, n); };
 
 // ---- Parade und Ausweichen (Nachtrag Ausbesserung 2 in grad-zeichen-kampf.md) ----
+function bewegEff() { return Math.min(D.STUFE_MAX, state.hero.beweg || 0) + perkStat("beweg") + buffStat("beweg"); }  // Liste 8: Ausweichen/Parade aus Beweglichkeit
 function fortuneEff() { return (state.hero.fortune || 0) + perkStat("fortune"); }
 function dodgeChance() {
   const p = gradState().pfad;
-  return clamp(3 + Math.floor(fortuneEff() / 3) + 2 * (p.dieb || 0) + gearFx("dodgePct") + perkFxNum("dodgePct"), 0, 25);
+  return clamp(3 + Math.floor(bewegEff() / 3) + 2 * (p.dieb || 0) + gearFx("dodgePct") + perkFxNum("dodgePct"), 0, 25);
 }
 function parryChance(c) {
   const armed = !!(weaponOf("waffeL") || (state.equipped && state.equipped.schild));
   if (!armed) return 0;
   const p = gradState().pfad, shield = state.equipped && state.equipped.schild ? 6 : 0;
   const eh = c && c.eisenhaut && c.eisenhaut.left > 0 ? 5 : 0;
-  return clamp(3 + Math.floor(defEff() / 3) + shield + 2 * (p.krieger || 0) + eh + gearFx("parryPct") + perkFxNum("parryPct"), 0, 30);
+  return clamp(3 + Math.floor(bewegEff() / 3) + shield + 2 * (p.krieger || 0) + eh + gearFx("parryPct") + perkFxNum("parryPct"), 0, 30);
 }
 function heroDefense(c) {
   if (Math.random() * 100 < dodgeChance()) return "dodge";
@@ -1588,7 +1590,7 @@ function styleSheetKind(body, kind) {
 const VALUE_TIPS = {
   hp: "Leben. Fällt es auf 0, verliert ihr den Kampf. Rast beim Gastwirt füllt es auf.",
   grad: "Grad. Steigt mit dem Wachstum aller Grundwerte und öffnet Wahl, Zeichen-Plätze und Atem.",
-  atk: "Angriff. Mehr Schaden je Schlag (Angriff − Panzer des Gegners, mindestens 20 %).",
+  atk: "Kraft. Mehr Schaden je Schlag (Kraft − Panzer des Gegners, mindestens 20 %).",
   def: "Panzer. Weniger Schaden je gegnerischem Treffer und bessere Parade (+1 % je 3 Panzer).",
   will: "Wille. Stärkt Zauber-Zeichen und Willenskraft, hilft bei Proben und bei der Flucht.",
   fortune: "Glück. Mehr harte Treffer (+1 % je 10) und Ausweichen (+1 % je 3).",
@@ -1898,7 +1900,7 @@ factionsHtml = function () {
       dbg("gunst " + a.gunst + ", zorn " + a.zorn + ", vertrauen " + e.vertrauen + ", furcht " + e.furcht) + "</div>";
   }).join("");
 };
-const STAT_NAMEN_G = { atk: "Angriff", def: "Panzer", will: "Wille", fortune: "Glück", rede: "Wortgewicht" };
+const STAT_NAMEN_G = { atk: "Kraft", def: "Panzer", beweg: "Beweglichkeit", will: "Wille", fortune: "Glück", rede: "Wortgewicht" };
 Object.defineProperty(VALUE_TIPS, "will_werte", { enumerable: true, get() { const v = state && state.values; return VALUE_TIPS.will + " " + VALUE_TIPS.wille + (v ? " Willenskraft " + v.wk + " / " + wkMax() + "." : ""); } });
 VALUE_TIPS.grad = "Grad. Steigt mit Stufenaufstiegen der Grundwerte.";
 VALUE_TIPS.wille = "Wille (wirksam). Grundwert plus Segen und Ausrüstung, höchstens 20 aus dem Grundwert.";
@@ -1909,8 +1911,8 @@ function statsSheetHtml() {
     "<div class='tiny'>" + (nx == null || lvl >= 10 ? "Weitere Grade folgen." : "noch " + Math.max(0, nx - w) + " Stufenaufstiege bis Grad " + (lvl + 1)) + "</div></div>";
   html += "<h3>Grundwerte</h3>" + D.GRUNDWERTE.map((k) => {
     const xp = state.statXp[k] || { xp: 0, need: stufeNeed((state.hero[k] || 0) + 1) }, st = state.hero[k] || 0, am = st >= D.STUFE_MAX;
-    const name = STAT_NAMEN_G[k] + (k === "will" ? " " + st + " · " + willTierName(willEff()) : "");
-    return "<div class='card' data-tip='' data-vtip='" + (k === "will" ? "will_werte" : k) + "' data-stat='" + k + "'><b>" + esc(name) + "</b> · Stufe " + st +
+    const name = STAT_NAMEN_G[k];  // Liste 8: Wille wie die anderen „Stufe n“, danach der Begriff
+    return "<div class='card' data-tip='' data-vtip='" + (k === "will" ? "will_werte" : k) + "' data-stat='" + k + "'><b>" + esc(name) + "</b> · Stufe " + st + (k === "will" ? " · " + esc(willTierName(willEff())) : "") +
       "<div class='bar'><i style='width:" + (am ? 100 : Math.round(xp.xp / xp.need * 100)) + "%'></i></div><div class='tiny'>" + (am ? "Höchste Stufe" : xp.xp + " / " + xp.need) + "</div></div>";
   }).join("");
   const v = state.values, ax = state.statXp.ansehen || { xp: 0, need: 12 }, kt = korrTierIdx();
@@ -2357,3 +2359,131 @@ render = function () {
     const alle = state && ["ila", "kes", "nim", "saffi"].every((id) => npcHere(D.NPCs[id], "bordell_lounge"));
     return alle ? voll : kurz; } });
 })();
+
+// =====================================================================
+// Liste 8 (Nico, 15.10.)
+// =====================================================================
+// (3) Beweglichkeit: Grundwert „beweg“ (Stufen/Kosten wie die anderen), trägt Ausweichen und Parade; Panzer nur noch Schadensminderung.
+if (!GROWTH_KEYS.includes("beweg")) GROWTH_KEYS.push("beweg");
+function bewegAnlegen(s) {
+  if (!s || !s.hero) return s;
+  const h = s.hero; if (typeof h.beweg !== "number") h.beweg = 1;
+  s.grad = s.grad || { statStart: {}, statPeak: {}, pending: null, nachhol: 0, pfad: {}, questGift: {}, declined: [] };
+  s.grad.statStart = s.grad.statStart || {}; s.grad.statPeak = s.grad.statPeak || {};
+  if (typeof s.grad.statStart.beweg !== "number") s.grad.statStart.beweg = h.beweg;
+  s.grad.statPeak.beweg = Math.max(s.grad.statPeak.beweg || 0, h.beweg);
+  s.statXp = s.statXp || {}; const r = s.statXp.beweg || { xp: 0 };
+  r.need = stufeNeed(h.beweg + 1); r.xp = Math.max(0, Math.min(r.xp || 0, r.need - 1)); s.statXp.beweg = r;
+  return s;
+}
+function migV15(s) { return bewegAnlegen(s); }  // Altstände: Beweglichkeit 1
+VALUE_TIPS.beweg = "Beweglichkeit. Bestimmt Ausweichen und Parade (je +1 % je 3 Stufen).";
+VALUE_TIPS.def = "Panzer. Weniger Schaden je gegnerischem Treffer.";
+VALUE_TIPS.fortune = "Glück. Mehr harte Treffer (+1 % je 10).";
+VALUE_TIPS.ausweichen = "Ausweichen. Chance, einem gegnerischen Treffer ganz zu entgehen: 3 % + Beweglichkeit/3 + 2 je Nebelhand-Stufe, höchstens 25 %.";
+VALUE_TIPS.parade = "Parade. Chance, einen Treffer zu halbieren (mindestens 1): 3 % + Beweglichkeit/3 + 6 mit Schild + 2 je Eisenwacht-Stufe + 5 unter Eisenhaut, höchstens 30 %. Braucht Waffe oder Schild.";
+
+// (7) Startbeziehung auf dem Hof (nur neue Spiele): Hannes, Ailsa +2 Stufen; Oke, Brannoc, Lene, Anselm +1 Stufe.
+const HOF_STARTNAEHE = { hannes: 2, ailsa: 2, oke: 1, brannoc: 1, lene: 1, anselm: 1 };
+function bondStufeHoch(wert, n) {
+  const i = D.BOND_STEPS.reduce((acc, b, j) => (wert >= b.min ? j : acc), 0);
+  const z = D.BOND_STEPS[Math.min(D.BOND_STEPS.length - 1, i + n)];
+  return Math.max(wert, z.min);
+}
+const _newGameListe8 = newGame;
+newGame = function (payload) {
+  const r = _newGameListe8.apply(this, arguments);
+  if (state) {
+    bewegAnlegen(state);
+    Object.keys(HOF_STARTNAEHE).forEach((id) => { if (D.NPCs[id]) state.bonds[id] = bondStufeHoch(state.bonds[id] || 0, HOF_STARTNAEHE[id]); });
+    persist(); render();
+  }
+  return r;
+};
+
+// (8) Gold im Charakterfenster unter den Balken (Fluss-Layout: neue Balken schieben es nach unten).
+function heldGoldMalen() {
+  const main = document.querySelector("#pane-hero .hero-main"); if (!main || !state) return;
+  let g = document.getElementById("hero-gold");
+  if (!g) { g = document.createElement("div"); g.id = "hero-gold"; g.className = "statline hero-gold"; g.dataset.tip = ""; }
+  main.appendChild(g);  // immer letztes Kind: steht unter Leben, Willenskraft und allen späteren Balken
+  g.innerHTML = "<em>Gold</em><span>" + (state.hero.gold || 0) + "</span>";
+}
+
+// (1) Textfenster über dem Ortsfenster: aller Text (NPC-Rede, Erzähler); Wahl/Entscheidung/Beenden bleiben im Gesprächsfenster.
+function textfensterEl() {
+  let w = document.getElementById("textfenster");
+  if (!w) {
+    const body = document.querySelector("#pane-scene .pane-body"); if (!body) return null;
+    w = document.createElement("div"); w.id = "textfenster"; w.hidden = true;
+    w.innerHTML = "<div class='tf-who'></div><div class='tf-text'></div>";
+    body.appendChild(w);
+  }
+  w.style.backgroundImage = "linear-gradient(rgba(10,6,7,.35),rgba(10,6,7,.55)),url('" + art("ui/textfenster_" + heroGender() + ".jpg") + "')";
+  return w;
+}
+function textfensterSync() {
+  const w = textfensterEl(); if (!w || !state) { if (w) w.hidden = true; return; }
+  const line = document.getElementById("talk-line"), who = document.getElementById("talk-who");
+  const txt = line ? line.textContent : "";
+  const anzeigen = !!txt && !state.inCombat && !(document.getElementById("combat-win") && !document.getElementById("combat-win").hidden);
+  w.hidden = !anzeigen;
+  document.body.classList.toggle("tf-aktiv", anzeigen);
+  if (anzeigen) { w.querySelector(".tf-who").textContent = who ? who.textContent : ""; w.querySelector(".tf-text").innerHTML = line.innerHTML; }
+}
+// Erzähler (Rollen, Vater-Start über openStory = Gesprächszeile) im selben Fensterbild
+function erzaehlerBild() {
+  const sc = document.querySelector("#narrator .scroll"); if (!sc) return;
+  sc.classList.add("tf-bild");
+  sc.style.backgroundImage = "linear-gradient(rgba(10,6,7,.35),rgba(10,6,7,.55)),url('" + art("ui/textfenster_" + heroGender() + ".jpg") + "')";
+}
+
+// (5) Werteprobe für Gesprächsoptionen: Option { label, go, probe: { atk: 4, beweg: 3 } } – nicht erfüllt = grau mit Bedingung.
+function probeFehlt(probe) {
+  return Object.keys(probe || {}).filter((k) => (state.hero[k] || 0) < probe[k]).map((k) => (STAT_NAMEN_G[k] || k) + " " + probe[k]);
+}
+let letzteWahl = [];
+const _showLineListe8 = showLine;
+showLine = function (text, choices) {
+  letzteWahl = choices || [];
+  const r = _showLineListe8.apply(this, arguments);
+  const btns = document.querySelectorAll("#talk-choices button");
+  letzteWahl.forEach((c, i) => {
+    const b = btns[i]; if (!b || !c || !c.probe) return;
+    const fehlt = probeFehlt(c.probe);
+    b.classList.add("probe");
+    if (fehlt.length) { b.disabled = true; b.classList.add("probe-fehlt"); b.textContent = c.label + " (" + fehlt.join(", ") + ")"; b.title = "Benötigt " + fehlt.join(", "); }
+  });
+  textfensterSync();
+  return r;
+};
+const _chooseListe8 = choose;
+choose = function (go) {
+  const c = letzteWahl.find((x) => x && x.go === go && x.probe);
+  if (c && probeFehlt(c.probe).length) return;  // gesperrte Probe-Option
+  return _chooseListe8.apply(this, arguments);
+};
+// TEST-BEISPIEL (deutlich markiert, später ersetzen): Branna bietet eine Kraftprobe an.
+TALK_HOOKS.push((npc, c) => { if (npc.id === "branna") c.push({ label: "[Test] Den schweren Amboss anheben", go: "probe_test", probe: { atk: 6 } }); });
+CHOOSE_HOOKS.probe_test = () => "[Test] Ihr hebt den Amboss. Die Probe ist bestanden.";
+
+// render: Gold, Textfenster, Erzählerbild
+const _renderListe8 = render;
+render = function () {
+  const r = _renderListe8.apply(this, arguments);
+  if (state) { heldGoldMalen(); textfensterSync(); erzaehlerBild(); }
+  return r;
+};
+// Sitzplätze je Ort (15.10.): loc.sitze = { npcId: { x, y } } → wird zu NPC-Pin für diesen Ort (bestehender pins-Mechanismus).
+Object.values(D.LOCATIONS).forEach((l) => Object.keys(l.sitze || {}).forEach((id) => { const n = D.NPCs[id]; if (n) { n.pins = n.pins || {}; n.pins[l.id] = l.sitze[id]; } }));
+// Bild-Cache (15.10.): unter gleichem Namen ersetzte Bilder bekommen eine Version an die URL (sonst zeigt der Browser das alte).
+const ART_VERSION = { "ui/wait_bauernhaus_innen.jpg": "20261015d", "ui/wait_garnison.jpg": "20261015d", "ui/wait_aschenpalast.jpg": "20261015d", "ui/wait_friedhof.jpg": "20261015d", "ui/wait_krypta.jpg": "20261015d", "ui/wait_bordell.jpg": "20261015d" };
+const _artOhneVersion = art;
+art = function (rel) { const u = _artOhneVersion(rel); const v = rel && ART_VERSION[String(rel).replace(/^assets\//, "")]; return v ? u + "?v=" + v : u; };
+// Feste Sitzplätze nicht seitlich verschieben (Ausweichen nur für Schilder ohne Sitz).
+const _spreadSpotsBasis = spreadSpots;
+spreadSpots = function (scene) {
+  const S = state && (D.LOCATIONS[state.location] || {}).sitze;
+  if (S && scene && [...scene.querySelectorAll(".spot")].every((b) => S[b.dataset.npc])) return;
+  return _spreadSpotsBasis.apply(this, arguments);
+};
