@@ -513,8 +513,9 @@ const NPCs = {
     talk: { start: "Was soll es sein? Ich schmiede, was hält, nicht was glänzt." }
   },
   vesse: {
-    id: "vesse", name: "Vesse", title: "Dirnenwirtin", location: "bordell",
-    text: "Vesse sieht zur Tür, bevor sie euch ansieht.",
+    id: "vesse", name: "Vessa",  // Anzeigename Vessa (15.10.), ID bleibt vesse für alte Spielstände
+    title: "Dirnenwirtin", location: "bordell",
+    text: "Vessa sieht zur Tür, bevor sie euch ansieht.",
     art: "npcs/vessa.jpg",
     shop: ["wein_der_stunde","kussphiole"], stock: { wein_der_stunde: 4, kussphiole: 2 },
     merchant: true, buys: true, hours: ["nachmittag","abend","nacht"], pin: { x: 20, y: 86 }, faction: "gasse",
@@ -542,7 +543,7 @@ const NPCs = {
     text: "Ila hält ein Glas, aus dem sie nicht trinkt.",
     art: "npcs/ila.jpg",
     merchant: false, hours: ["nachmittag","abend","nacht"], pin: { x: 47, y: 89 }, faction: "gasse",
-    lines: ["Fragt Vesse, nicht mich."],
+    lines: ["Fragt Vessa, nicht mich."],
     talk: { start: "Setzt euch, wenn ihr wollt. Reden kostet hier nichts. Noch nicht." }
  ,
     // Bordell 15.10.: Tagesablauf in den Räumen (schlägt hours/location)
@@ -971,19 +972,19 @@ const LOCATIONS = {
       { id: "platz", label: "Zum Platz", x: 28, y: 88, arch: true }
     ] },
   // Bordell (15.10.): Empfang = Zentralort des großen Nebenorts „bordell“; Außenbild locations/bordell.jpg bleibt unverändert im Ordner.
-  bordell: { id: "bordell", name: "Empfang", region: "bordell", blurb: "Die rote Tür lässt Licht auf die Schwelle. Drinnen redet man leiser als auf dem Platz.", art: "locations/bordell_empfang.jpg",
+  bordell: { id: "bordell", name: "Empfang", region: "bordell", blurb: "Hinter der Roten Tür dicke Teppiche, Kerzen vor goldgerahmten Spiegeln und ein Tresen, an dem keiner nach deinem Namen fragt. Gefragt wird nur, was du suchst und was du zahlst.", art: "locations/bordell_empfang.jpg",
     pass: "ui/pass_rotetuer.jpg",
     exits: [ { id: "bordell_lounge", label: "Bar/Lounge" }, { id: "bordell_buero", label: "Büro" }, { id: "bordell_rotes_zimmer", label: "Rotes Zimmer" }, { id: "bordell_schwarze_kammer", label: "Schwarze Kammer" }, { id: "bordell_prinzessinnenraum", label: "Prinzessinnenraum" }, { id: "gassen", label: "Rote Tür (hinaus)" } ] },
-  // Räume (Ortstexte: PLATZHALTER für Ext Text); Durchgänge kosten 0 min (gleicher großer Nebenort).
-  bordell_lounge: { id: "bordell_lounge", name: "Bar/Lounge", region: "bordell", blurb: "Gedämpftes Licht, ein langer Tresen, weiche Sessel. Hier wird getrunken, bevor man redet.", art: "locations/bordell_lounge.jpg",
+  // Räume (Ortstexte 15.10. von Nico); Durchgänge kosten 0 min (gleicher großer Nebenort).
+  bordell_lounge: { id: "bordell_lounge", name: "Bar/Lounge", region: "bordell", blurb: "Laternen über tiefen Samtpolstern, hinter der Theke schenkt Corin aus, ohne viel zu sagen. Auf den Sofas sitzen Ila, Kes, Nim und Saffi, und sie sehen genau, wer hereinkommt.", art: "locations/bordell_lounge.jpg",
     exits: [ { id: "bordell", label: "Empfang" }, { id: "bordell_buero", label: "Büro" }, { id: "bordell_rotes_zimmer", label: "Rotes Zimmer" }, { id: "bordell_schwarze_kammer", label: "Schwarze Kammer" }, { id: "bordell_prinzessinnenraum", label: "Prinzessinnenraum" } ] },
-  bordell_buero: { id: "bordell_buero", name: "Büro", region: "bordell", blurb: "Vesses Schreibtisch, Bücher und Rechnungen. Wer hier steht, wird gezählt.", art: "locations/bordell_buero.jpg",
+  bordell_buero: { id: "bordell_buero", name: "Büro", region: "bordell", blurb: "Ein Schreibtisch mit offenem Buch, Feder und Karaffe, dahinter Regale voller Rechnungsbücher. Hier steht, wer im Haus was schuldet, und Vessa liest es selbst.", art: "locations/bordell_buero.jpg",
     exits: [ { id: "bordell", label: "Empfang" }, { id: "bordell_lounge", label: "Bar/Lounge" }, { id: "bordell_rotes_zimmer", label: "Rotes Zimmer" }, { id: "bordell_schwarze_kammer", label: "Schwarze Kammer" }, { id: "bordell_prinzessinnenraum", label: "Prinzessinnenraum" } ] },
-  bordell_rotes_zimmer: { id: "bordell_rotes_zimmer", name: "Rotes Zimmer", region: "bordell", thema: true, blurb: "Rote Vorhänge, rotes Licht, ein breites Bett.", art: "locations/bordell_rotes_zimmer.jpg",
+  bordell_rotes_zimmer: { id: "bordell_rotes_zimmer", name: "Rotes Zimmer", region: "bordell", thema: true, blurb: "Alles ist aus rotem Samt, die Wände, das Bett, die Vorhänge. Der Raum schluckt jedes Geräusch, das niemand draußen hören soll.", art: "locations/bordell_rotes_zimmer.jpg",
     exits: [ { id: "bordell", label: "Empfang" }, { id: "bordell_lounge", label: "Bar/Lounge" }, { id: "bordell_buero", label: "Büro" }, { id: "bordell_schwarze_kammer", label: "Schwarze Kammer" }, { id: "bordell_prinzessinnenraum", label: "Prinzessinnenraum" } ] },
-  bordell_schwarze_kammer: { id: "bordell_schwarze_kammer", name: "Schwarze Kammer", region: "bordell", thema: true, blurb: "Dunkles Holz, Kerzen, kaum ein Laut dringt hinaus.", art: "locations/bordell_schwarze_kammer.jpg",
+  bordell_schwarze_kammer: { id: "bordell_schwarze_kammer", name: "Schwarze Kammer", region: "bordell", thema: true, blurb: "Schwarzer Lack und Leder, an der Wand hängen Riemen in sauberen Reihen. Hier gelten Regeln, und wer sie bricht, kommt nicht wieder.", art: "locations/bordell_schwarze_kammer.jpg",
     exits: [ { id: "bordell", label: "Empfang" }, { id: "bordell_lounge", label: "Bar/Lounge" }, { id: "bordell_buero", label: "Büro" }, { id: "bordell_rotes_zimmer", label: "Rotes Zimmer" }, { id: "bordell_prinzessinnenraum", label: "Prinzessinnenraum" } ] },
-  bordell_prinzessinnenraum: { id: "bordell_prinzessinnenraum", name: "Prinzessinnenraum", region: "bordell", thema: true, blurb: "Rosa Seide, Spitze und ein Bett wie eine Torte.", art: "locations/bordell_prinzessinnenraum.jpg",
+  bordell_prinzessinnenraum: { id: "bordell_prinzessinnenraum", name: "Prinzessinnenraum", region: "bordell", thema: true, blurb: "Pink und Rosa, Rüschen an jedem Kissen, ein Spiegel mit Schleifen. Wer hier eintritt, legt ab, was er draußen darstellt.", art: "locations/bordell_prinzessinnenraum.jpg",
     exits: [ { id: "bordell", label: "Empfang" }, { id: "bordell_lounge", label: "Bar/Lounge" }, { id: "bordell_buero", label: "Büro" }, { id: "bordell_rotes_zimmer", label: "Rotes Zimmer" }, { id: "bordell_schwarze_kammer", label: "Schwarze Kammer" } ] },
   gasthaus: { id: "gasthaus", name: "Gasthaus", region: "stadt", blurb: "Tische, Rauch, ein Tresen. Wer zahlt, bekommt einen Platz, der nicht der Markt ist.", art: "locations/gasthaus.jpg",
     // Nebenort der Gassen: nur über die Tür in den Gassen, keine Schnellreise.
