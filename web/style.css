@@ -502,3 +502,4 @@ body.interaktion #scene .spot,body.interaktion #scene .arch,body.interaktion #sc
 #textfenster.bild-rechts .tf-bild-slot{float:right;margin:0 0 12px 18px;max-width:36%;max-height:80%}
 .bar.korrbar i{background:linear-gradient(90deg,#5a1a2a,#a0304a)}
 #narr-text{white-space:pre-wrap}
+#textfenster .tf-text em,#narr-text em{font-style:italic;font-weight:inherit}

@@ -2437,7 +2437,7 @@ function textfensterSync() {
   const st = state.dialogue && state.dialogue.story && D.STORY[state.dialogue.story], bild = anzeigen ? ((st && st.bild) || (state.dialogue && lastTalk && lastTalk.textBild) || null) : null;
   const slot = w.querySelector(".tf-bild-slot"); if (slot) { slot.hidden = !bild; if (bild) { if (slot.getAttribute("src") !== art(bild)) slot.src = art(bild); } else slot.removeAttribute("src"); }
   w.classList.toggle("mit-bild", !!bild);
-  if (anzeigen) { w.querySelector(".tf-who").textContent = who ? who.textContent : ""; const tt = w.querySelector(".tf-text"); if ([...line.children].some((e) => e.tagName !== "BR")) tt.innerHTML = line.innerHTML; else tt.textContent = satzZeilen([...line.childNodes].map((n) => n.nodeName === "BR" ? "\n" : n.textContent).join("")); }
+  if (anzeigen) { w.querySelector(".tf-who").textContent = who ? who.textContent : ""; const tt = w.querySelector(".tf-text"); if ([...line.children].some((e) => e.tagName !== "BR" && e.tagName !== "EM")) tt.innerHTML = line.innerHTML; else { const roh = (typeof letzteTfText === "string" && letzteTfText.length) ? letzteTfText : [...line.childNodes].map((n) => n.nodeName === "BR" ? "\n" : n.textContent).join(""); tt.innerHTML = kursivHtml(satzZeilen(roh)); } }
 }
 // Erzähler (Rollen, Vater-Start über openStory = Gesprächszeile) im selben Fensterbild
 function erzaehlerBild() {
@@ -2749,11 +2749,24 @@ textfensterSync = function () {
 // Nicht getrennt: Abkürzungen (z.B., d.h., Nr., St., Einzelbuchstaben), Ziffern vor Punkt, Auslassungen (… / ...),
 // Satzzeichen innerhalb von Anführungszeichen; nach einem schließenden Anführungszeichen mit Satzende davor wird getrennt.
 const SATZ_ABK = ["z", "b", "d", "h", "nr", "st", "usw", "bzw", "ca", "dr", "hr", "fr", "evtl", "ggf", "vgl", "etc", "bspw", "u", "a", "s", "o", "jh", "str", "abs", "min", "std"];
+function kursivHtml(text) {
+  if (!text) return "";
+  const out = []; let i = 0, m, re = /\*([^*]+)\*/g;
+  while ((m = re.exec(text))) { out.push(esc(text.slice(i, m.index))); out.push("<em>" + esc(m[1]) + "</em>"); i = m.index + m[0].length; }
+  out.push(esc(text.slice(i))); return out.join("");
+}
 function satzZeilen(text) {
   if (!text) return text;
-  return String(text).split(/\n[ \t]*\n/).map((abs) => satzAbsatz(abs.trim())).join("\n\n");
+  const hold = [], PH0 = "", PH1 = "";
+  text = String(text).replace(/\*([^*]+)\*/g, (_, x) => {
+    hold.push("*" + x + "*");
+    const pe = /[.!?…]$/.test(x) ? x.slice(-1) : "";
+    return PH0 + (hold.length - 1) + PH1 + pe;
+  });
+  const z = text.split(/\n[ \t]*\n/).map((abs) => satzAbsatz(abs.trim(), PH0)).join("\n\n");
+  return z.replace(new RegExp(PH0.replace(/[\\^$*+?.()|[\]{}]/g, "\\$&") + "(\\d+)" + PH1.replace(/[\\^$*+?.()|[\]{}]/g, "\\$&") + "([.!?…])?", "g"), (_, i) => hold[+i]);
 }
-function satzAbsatz(t) {
+function satzAbsatz(t, PH0) {
   const AUF = "„«‚", ZU = "“»‘", GROSS = /[A-ZÄÖÜ„"«]/;
   let out = "", tief = 0;
   const endeOk = (i) => {  // i = Index des Satzzeichens
@@ -2767,7 +2780,7 @@ function satzAbsatz(t) {
     }
     return true;
   };
-  const folgtSatz = (j) => { let k = j; if (!/\s/.test(t[k] || "")) return false; while (/\s/.test(t[k] || "")) k++; return k < t.length && GROSS.test(t[k]) ? k : false; };
+  const folgtSatz = (j) => { let k = j; if (!/\s/.test(t[k] || "")) return false; while (/\s/.test(t[k] || "")) k++; return k < t.length && (GROSS.test(t[k]) || (PH0 && t.startsWith(PH0, k))) ? k : false; };
   for (let i = 0; i < t.length; i++) {
     const c = t[i];
     out += c;
@@ -2786,9 +2799,15 @@ function satzAbsatz(t) {
   }
   return out;
 }
+let letzteTfText = "";
+const _showLineKursiv = showLine;
+showLine = function (text, choices) {
+  letzteTfText = text || "";
+  return _showLineKursiv.call(this, (text || "").replace(/\*([^*]+)\*/g, "$1"), choices);
+};
 const _renderZeilen = render;
 render = function () {
   const r = _renderZeilen.apply(this, arguments);
-  const nt = document.getElementById("narr-text"); if (nt && state && state.narrator && state.narrator.text && !nt.children.length) { const z = satzZeilen(state.narrator.text); if (nt.textContent !== z) nt.textContent = z; }
+  const nt = document.getElementById("narr-text"); if (nt && state && state.narrator && state.narrator.text && ![...nt.children].some((e) => e.tagName !== "EM" && e.tagName !== "BR")) { const z = kursivHtml(satzZeilen(state.narrator.text)); if (nt.innerHTML !== z) nt.innerHTML = z; }
   return r;
 };
