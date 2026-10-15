@@ -2419,7 +2419,8 @@ function textfensterEl() {
     w.innerHTML = "<div class='tf-who'></div><div class='tf-text'></div>";
     body.appendChild(w);
   }
-  w.style.backgroundImage = "linear-gradient(rgba(10,6,7,.35),rgba(10,6,7,.55)),url('" + art("ui/textfenster_" + heroGender() + ".jpg") + "')";
+  w.style.backgroundImage = "none";  // 15.10. (Nico): kein Bild mehr, durchscheinend dunkel (CSS)
+  if (!w.querySelector(".tf-bild-slot")) { const b = document.createElement("img"); b.className = "tf-bild-slot"; b.alt = ""; b.hidden = true; w.insertBefore(b, w.firstChild); }
   return w;
 }
 function textfensterSync() {
@@ -2429,13 +2430,18 @@ function textfensterSync() {
   const anzeigen = !!txt && !state.inCombat && !(document.getElementById("combat-win") && !document.getElementById("combat-win").hidden);
   w.hidden = !anzeigen;
   document.body.classList.toggle("tf-aktiv", anzeigen);
+  const nar = document.getElementById("narrator"); document.body.classList.toggle("interaktion", anzeigen || !!(nar && !nar.hidden));  // Überlagerungen aus
+  // Bildplatz: datengetrieben je Interaktion – STORY[x].bild oder NPC.textBild; ohne Bild versteckt.
+  const st = state.dialogue && state.dialogue.story && D.STORY[state.dialogue.story], bild = anzeigen ? ((st && st.bild) || (state.dialogue && lastTalk && lastTalk.textBild) || null) : null;
+  const slot = w.querySelector(".tf-bild-slot"); if (slot) { slot.hidden = !bild; if (bild) { if (slot.getAttribute("src") !== art(bild)) slot.src = art(bild); } else slot.removeAttribute("src"); }
+  w.classList.toggle("mit-bild", !!bild);
   if (anzeigen) { w.querySelector(".tf-who").textContent = who ? who.textContent : ""; w.querySelector(".tf-text").innerHTML = line.innerHTML; }
 }
 // Erzähler (Rollen, Vater-Start über openStory = Gesprächszeile) im selben Fensterbild
 function erzaehlerBild() {
   const sc = document.querySelector("#narrator .scroll"); if (!sc) return;
   sc.classList.add("tf-bild");
-  sc.style.backgroundImage = "linear-gradient(rgba(10,6,7,.35),rgba(10,6,7,.55)),url('" + art("ui/textfenster_" + heroGender() + ".jpg") + "')";
+  sc.style.backgroundImage = "none";
 }
 
 // (5) Werteprobe für Gesprächsoptionen: Option { label, go, probe: { atk: 4, beweg: 3 } } – nicht erfüllt = grau mit Bedingung.

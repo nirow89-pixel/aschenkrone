@@ -980,7 +980,7 @@ const LOCATIONS = {
   bordell_lounge: { id: "bordell_lounge", name: "Bar/Lounge", region: "bordell",
     // Feste Sitzplätze (15.10.) in % des Ortsfensters (x Mitte, y Unterkante des Schilds); gilt nur für Anwesende.
     sitze: { corin: { x: 22, y: 50 }, saffi: { x: 11, y: 80 }, ila: { x: 50, y: 76 }, kes: { x: 67, y: 76 }, nim: { x: 84, y: 76 } },
-    blurb: "Laternen über tiefen Samtpolstern, hinter der Theke schenkt Corin aus, ohne viel zu sagen. Auf den Sofas sitzen Ila, Kes, Nim und Saffi, und sie sehen genau, wer hereinkommt.", art: "locations/bordell_lounge.jpg",
+    blurb: "Laternen über tiefen Samtpolstern, hinter der Theke schenkt Corin aus, ohne viel zu sagen. Saffi lehnt im Sessel links, Ila, Kes und Nim teilen sich das Sofa rechts, und keine von ihnen verpasst, wer hereinkommt.", art: "locations/bordell_lounge.jpg",
     exits: [ { id: "bordell", label: "Empfang" }, { id: "bordell_buero", label: "Büro" }, { id: "bordell_rotes_zimmer", label: "Rotes Zimmer" }, { id: "bordell_schwarze_kammer", label: "Schwarze Kammer" }, { id: "bordell_prinzessinnenraum", label: "Prinzessinnenraum" } ] },
   bordell_buero: { id: "bordell_buero", name: "Büro", region: "bordell", blurb: "Ein Schreibtisch mit offenem Buch, Feder und Karaffe, dahinter Regale voller Rechnungsbücher. Hier steht, wer im Haus was schuldet, und Vessa liest es selbst.", art: "locations/bordell_buero.jpg",
     exits: [ { id: "bordell", label: "Empfang" }, { id: "bordell_lounge", label: "Bar/Lounge" }, { id: "bordell_rotes_zimmer", label: "Rotes Zimmer" }, { id: "bordell_schwarze_kammer", label: "Schwarze Kammer" }, { id: "bordell_prinzessinnenraum", label: "Prinzessinnenraum" } ] },
