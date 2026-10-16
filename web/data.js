@@ -211,6 +211,19 @@ const ITEMS = {
   // PLATZHALTER-Waren für Corin (Bordell, 15.10.) – Name, Bild und Werte werden später ersetzt
   platzhalter_hauswein: { id: "platzhalter_hauswein", img: "items/wein_der_stunde.jpg", name: "Hauswein (Platzhalter)", type: "verbrauch", heal: 3, price: 4, sell: 2, text: "PLATZHALTER: Wein von Corins Tresen." },
   platzhalter_brotteller: { id: "platzhalter_brotteller", img: "items/wein_der_stunde.jpg", name: "Brot und Käse (Platzhalter)", type: "verbrauch", heal: 4, price: 5, sell: 2, text: "PLATZHALTER: Speise von Corins Tresen." },
+  // Essen (Ausbesserungen5, 16.10.): Verbrauchsgegenstände bei Gasthaus, Schenke, Krämerin und Bordell. Bilder fehlen noch → Platzhalterbild.
+  brot: { id: "brot", img: "ui/platzhalter.jpg", bildSoll: "items/essen_brot.jpg", name: "Brot", type: "verbrauch", essen: true, heal: 4, price: 2, sell: 1, text: "Ein Laib dunkles Brot, die Kruste noch fest." },
+  apfel: { id: "apfel", img: "ui/platzhalter.jpg", bildSoll: "items/essen_apfel.jpg", name: "Apfel", type: "verbrauch", essen: true, heal: 2, wk: 1, price: 2, sell: 1, text: "Ein roter Apfel, ein wenig mehlig, aber süß." },
+  kaese: { id: "kaese", img: "ui/platzhalter.jpg", bildSoll: "items/essen_kaese.jpg", name: "Käse", type: "verbrauch", essen: true, heal: 5, price: 3, sell: 1, text: "Ein Keil harter Käse, in Tuch gewickelt." },
+  gebratenes_fleisch: { id: "gebratenes_fleisch", img: "ui/platzhalter.jpg", bildSoll: "items/essen_gebratenes_fleisch.jpg", name: "Gebratenes Fleisch", type: "verbrauch", essen: true, heal: 9, price: 6, sell: 3, text: "Ein Stück Fleisch vom Spieß, außen dunkel, innen saftig." },
+  eintopf: { id: "eintopf", img: "ui/platzhalter.jpg", bildSoll: "items/essen_eintopf.jpg", name: "Eintopf", type: "verbrauch", essen: true, heal: 7, wk: 2, price: 5, sell: 2, text: "Eine Schale heißer Eintopf mit Rüben und Speck. Wärmt bis in die Finger." },
+  raeucherwurst: { id: "raeucherwurst", img: "ui/platzhalter.jpg", bildSoll: "items/essen_raeucherwurst.jpg", name: "Räucherwurst", type: "verbrauch", essen: true, heal: 6, price: 4, sell: 2, text: "Eine harte Wurst, die lange hält und nach Rauch riecht." },
+  honigkuchen: { id: "honigkuchen", img: "ui/platzhalter.jpg", bildSoll: "items/essen_honigkuchen.jpg", name: "Honigkuchen", type: "verbrauch", essen: true, heal: 3, wk: 4, price: 4, sell: 2, text: "Ein klebriges Stück Kuchen. Süß genug, um die Laune zu heben." },
+  dunkelbier: { id: "dunkelbier", img: "ui/platzhalter.jpg", bildSoll: "items/essen_dunkelbier.jpg", name: "Dunkelbier", type: "verbrauch", essen: true, heal: 2, wk: 3, price: 3, sell: 1, text: "Ein Krug dunkles Bier, bitter und schwer." },
+  hauswein: { id: "hauswein", img: "ui/platzhalter.jpg", bildSoll: "items/essen_hauswein.jpg", name: "Hauswein", type: "verbrauch", essen: true, heal: 2, wk: 5, price: 5, sell: 2, text: "Corins Hauswein. Rot, schwer und ein wenig zu süß." },
+  kandierte_feigen: { id: "kandierte_feigen", img: "ui/platzhalter.jpg", bildSoll: "items/essen_kandierte_feigen.jpg", name: "Kandierte Feigen", type: "verbrauch", essen: true, heal: 3, wk: 6, price: 7, sell: 3, text: "Eine kleine Schale Feigen in Zuckerkruste, wie man sie in der Lounge reicht." },
+  // Saffi Stufe 2 (16.10.): eigener Typ „kleidung“ (konkurriert nicht als Rüstung), Questgegenstand, kein Preis, nicht verkäuflich. Bild fehlt → Platzhalter.
+  saffis_minirock: { id: "saffis_minirock", img: "ui/platzhalter.jpg", bildSoll: "items/saffi_minirock.jpg", name: "Saffis Minirock", type: "kleidung", slot: "beine", questItem: true, text: "Schwarzer Stoff, viel zu kurz, um irgendetwas zu verbergen. Saffi will ihn wiedersehen." },
   // Saffi-Interaktion (Nico, 15.10.): Questgegenstand im Amulett-Platz, nicht verkäuflich (kein Preis). Text PLATZHALTER.
   saffis_halsband: { id: "saffis_halsband", img: "items/lackchoker.jpg", name: "Saffis Halsband", type: "schmuck", slot: "amulett", questItem: true, text: "Schwarzer Lack und ein kleines Schloss. Saffi hat es dir angelegt." },
   teichbluete: { id: "teichbluete", img: "items/teichbluete.jpg", name: "Teichblüte", type: "ware", price: 8, sell: 4, text: "Eine helle, rosa Blüte vom Teich. Händler kaufen sie an." },
@@ -534,8 +547,8 @@ const NPCs = {
     text: "Corin lehnt am Vorhang und zählt die Gäste.",
     art: "npcs/corin.jpg",
     merchant: true, buys: false, hours: ["nachmittag","abend","nacht"], pin: { x: 34, y: 87 }, faction: "gasse",
-    // Bordell 15.10.: Barmann in der Bar/Lounge, Wein und Speisen – PLATZHALTER-Waren
-    shop: ["platzhalter_hauswein","platzhalter_brotteller"], stock: { platzhalter_hauswein: 6, platzhalter_brotteller: 6 },
+    // Bordell: Barmann in der Bar/Lounge, Wein und Speisen (16.10.: echte Waren statt Platzhalter)
+    shop: ["hauswein","kandierte_feigen","kaese","honigkuchen"], stock: { hauswein: 6, kandierte_feigen: 4, kaese: 4, honigkuchen: 4 },
     lines: ["Ich sehe, wer kommt. Das reicht mir."],
     talk: { start: "Ihr seid nicht von hier. Das sieht man an den Schuhen." }
  ,
@@ -1066,7 +1079,7 @@ const LOCATIONS = {
     klickbild: { art: "locations/test_schankraum_leer.jpg", size: [1000, 671],
       varianten: [ { npc: "marktfrau", art: "locations/test_schankraum_maera.jpg" } ],
       hotspots: [
-        { type: "npc", target: "marktfrau", label: "Maera", poly: [[27, 33], [33.5, 32.5], [35.5, 44], [37.8, 55.8], [22.5, 55.8], [24, 44]] },
+        { type: "npc", target: "marktfrau", label: "Maera", poly: [[28.2, 33.4], [31.4, 33.2], [32.6, 36.8], [35, 42], [36.4, 47.5], [37.2, 55.4], [24.2, 55.4], [24.8, 47.5], [26.4, 41.5], [27.4, 36.8]] },
         { type: "pass", target: "schenke_hinterzimmer", label: "Hinterzimmer", poly: [[68.5, 32], [82.2, 30.6], [82.2, 70], [70, 68.6]] } ] } },
   // Kleine Nebenorte (Leitung 14.10.; Texte PLATZHALTER für Ext Text)
   schenke_hinterzimmer: { id: "schenke_hinterzimmer", name: "Hinterzimmer", region: "unterorten", parent: "schenke", pass: "ui/pass_hinterzimmer.jpg", back: "Zurück in den Schankraum", blurb: "Ein enger Raum hinter dem Vorhang, ein Tisch, ein paar Stühle, eine Kerze. Wer hier sitzt, will nicht vom Schankraum aus gesehen werden.", art: "locations/schenke_hinterzimmer.jpg",
@@ -1243,6 +1256,56 @@ const SAFFI = {
   bild: { halsband: "items/lackchoker.jpg", bestimmen: { m: "locations/saffi_akt_bestimmen_m.jpg", w: "locations/saffi_akt_bestimmen_w.jpg" },
     halsbandAkt: { m: "locations/saffi_akt_halsband_m.jpg", w: "locations/saffi_akt_halsband_w.jpg" } }
 };
+// Saffi Stufe 2 · Minirock (Entwurf 16.10. mit Nicos Entscheidungen). Texte je Geschlecht als { m, w }; *…* = Erzähltext (kursiv).
+const SAFFI2 = {
+  t: {
+    gruss: "Da ist ja mein {brav}!\n*Saffi lehnt sich im Sessel zurück und mustert dich ganz langsam von oben bis unten.*\nZeit, da weiterzumachen, wo wir aufgehört haben, nicht wahr, {name}?\n*Ihr Blick bleibt an deinem Hals hängen.*",
+    halsA: "Oh, du trägst es ja schon, ganz ohne dass ich was sagen muss. Brav.",
+    halsB: "Im Beutel nützt es mir aber nichts, Schatz. Das regeln wir gleich hinten.",
+    halsC: "Ich hoffe, du hast dein Halsband dabei.",
+    schluss: "Heute hab ich nämlich noch eine Kleinigkeit für dich.",
+    schlussRock: "Und der Rock wartet übrigens immer noch auf dich, ich hab ihn extra aufgehoben.",
+    neugier: "Neugierig, hm?\n*Sie legt dir einen Finger auf die Lippen, bevor du nachhaken kannst.*\nWenn ich's dir hier vor allen verrate, ist doch die halbe Überraschung weg.\n*Sie beugt sich vor und senkt die Stimme, sodass Ila, Kes und Nim sich nicht zu sehr anstrengen müssen, um mitzuhören.*\nNur so viel: Es passt perfekt zu deinem Halsband.\nAlso, kommst du mit?",
+    gerne: "Sehr schön, komm mit!\n*Sie hakt sich bei dir unter und zieht dich an Corins Theke vorbei zur Treppe.*\nUnd guck nicht so, ich beiß nur, wenn du mich darum bittest.",
+    rockA: "*Saffi schließt die Tür hinter euch und dreht sich langsam zu dir um.*\nSo, mein Schatz. Das Bestimmen hast du ja schon mir überlassen, also lass mal sehen.\n*Sie hakt einen Finger in dein Halsband und prüft das kleine Schloss.*",
+    rockB: "*Saffi schließt die Tür hinter euch und dreht sich langsam zu dir um.*\nSo, mein Schatz. Das Bestimmen hast du ja schon mir überlassen, also lass mal sehen.\n*Sie fischt das Halsband aus deinem Beutel und legt es dir um.*\n*Wieder macht es „klick“.*",
+    rock: { m: "Sitzt perfekt. Aber irgendwas fehlt noch …\n*Sie greift hinter ein Kissen und hält ein Stück schwarzen Stoff hoch, kaum länger als ihre Hand.*\nEin Rock, {name}. Ja, für dich, guck nicht so entsetzt.\nGlaub mir, der steht dir besser als diese langweilige Hose.",
+      w: "Sitzt perfekt. Aber irgendwas fehlt noch …\n*Sie greift hinter ein Kissen und hält ein Stück schwarzen Stoff hoch, kaum länger als ihre Hand.*\nEin Rock, {name}. Zugegeben, kürzer als alles, was du sonst so trägst.\nAber deine Beine haben ein bisschen Publikum verdient, findest du nicht?" },
+    einstieg: { angenommen: "So ist es brav, {gut}.", gezoegert: "Siehst du, war doch gar nicht so schwer.", nachgegeben: "Na also. Hat ein bisschen gedauert, aber na also.",
+      freiwillig: "Freiwillig? Oh, das merk ich mir, {name}.", gehandelt: "Abgemacht ist abgemacht, also los." },
+    anziehen: { m: "*Saffi drückt dir den Rock in die Hand und dreht sich nicht mal höflich weg, während du dich umziehst.*\n*Sie beißt sich auf die Lippe, um nicht laut loszulachen, und zupft den Saum zurecht.*\nNa bitte, wer hätte gedacht, dass du so hübsche Knie hast?\n*Dann zieht sie dich vor den großen Spiegel und stellt sich dicht hinter dich.*\nSchau ruhig hin. Halsband und Rock, so gehörst du mir, wenn du hier oben bist.",
+      w: "*Saffi drückt dir den Rock in die Hand und dreht sich nicht mal höflich weg, während du dich umziehst.*\n*Sie zupft den Saum zurecht, der davon kein bisschen länger wird.*\nSiehst du? Genau so hab ich mir das vorgestellt.\n*Dann zieht sie dich vor den großen Spiegel und stellt sich dicht hinter dich.*\nSchau ruhig hin. Halsband und Rock, so gehörst du mir, wenn du hier oben bist." },
+    zoegern: { m: "*Saffi legt den Kopf schief und lässt den Rock an einem Finger baumeln.*\nMuss es nicht. Aber du hast mir das Bestimmen überlassen, schon vergessen?\n*Sie kommt einen Schritt näher, und ihre Stimme wird weich wie Samt.*\nIch verrat dir was: Die, die am meisten zögern, gefallen sich hinterher am besten.\nUnd keine Sorge, hier drin sieht dich keiner außer mir. Und ich erzähl's nur Vessa. Vielleicht.",
+      w: "*Saffi legt den Kopf schief und lässt den Rock an einem Finger baumeln.*\nMuss es nicht. Aber du hast mir das Bestimmen überlassen, schon vergessen?\n*Sie kommt einen Schritt näher, und ihre Stimme wird weich wie Samt.*\nIch verrat dir was: Die, die am meisten zögern, gefallen sich hinterher am besten.\nUnd jetzt tu nicht so, als hättest du nicht schon mal dran gedacht, {name}." },
+    ablehnen: "*Saffis Lächeln wird eine Spur schmaler.*\nNicht brav …\n*Sie dreht den Rock zwischen den Fingern, als würde sie überlegen, was sie jetzt mit dir anstellt.*\nZwingen kann ich dich nicht, {name}. Aber du hast mir erlaubt zu bestimmen, und ich frag dich genau noch ein Mal.\n*Sie hält ihn dir hin und wartet.*",
+    handel: "*Saffi zieht eine Augenbraue hoch, dann lacht sie leise.*\nDu verhandelst mit mir? Frech. Gefällt mir.\nAlso gut: Hier drin trägst du ihn, und bevor du runtergehst, darfst du ihn wieder ausziehen.\nDann muss Vessa dich nicht so sehen.\n*Sie tippt dir mit dem Rock gegen die Brust.*\nAber angezogen wird er jetzt. Und ich schau zu.",
+    geschnappt: "*Bevor Saffi reagieren kann, hast du ihr den Rock aus der Hand gezupft.*\n*Einen Moment starrt sie dich an, dann prustet sie los.*\nHey! Flinke Finger, was?\n*Sie lässt sich rücklings aufs Bett fallen, stützt sich auf die Ellenbogen und sieht dich herausfordernd an.*\nNa los, jetzt hast du ihn. Was machst du jetzt damit?",
+    zugeworfen: "*Saffi fängt den Rock mit einer Hand und hält ihn sich prüfend an die Hüfte.*\nNetter Versuch, {anrede}. An mir wär der ja nicht mal kurz.\n*Sie steht auf und wirft ihn dir zurück, direkt in die Arme.*\nBestimmen tu aber immer noch ich. Also?",
+    hart: "*Saffi seufzt theatralisch und wirft den Rock aufs Bett.*\nNa schön. Dann eben nicht heute.\n*Sie tippt dir gegen das Halsband, nicht unfreundlich, aber bestimmt.*\nDas hier behältst du. Und den Rock heb ich dir auf, ich bin nämlich geduldig.\nAch, und bezahlt ist bezahlt, {anrede}. Vessa gibt nichts zurück.\n*Sie zwinkert und hält dir die Tür auf.*",
+    szene: "*Saffi tritt einen Schritt zurück und betrachtet ihr Werk, als hätte sie es selbst genäht.*\nKomm jetzt her, mein hübsches, gehorsames Ding.\nDu darfst mich wieder anfassen, aber der Rock bleibt an. Das ist die Regel.\n*Sie zieht dich an deinem Halsband sanft zu sich, und der Rest bleibt hinter dem roten Vorhang.*",
+    abschied: "Das hat Spaß gemacht, ich hoffe, wir sehen uns bald wieder!\n*Sie haucht dir einen Kuss zu und geht zur Tür.*\n*Dort dreht sie sich noch einmal um.*",
+    abschiedStandard: "Ach, und den Rock behältst du. Ich will ihn beim nächsten Mal wiedersehen.",
+    abschiedHandel: "Den Rock darfst du jetzt ausziehen, so war's abgemacht. Aber bring ihn mit, wenn du wiederkommst.",
+    zusatz: { m: "Und Ulfi … ähm, ich meine natürlich {name}: Die Treppe runter nimmst du lieber langsam.", mSpitz: "Und {name}: Die Treppe runter nimmst du lieber langsam.",
+      w: "Und {name}: Bück dich unten besser nicht nach Münzen." },
+    stufe3: "Da ist ja mein hübsches Ding.\n*Saffi lässt den Blick von deinem Hals bis zu deinen Knien wandern und grinst.*\nHalsband und Rock, hoffe ich?",
+    schuldFrage: "Nicht genug Gold, willst du Schulden bei Vessa aufnehmen?"
+  },
+  // Stellschrauben (alle vorläufig, Nico 16.10.: „anpassbar bauen“)
+  kosten: { neinDanke: 10, rockZoegern: 10, rockAblehnen: 40, rockHart: 10 },  // + halsAufschlag (75 %)
+  hartAufschlag: 0.5,         // „Hart bleiben“ unbegrenzt, jede frühere Ablehnung macht die Rock-Weigerungen +50 % teurer
+  probe: { rockSchnappen: { beweg: 4 }, rockHandel: { rede: 3 } },
+  uebung: 2, uebungSchnappen: 1,
+  beziehung: { handel: 1, selbst: 2, zuwerfen: 1, hart: -1 },
+  // Bilder fehlen noch → Platzhalter; Sollnamen: items/saffi_minirock.jpg, locations/saffi_akt_rock_m.jpg / _w.jpg
+  bild: { rock: "ui/platzhalter.jpg", akt: { m: "ui/platzhalter.jpg", w: "ui/platzhalter.jpg" } },
+  bildSoll: { rock: "items/saffi_minirock.jpg", akt: { m: "locations/saffi_akt_rock_m.jpg", w: "locations/saffi_akt_rock_w.jpg" } }
+};
+// Korruption durch Saffis Kleidung (Nico 16.10.): dauerhaft, solange getragen; Handel „nur im Zimmer“ einmalig.
+const SAFFI_KORRUPTION_TRAGEN = { saffis_halsband: 5, saffis_minirock: 5 };
+const SAFFI_KORRUPTION_ROCK_HANDEL = 3;
+// Leichte negative Trage-Effekte (Pfad soll langsam weiterziehen): Werte je getragenem Gegenstand.
+const SAFFI_TRAGEFFEKT = { saffis_minirock: { beweg: -1 }, saffis_halsband: { wkRegenPct: -3 } };
 const SAFFI_KORRUPTION_HALSBAND = 5;  // Korruption für den Halsband-Pfad: +5 (Nico 15.10., vorläufig)
 // Schulden bei Vessa
 const SCHULD = { zinsProTag: 0.05, gefallenAb: 500, gefallenText: '*Vessa klappt das Buch zu.* "Fünfhundert. Zahlen wirst du trotzdem, und dazu schuldest du mir jetzt einen Gefallen. Irgendwann bitte ich dich darum, und dann sagst du nicht nein."',
@@ -1324,7 +1387,7 @@ ausstellungNeu();
 window.D = {
   WORLD, FACTIONS, DAY_PHASES, BOND_STEPS, STAT_KEYS,
   HERKUENFTE, FLUECHE, PORTRAITS, AVATARE, START_POOL, EXT_ART, ITEMS, SKILLS, MONSTER, NPCs, QUESTS, BITTEN, STORY, ANREDE,
-  NARRATOR, REGIONS, LOCATIONS, BASE_HERO, WEEKDAYS, AUSSTELLUNG, ausstellungNeu, WOLF_LINES, SPAWN_TABLES, ZEICHEN, PFAD_ZEICHEN, GRAD_STUFEN, GRUNDWERTE, STUFE_MAX, STUFEN_KOSTEN, GRAD_AUFSTIEGE, RICHTUNGEN, GRAD_BELOHNUNG, NEBENRICHTUNG_AB, BLOCK_START, WAY_MIN, WAYS, BORDELL_THEMENRAEUME_OFFEN, SAFFI, SAFFI_KORRUPTION_HALSBAND, SCHULD
+  NARRATOR, REGIONS, LOCATIONS, BASE_HERO, WEEKDAYS, AUSSTELLUNG, ausstellungNeu, WOLF_LINES, SPAWN_TABLES, ZEICHEN, PFAD_ZEICHEN, GRAD_STUFEN, GRUNDWERTE, STUFE_MAX, STUFEN_KOSTEN, GRAD_AUFSTIEGE, RICHTUNGEN, GRAD_BELOHNUNG, NEBENRICHTUNG_AB, BLOCK_START, WAY_MIN, WAYS, BORDELL_THEMENRAEUME_OFFEN, SAFFI, SAFFI_KORRUPTION_HALSBAND, SAFFI2, SAFFI_KORRUPTION_TRAGEN, SAFFI_KORRUPTION_ROCK_HANDEL, SAFFI_TRAGEFFEKT, SCHULD
 };
 
 // ---- Male, Flüche, Segen (male-fluche-segen.md §6, fx laut grad-zeichen-kampf.md §12.4) ----
@@ -1364,11 +1427,18 @@ window.D.PERKS = {
 };
 // ---- Händler-Wirtschaft (Ausbesserung 2): eigenes Gold, Wochen-Sortiment aus eigenem Pool ----
 // gold = Kasse je Woche (7 Tage), size = Anzahl Waren je Wochen-Auswahl, pool = mögliche Waren.
+// Essen (16.10.): feste Grundware je Händler, kommt jede Woche zusätzlich zum Pool-Sortiment ins Lager (Menge).
+window.D.ESSEN_HAENDLER = {
+  jorun: { brot: 6, eintopf: 4, gebratenes_fleisch: 3, dunkelbier: 6, kaese: 3 },          // Gasthaus
+  marktfrau: { brot: 5, dunkelbier: 6, raeucherwurst: 4, gebratenes_fleisch: 3, apfel: 5 }, // Schenke (Maera)
+  kraemerin: { brot: 6, apfel: 8, kaese: 4, raeucherwurst: 4, honigkuchen: 3 },             // Krämerin
+  corin: { hauswein: 6, kandierte_feigen: 4, kaese: 3, honigkuchen: 3 }                      // Bordell
+};
 window.D.MERCHANT_ECON = {
   marktfrau: { gold: 120, size: 5, pool: ["glutphiole","nebeltrank","aschesalbe","wein_der_stunde","teichbluete","waldphiole","kussphiole"] },
   hella: { gold: 90, size: 3, pool: ["waldphiole","nebeltrank","aschesalbe","teichbluete","spiegeltrank","glutphiole"] },
   branna: { gold: 220, size: 5, pool: ["dorfstahl","aschenklinge","aschenschild","eisen_beinschienen","hohe_panzerstiefel","knochenhandschuh","zweihander","schnallen_lederstiefel","leder_hose"] },
-  corin: { gold: 60, size: 2, pool: ["platzhalter_hauswein","platzhalter_brotteller"] },  // PLATZHALTER
+  corin: { gold: 60, size: 2, pool: ["hauswein","kandierte_feigen","kaese","honigkuchen","dunkelbier"] },
   vesse: { gold: 100, size: 3, pool: ["wein_der_stunde","kussphiole","spiegeltrank","seidenhand","samtbrust"] },
   iven: { gold: 200, size: 4, pool: ["glutring","nebelamulett","kronenring","ascheohr","teichbluete"] },
   jorun: { gold: 80, size: 2, pool: ["wein_der_stunde","teichbluete","aschesalbe","glutphiole"] },

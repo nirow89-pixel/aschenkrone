@@ -503,3 +503,12 @@ body.interaktion #scene .spot,body.interaktion #scene .arch,body.interaktion #sc
 .bar.korrbar i{background:linear-gradient(90deg,#5a1a2a,#a0304a)}
 #narr-text{white-space:pre-wrap}
 #textfenster .tf-text em,#narr-text em{font-style:italic;font-weight:inherit}
+/* Ausbesserungen5 (16.10.): Gesprächsknöpfe etwas größer */
+#talk-choices button{font-size:15px;padding:9px 18px;min-height:40px}
+/* Questmarker links oben am NPC-Schild: ! goldgelb schwankend, ? silber (offen) / goldgelb (abgebbar) */
+.spot .tag{position:relative}
+.spot .tag .qmark{position:absolute;left:-9px;top:-15px;font-family:Georgia,serif;font-weight:700;font-size:20px;line-height:1;letter-spacing:0;pointer-events:none;text-shadow:0 0 3px #000,0 0 6px rgba(0,0,0,.9);transform-origin:50% 90%}
+.spot .tag .qmark.q-angebot{color:#f2c94c;animation:qschwank 2.4s ease-in-out infinite}
+.spot .tag .qmark.q-offen{color:#c9ccd3}
+.spot .tag .qmark.q-fertig{color:#f2c94c}
+@keyframes qschwank{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(12deg)}}

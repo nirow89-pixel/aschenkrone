@@ -1,6 +1,10 @@
-// Debug-Testoptionen (Optionen-Fenster). Gespeichert in localStorage „aschenkrone-debug“, NICHT im Spielstand.
+// Debug-Testoptionen (Optionen-Fenster), Nico 16.10.:
+//  - im laufenden Spiel aktiviert → gilt nur für diesen Spielstand und wird darin gespeichert (state.debug)
+//  - im Hauptmenü → nur für die Browser-Sitzung (sessionStorage), nach Neustart des Browsers wieder aus;
+//    ein neu gestartetes Spiel übernimmt die Menü-Einstellung in seinen Spielstand.
 // ?debug=1 bleibt unabhängig davon wirksam.
 const DEBUG_KEY = "aschenkrone-debug";
+try { localStorage.removeItem(DEBUG_KEY); } catch {}  // alter, browserweiter Speicher (bis 15.10.) entfällt
 const DEBUG_OPTS = [
   { id: "gold", label: "Gold: Knopf „+100 Gold“ (neues Spiel startet mit +500 wie ?debug=1)" },
   { id: "grad", label: "Grad-Aufstieg: Knopf „+1 Grad“ über dem Beutel" },
@@ -30,9 +34,18 @@ function debugStadt() {
   persist(); render();
   return true;
 }
-function debugOpts() { try { return JSON.parse(localStorage.getItem(DEBUG_KEY)) || {}; } catch { return {}; } }
+function debugImSpiel() { const sh = document.getElementById("shell"); return !!state && !!sh && sh.classList.contains("on"); }
+function debugSitzung() { try { return JSON.parse(sessionStorage.getItem(DEBUG_KEY)) || {}; } catch { return {}; } }
+function debugOpts() { if (debugImSpiel()) return Object.assign({}, state.debug || {}); return debugSitzung(); }
 function debugOpt(id) { return !!debugOpts()[id]; }
-function setDebugOpt(id, on) { const o = debugOpts(); o[id] = !!on; localStorage.setItem(DEBUG_KEY, JSON.stringify(o)); paintDebugActs(); }
+function setDebugOpt(id, on) {
+  const o = debugOpts(); o[id] = !!on;
+  if (debugImSpiel()) { state.debug = o; persist(); }
+  else { try { sessionStorage.setItem(DEBUG_KEY, JSON.stringify(o)); } catch {} }
+  paintDebugActs();
+}
+// Neues Spiel übernimmt die Sitzungs-Einstellung aus dem Hauptmenü in den Spielstand
+if (typeof newGame === "function") { const _newGameDbg = newGame; newGame = function () { const o = debugSitzung(); const r = _newGameDbg.apply(this, arguments); if (state && !state.debug) { state.debug = o; persist(); } return r; }; }
 // Regulärer Grad-Aufstieg (wie trackPeak): +4 Leben, Wahl Richtung/Perk über g.pending.
 function debugGradUp() {
   if (!state || !state.grad) return false;
@@ -82,7 +95,7 @@ function paintDebugActs() {
 function debugSection() {
   const d = document.createElement("div");
   d.className = "dbg-sec";
-  d.innerHTML = '<div class="opt-h">Debug</div><p class="tiny">Testoptionen, nur in diesem Browser gespeichert, nicht im Spielstand.</p>' +
+  d.innerHTML = '<div class="opt-h">Debug</div><p class="tiny">' + (debugImSpiel() ? "Testoptionen für diesen Spielstand (werden mit ihm gespeichert)." : "Testoptionen für diese Browser-Sitzung (nach Neustart des Browsers aus).") + '</p>' +
     DEBUG_OPTS.map((o) => '<label class="dbg-opt"><input type="checkbox" data-opt="' + o.id + '"' + (debugOpt(o.id) ? " checked" : "") + "> " + o.label + "</label>").join("");
   d.querySelectorAll("input[data-opt]").forEach((c) => { c.onchange = () => setDebugOpt(c.dataset.opt, c.checked); });
   return d;

@@ -2811,3 +2811,295 @@ render = function () {
   const nt = document.getElementById("narr-text"); if (nt && state && state.narrator && state.narrator.text && ![...nt.children].some((e) => e.tagName !== "EM" && e.tagName !== "BR")) { const z = kursivHtml(satzZeilen(state.narrator.text)); if (nt.innerHTML !== z) nt.innerHTML = z; }
   return r;
 };
+
+// =====================================================================
+// Ausbesserungen5 (16.10.) · Kampftext · Questmarker · Essen bei Händlern · Platzhalterbilder · Saffi Stufe 2
+// =====================================================================
+// (1) Kampf: kein Textfenster, Kampftext wieder im Gesprächsfenster (solange Kampf läuft oder das Kampfende offen ist).
+function kampfTextAktiv() { return !!(state && (state.inCombat || state.combatEnd)); }
+const _tfSyncKampf = textfensterSync;
+textfensterSync = function () {
+  const r = _tfSyncKampf.apply(this, arguments);
+  const w = document.getElementById("textfenster");
+  if (w && !w.hidden && kampfTextAktiv()) {
+    w.hidden = true; w.classList.remove("mit-bild", "bild-rechts");
+    document.body.classList.remove("tf-aktiv");
+    const nar = document.getElementById("narrator"); document.body.classList.toggle("interaktion", !!(nar && !nar.hidden));
+  }
+  return r;
+};
+// (2) Questmarker am NPC-Schild: „!“ goldgelb schwankend = Bitte/Auftrag annehmbar; „?“ silber = Abgabe offen; „?“ gold = abgebbar.
+const QUEST_ANGEBOTE = [  // alte Aufträge (talkChoices „quest“/„done“) – generisch erweiterbar
+  { npc: "burgvogt", q: "wolfspfad", offen: () => !state.flags.wolf_alt_geschlossen, fertig: () => !!(state.flags.wolf_slain || state.flags.wolf_tot) },
+  { npc: "tamsin", q: "tamsin_wolf", offen: () => !state.flags.wolf_alt_geschlossen, fertig: () => !!(state.flags.wolf_slain || state.flags.wolf_tot) }
+];
+function questMarker(npcId) {
+  if (!state) return null;
+  let m = null;
+  const rang = { angebot: 1, offen: 2, fertig: 3 };
+  const setz = (x) => { if (!m || rang[x] > rang[m]) m = x; };
+  QUEST_ANGEBOTE.filter((a) => a.npc === npcId).forEach((a) => {
+    const st = (state.quests || {})[a.q];
+    if (!st && a.offen()) setz("angebot");
+    else if (st === "active") setz(a.fertig() ? "fertig" : "offen");
+  });
+  const bs = state.bitten || {};
+  Object.values(D.BITTEN || {}).forEach((q) => {
+    const b = bs[q.id];
+    if (!b && q.angebot && q.giver === npcId && q.angebot()) setz("angebot");  // Bitten mit Angebot am NPC (optional: q.angebot())
+    if (!b || b.status !== "aktiv") return;
+    const ziel = (q.schritte || []).find((x) => x.art === "abgeben"); if (!ziel || ziel.npc !== npcId) return;
+    setz(b.schritt >= q.schritte.indexOf(ziel) && hatItem(ziel.item) ? "fertig" : "offen");
+  });
+  return m;
+}
+function questMarkerMalen() {
+  document.querySelectorAll("#scene .spot[data-npc]").forEach((b) => {
+    const m = questMarker(b.dataset.npc), tag = b.querySelector(".tag"); if (!tag) return;
+    let q = tag.querySelector(".qmark");
+    if (!m) { if (q) q.remove(); return; }
+    if (!q) { q = document.createElement("span"); tag.prepend(q); }
+    q.className = "qmark " + (m === "angebot" ? "q-angebot" : m === "fertig" ? "q-fertig" : "q-offen");
+    q.textContent = m === "angebot" ? "!" : "?";
+    q.title = m === "angebot" ? "Hat eine Bitte" : m === "fertig" ? "Bitte abgeben" : "Bitte noch nicht erfüllt";
+  });
+}
+const _renderMarker = render;
+render = function () { const r = _renderMarker.apply(this, arguments); if (state) questMarkerMalen(); return r; };
+// (3) Essen bei Händlern: feste Grundware (D.ESSEN_HAENDLER) je Woche ins Lager; alte Corin-Platzhalter fallen heraus.
+const _merchStateEssen = merchState;
+merchState = function (npc) {
+  const m = _merchStateEssen.apply(this, arguments);
+  if (!m || !D.ESSEN_HAENDLER || !npc) return m;
+  Object.keys(m.stock || {}).filter((id) => id.startsWith("platzhalter_")).forEach((id) => delete m.stock[id]);
+  const e = D.ESSEN_HAENDLER[npc.id], wk = weekOf(state.day);
+  if (e && m.essenWoche !== wk) { m.essenWoche = wk; Object.entries(e).forEach(([id, n]) => { if (D.ITEMS[id]) m.stock[id] = Math.max(m.stock[id] || 0, n); }); }
+  return m;
+};
+// Platzhalterbild für fehlende Gegenstands- und Szenenbilder (Liste im Bericht): items/… und locations/saffi_akt_… fallen auf ui/platzhalter.jpg zurück.
+const PLATZHALTER_BILD = "ui/platzhalter.jpg";
+const _onImgPlatz = onImg;
+onImg = function (img, rel, fallbacks) {
+  const fb = (fallbacks || []).slice();
+  if (rel && /^(items|locations\/saffi_akt)/.test(rel) && !fb.includes(PLATZHALTER_BILD)) fb.push(PLATZHALTER_BILD);
+  return _onImgPlatz.call(this, img, rel, fb);
+};
+// Gegenstandstyp „kleidung“ (Nico 16.10.: alle Gegenstände haben einen Typ)
+const _slotWordKleid = slotWord;
+slotWord = function (it) { const r = _slotWordKleid.apply(this, arguments); return it && it.type === "kleidung" ? "Kleidung · " + r : r; };
+
+// ---- Saffi Stufe 2 ----
+function migV17(s) {
+  if (!s || typeof s !== "object") return s;
+  saffiGrund(s);
+  const sf = s.saffi;
+  if (typeof sf.stufe !== "number") sf.stufe = sf.pfad === "halsband" ? 1 : 0;
+  if (typeof sf.rockAbgelehnt !== "number") sf.rockAbgelehnt = 0;
+  if (sf.rock === undefined) sf.rock = null;
+  sf.rockGeschnappt = !!sf.rockGeschnappt; sf.rockNurZimmer = !!sf.rockNurZimmer;
+  // Halsband-Korruption galt bisher einmalig (+5); ab jetzt „solange getragen“ → als bereits gezählt übernehmen, der Abgleich zieht sie ab, falls es nicht getragen ist.
+  if (!sf.tragKorr) sf.tragKorr = {};
+  if (sf.pfad === "halsband" && typeof sf.tragKorr.saffis_halsband !== "number") sf.tragKorr.saffis_halsband = D.SAFFI_KORRUPTION_HALSBAND || 0;
+  if (!s.beziehungen || typeof s.beziehungen !== "object") s.beziehungen = {};
+  return s;
+}
+function saffi2Grund(s) { migV17(s); return s; }
+const _loadSaffi2 = load;
+load = function () { const r = _loadSaffi2.apply(this, arguments); if (r !== false && state) { saffi2Grund(state); saffiTragKorrSync(); } return r; };
+const _newGameSaffi2 = newGame;
+newGame = function () { const r = _newGameSaffi2.apply(this, arguments); if (state) { saffi2Grund(state); persist(); } return r; };
+// Beziehung (generisch, Kategorien folgen; Nico 16.10.): state.beziehungen[npc][kategorie]
+function beziehungWert(npc, kat) { return ((state.beziehungen || {})[npc] || {})[kat || "allgemein"] || 0; }
+function beziehungZu(npc, d, kat) {
+  if (!d) return; if (!state.beziehungen) state.beziehungen = {};
+  const b = state.beziehungen[npc] || (state.beziehungen[npc] = {}); kat = kat || "allgemein";
+  b[kat] = (b[kat] || 0) + d; wertDelta("Beziehung " + ((D.NPCs[npc] || {}).name || npc), d);
+}
+// Korruption, solange Saffis Kleidung getragen wird (+N beim Anlegen, −N beim Ablegen; ohne Tagesdeckel)
+function saffiGetragen(id) { return !!state && Object.values(state.equipped || {}).includes(id); }
+function saffiTragKorrSync() {
+  if (!state || !state.values || !state.saffi) return;
+  const sf = state.saffi; if (!sf.tragKorr) sf.tragKorr = {};
+  Object.entries(D.SAFFI_KORRUPTION_TRAGEN || {}).forEach(([id, n]) => {
+    const hat = typeof sf.tragKorr[id] === "number" ? sf.tragKorr[id] : 0, an = saffiGetragen(id), v = state.values, alt = v.korr || 0;
+    if (an && !hat) { v.korr = clamp(alt + n, 0, KORR_MAX); v.korrPeak = Math.max(v.korrPeak || 0, v.korr); sf.tragKorr[id] = v.korr - alt || n; }
+    else if (!an && hat) { v.korr = clamp(alt - hat, 0, KORR_MAX); delete sf.tragKorr[id]; }
+    else return;
+    syncValueFlags(); wertDelta("Korruption", v.korr - alt);
+  });
+}
+// Trage-Effekte: Rock −1 Beweglichkeit, Halsband etwas weniger WK-Regeneration
+function saffiTragEffekt(k) { return state ? Object.entries(D.SAFFI_TRAGEFFEKT || {}).reduce((s, [id, fx]) => s + (saffiGetragen(id) ? (fx[k] || 0) : 0), 0) : 0; }
+const _bewegEffSaffi = bewegEff;
+bewegEff = function () { return _bewegEffSaffi.apply(this, arguments) + saffiTragEffekt("beweg"); };
+const _wkRegenSaffi = wkRegenPct;
+wkRegenPct = function () { return Math.max(0, _wkRegenSaffi.apply(this, arguments) + saffiTragEffekt("wkRegenPct")); };
+const _equipKorr = equip;
+equip = function () { const r = _equipKorr.apply(this, arguments); saffiTragKorrSync(); if (state) persist(); return r; };
+const _unequipKorr = unequip;
+unequip = function (slot) {
+  if (slot === "beine" && rockZu()) { halsbandHinweis(); return; }
+  const r = _unequipKorr.apply(this, arguments); saffiTragKorrSync(); if (state) persist(); return r;
+};
+function rockZu() { return !!(state && state.saffi && state.saffi.laeuft && state.equipped && state.equipped.beine === "saffis_minirock"); }
+const _equipRockZu = equip;
+equip = function (id) { const it = D.ITEMS[id]; if (it && it.slot === "beine" && rockZu()) { halsbandHinweis(); return; } return _equipRockZu.apply(this, arguments); };
+function saffiHatRock() { return state.inventory.includes("saffis_minirock") || state.equipped.beine === "saffis_minirock"; }
+function rockAnlegen() {
+  const i = state.inventory.indexOf("saffis_minirock"); if (i >= 0) state.inventory.splice(i, 1);
+  const prev = state.equipped.beine;
+  if (prev && prev !== "saffis_minirock") { state.inventory.push(prev); log((D.ITEMS[prev] || {}).name + " in den Beutel gelegt."); }
+  state.equipped.beine = "saffis_minirock"; log("Saffis Minirock angelegt.");
+  saffiTragKorrSync();
+}
+function rockAusziehen() {
+  if (state.equipped.beine !== "saffis_minirock") return;
+  delete state.equipped.beine; state.inventory.push("saffis_minirock"); log("Saffis Minirock in den Beutel gelegt.");
+  saffiTragKorrSync();
+}
+// Text Stufe 2: Geschlechtsvarianten { m, w }, Platzhalter wie saffiText
+function saffi2Text(v) {
+  const g = heroGender(), sf = saffiState(), S = D.SAFFI;
+  if (v && typeof v === "object") v = v[g] || v.m;
+  const name = sf.name === "spitz" ? S.spitzname[g] : state.hero.name;
+  return String(v || "").replace(/\{(\w+)\}/g, (_, k) => k === "username" ? state.hero.name : k === "name" ? name : k === "spitzname" ? S.spitzname[g] : (S.wort[k] ? S.wort[k][g] : ""));
+}
+// WK-Kosten Stufe 2: Grundkosten × (1 + Halsband-Aufschlag) × (1 + hartAufschlag × frühere Ablehnungen), aufgerundet, nie blockierend
+function saffi2Kosten(k) {
+  const S2 = D.SAFFI2, n = saffiState().rockAbgelehnt || 0, c = S2.kosten[k] || 0;
+  const hart = ["rockZoegern", "rockAblehnen", "rockHart"].includes(k) ? 1 + S2.hartAufschlag * n : 1;
+  return Math.ceil(c * (1 + D.SAFFI.halsAufschlag) * hart);
+}
+function saffi2WahlKosten(c, k) { const n = saffi2Kosten(k); c.wkKosten = n; c.label = c.label + " (WK " + n + ")"; return c; }
+function saffi2ZahlWk(k) { const n = saffi2Kosten(k), v = state.values, alt = v.wk || 0; v.wk = Math.max(0, alt - n); syncValueFlags(); wertDelta("Willenskraft", v.wk - alt); }
+function saffiGerneWahl() {
+  const sf = saffiState(), g = { label: "Gerne (" + D.SAFFI.preis + " Gold)", go: "saffi:gerne" };
+  if (sf.halsRunde && !saffiHatHalsband()) g.gesperrt = { text: "", title: "Du hast dein Halsband nicht dabei" };
+  return g;
+}
+const _saffiWahlS2 = saffiWahl;
+saffiWahl = function () {
+  const d = state.dialogue, sf = saffiState(), c = [];
+  switch (d.schritt) {
+    case "frage": { const r = _saffiWahlS2.apply(this, arguments); const i = r.findIndex((x) => x.go === "saffi:gerne"); if (i >= 0) { const g = saffiGerneWahl(); if (r[i].gesperrt) g.gesperrt = r[i].gesperrt; r[i] = g; } return r; }
+    case "schuldFrage": c.push({ label: "Ja", go: "saffi:schuldja" }, { label: "Nein", go: "saffi:schuldnein" }); return c;
+    case "s2frage": c.push(saffi2WahlKosten({ label: "Nein danke", go: "saffi:s2neindanke" }, "neinDanke"), { label: "Was für eine Kleinigkeit?", go: "saffi:s2neugier" }, saffiGerneWahl()); return c;
+    case "s2neugier": c.push(saffi2WahlKosten({ label: "Nein danke", go: "saffi:s2neindanke" }, "neinDanke"), saffiGerneWahl()); return c;
+    case "s2rock": c.push({ label: "Anziehen", go: "saffi:s2an_angenommen" }, saffi2WahlKosten({ label: "Muss das sein?", go: "saffi:s2zoegern" }, "rockZoegern"),
+      saffi2WahlKosten({ label: "Ablehnen", go: "saffi:s2ablehnen" }, "rockAblehnen"), { label: "Den Rock schnappen", go: "saffi:s2schnappen", probe: D.SAFFI2.probe.rockSchnappen },
+      { label: "Bestimmen", go: "saffi:bestimmen", gesperrt: { text: "", title: "Bereits entschieden" } }); return c;
+    case "s2zoegern": c.push({ label: "Na gut", go: "saffi:s2an_gezoegert" }, { label: "Nur hier im Zimmer, abgemacht?", go: "saffi:s2handel", probe: D.SAFFI2.probe.rockHandel },
+      saffi2WahlKosten({ label: "Ablehnen", go: "saffi:s2ablehnen" }, "rockAblehnen")); return c;
+    case "s2ablehnen": c.push({ label: "Doch anziehen", go: "saffi:s2an_nachgegeben" }, saffi2WahlKosten({ label: "Hart bleiben", go: "saffi:s2hart" }, "rockHart")); return c;
+    case "s2handel": c.push({ label: "Anziehen", go: "saffi:s2an_gehandelt" }); return c;
+    case "s2geschnappt": c.push({ label: "Selbst anziehen", go: "saffi:s2an_freiwillig" }, { label: "Zieh du ihn doch an!", go: "saffi:s2zuwerfen" }); return c;
+    case "s2zugeworfen": c.push({ label: "Anziehen", go: "saffi:s2an_angenommen" }, saffi2WahlKosten({ label: "Ablehnen", go: "saffi:s2ablehnen" }, "rockAblehnen")); return c;
+    case "s2anziehen": c.push({ label: "Weiter", go: "saffi:s2szene" }); return c;
+    case "s2szene": c.push({ label: "Verabschieden", go: "saffi:s2abschied" }); return c;
+    case "s2hart": c.push({ label: "Auf Wiedersehen", go: "saffi:s2tschuess" }); return c;
+    case "s3": { const g = { label: "Gerne", go: "saffi:s3gerne" };
+      g.gesperrt = !saffiHatHalsband() ? { text: "", title: "Du hast dein Halsband nicht dabei" } : !saffiHatRock() ? { text: "", title: "Du hast deinen Rock nicht dabei" } : { text: "folgt", title: "Stufe 3 folgt" };
+      c.push(g, { label: "Auf Wiedersehen", go: "leave" }); return c; }
+  }
+  return _saffiWahlS2.apply(this, arguments);
+};
+// Begrüßung: Stufe 1 abgeschlossen → S2-01 (Halsband getragen / im Beutel / fehlt; nach „Hart bleiben“ eigener Schluss); Stufe 2 → S2-12
+const _saffiBegruessungS2 = saffiBegruessung;
+saffiBegruessung = function () {
+  const sf = saffiState(); saffi2Grund(state); if (sf.pfad === "halsband" && !(sf.stufe >= 1)) sf.stufe = 1;
+  if (sf.pfad === "halsband" && sf.stufe >= 2) { sf.halsRunde = true; saffiDialog("s3"); return saffi2Zeigen(D.SAFFI2.t.stufe3); }
+  if (sf.pfad === "halsband" && sf.stufe === 1) {
+    sf.halsRunde = true; sf.runde2 = true; const T = D.SAFFI2.t;
+    const hals = state.equipped.amulett === "saffis_halsband" ? T.halsA : saffiHatHalsband() ? T.halsB : T.halsC;
+    saffiDialog("s2frage", { wieder: true });
+    return saffi2Zeigen([T.gruss, hals, sf.rock === "abgelehnt" ? T.schlussRock : T.schluss].join("\n"));
+  }
+  sf.runde2 = false;
+  return _saffiBegruessungS2.apply(this, arguments);
+};
+function saffi2Zeigen(roh) { const sf = saffiState(); sf.laeuft = true; render(); showFace(D.NPCs.saffi); showLine(saffi2Text(roh), talkChoices()); persist(); }
+const _saffiZimmerS2 = saffiZimmerStart;
+saffiZimmerStart = function () {
+  const sf = saffiState();
+  if (!sf.runde2) return _saffiZimmerS2.apply(this, arguments);
+  if (!sf.imZimmer || state.location !== "bordell_rotes_zimmer" || sf.zimmerAn) return;
+  sf.zimmerAn = true; state.narrator = null; const T = D.SAFFI2.t;
+  let kopf = T.rockA;
+  if (state.equipped.amulett !== "saffis_halsband" && state.inventory.includes("saffis_halsband")) { halsbandAnlegen(); saffiTragKorrSync(); kopf = T.rockB; }
+  saffiDialog("s2rock", { bild: D.SAFFI2.bild.rock, bildSeite: "rechts", immerBild: true });
+  saffi2Zeigen(kopf + "\n" + saffi2Text(T.rock));
+};
+function saffi2Schliessen(schritt) {
+  setTimeout(() => { if (state.dialogue && state.dialogue.node === "saffi" && state.dialogue.schritt === schritt) choose("clear"); saffiNachEmpfang(SAFFI_ZEIT.teleport); }, SAFFI_ZEIT.schliessen);
+}
+const _chooseHookSaffi1 = CHOOSE_HOOKS.saffi;
+CHOOSE_HOOKS.saffi = (go) => {
+  const a = go.split(":")[1], d = state.dialogue, sf = saffiState(), T = D.SAFFI2.t, S2 = D.SAFFI2, g = heroGender();
+  const zu = (schritt, roh, extra) => { saffiDialog(schritt, Object.assign({ wieder: d && d.wieder, weg: d && d.weg }, extra || {})); return saffi2Text(roh); };
+  const zimmerBild = { bild: S2.bild.rock, bildSeite: "rechts", immerBild: true };
+  // Bezahlung (Stufe 1 und 2): reicht das Gold nicht, erst nachfragen (Schulden bei Vessa)
+  if (a === "gerne" && !(d && d.schuldOk) && state.hero.gold < D.SAFFI.preis) {
+    if (sf.halsRunde && !saffiHatHalsband()) return false;
+    return zu("schuldFrage", T.schuldFrage, { zurueck: d && d.schritt });
+  }
+  if (a === "schuldja") { if (d) d.schuldOk = true; return CHOOSE_HOOKS.saffi("saffi:gerne"); }
+  if (a === "schuldnein") { saffiEnde(false); choose("leave"); return ""; }
+  if (a === "gerne" && sf.runde2) {
+    if (!saffiHatHalsband()) return false;
+    const p = D.SAFFI.preis, bezahlt = Math.min(state.hero.gold, p);
+    state.hero.gold -= bezahlt; wertDelta("Gold", -bezahlt); if (p - bezahlt > 0) schuldZu(p - bezahlt);
+    const t = zu("gerne", T.gerne);
+    setTimeout(() => { if (state.dialogue && state.dialogue.node === "saffi" && state.dialogue.schritt === "gerne") choose("saffi:w_mit"); }, SAFFI_ZEIT.mitgehen);
+    return t;
+  }
+  if (!a.startsWith("s2") && !a.startsWith("s3")) return _chooseHookSaffi1(go);
+  switch (a) {
+    case "s2neindanke": saffi2ZahlWk("neinDanke"); saffiEnde(false); sf.runde2 = false; choose("leave"); return "";
+    case "s2neugier": return zu("s2neugier", T.neugier);
+    case "s2zoegern": saffi2ZahlWk("rockZoegern"); return zu("s2zoegern", T.zoegern, zimmerBild);
+    case "s2ablehnen": saffi2ZahlWk("rockAblehnen"); return zu("s2ablehnen", T.ablehnen, zimmerBild);
+    case "s2handel": if (probeFehlt(S2.probe.rockHandel).length) return false; sf.rock = "gehandelt"; sf.rockNurZimmer = true; beziehungZu("saffi", S2.beziehung.handel); return zu("s2handel", T.handel, Object.assign({ weg: "gehandelt" }, zimmerBild));
+    case "s2schnappen": if (probeFehlt(S2.probe.rockSchnappen).length) return false; sf.rockGeschnappt = true; return zu("s2geschnappt", T.geschnappt, zimmerBild);
+    case "s2zuwerfen": beziehungZu("saffi", S2.beziehung.zuwerfen); return zu("s2zugeworfen", T.zugeworfen, zimmerBild);
+    case "s2hart": {
+      saffi2ZahlWk("rockHart"); sf.rock = "abgelehnt"; sf.rockAbgelehnt = (sf.rockAbgelehnt || 0) + 1; beziehungZu("saffi", S2.beziehung.hart);
+      saffiEnde(true); sf.runde2 = false;  // kein Segen, keine Übung, keine Korruption; Stufe bleibt 1; Abklingzeit
+      const t = zu("s2hart", T.hart); saffi2Schliessen("s2hart"); return t;
+    }
+    case "s2tschuess": choose("clear"); saffiNachEmpfang(SAFFI_ZEIT.teleport); return "";
+    case "s2szene": return zu("s2szene", T.szene, { bild: S2.bild.akt[g], immerBild: true });
+    case "s2abschied": {
+      const weg = (d && d.weg) || sf.rock || "angenommen", handel = weg === "gehandelt";
+      const xr = state.statXp.beweg || { xp: 0 }; const ue = S2.uebung + (weg === "freiwillig" ? S2.uebungSchnappen : 0);
+      gain("beweg", ue); wertDelta("Übung Beweglichkeit", ue);
+      beglueckt();
+      if (handel && D.SAFFI_KORRUPTION_ROCK_HANDEL) { const v = state.values, alt = v.korr || 0; v.korr = clamp(alt + D.SAFFI_KORRUPTION_ROCK_HANDEL, 0, KORR_MAX); v.korrPeak = Math.max(v.korrPeak || 0, v.korr); syncValueFlags(); wertDelta("Korruption", v.korr - alt); }
+      sf.stufe = 2; saffiEnde(true); sf.runde2 = false;
+      if (handel) rockAusziehen();  // „nur im Zimmer“: Rock nach Ende in den Beutel (Tragekorruption fällt weg)
+      const zusatz = handel ? "" : "\n" + (g === "m" ? (sf.name === "spitz" ? T.zusatz.mSpitz : T.zusatz.m) : T.zusatz.w);
+      const t = zu("ende", T.abschied + "\n" + (handel ? T.abschiedHandel : T.abschiedStandard) + zusatz);
+      saffi2Schliessen("ende"); return t;
+    }
+    case "s3gerne": return false;
+  }
+  if (a.startsWith("s2an_")) {
+    const weg = a.slice(5); sf.rock = weg;
+    if (weg === "freiwillig") beziehungZu("saffi", S2.beziehung.selbst);
+    rockAnlegen();
+    return zu("s2anziehen", T.einstieg[weg] + "\n" + saffi2Text(T.anziehen), Object.assign({ weg }, zimmerBild));
+  }
+  return "";
+};
+// Szenen- und Gegenstandsbild im Textfenster: fehlt die Datei, Platzhalterbild
+const _tfSyncPlatz = textfensterSync;
+textfensterSync = function () {
+  const r = _tfSyncPlatz.apply(this, arguments);
+  const slot = document.querySelector("#textfenster .tf-bild-slot");
+  if (slot && !slot.dataset.platz) { slot.dataset.platz = "1"; slot.addEventListener("error", () => { if (!slot.src.endsWith(PLATZHALTER_BILD)) slot.src = art(PLATZHALTER_BILD); }); }
+  return r;
+};
+// Halsband-Korruption ab 16.10. „solange getragen“ statt einmalig beim Abschluss
+const _saffiBelohnungTrag = saffiBelohnung;
+saffiBelohnung = function (hals) { const r = _saffiBelohnungTrag.call(this, false); if (hals) { const sf = saffiState(); sf.stufe = Math.max(sf.stufe || 0, 1); } saffiTragKorrSync(); return r; };  // Stufe 1 abgeschlossen
+const _halsbandAnlegenTrag = halsbandAnlegen;
+halsbandAnlegen = function () { const r = _halsbandAnlegenTrag.apply(this, arguments); saffiTragKorrSync(); return r; };
