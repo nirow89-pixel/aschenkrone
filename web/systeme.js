@@ -2500,7 +2500,7 @@ spreadSpots = function (scene) {
 // Saffi-Interaktion (Nicos Spezifikation 15.10.) · Schulden bei Vessa · Korruption im Charakterfenster · Segen „Beglückt“
 // =====================================================================
 const KORR_MAX = 200;
-const SAFFI_ZEIT = { mitgehen: 2000, auto: 3000, schliessen: 3000, teleport: 2000 };
+const SAFFI_ZEIT = { mitgehen: 2000, auto: 3000, schliessen: 3000, teleport: 2000 };  // 17.10.: mitgehen/schliessen ungenutzt (kein Selbstschließen mehr); auto = Raumteil startet nach Ankunft, teleport = nach manuellem Schließen
 function saffiState(s) { s = s || state; if (!s.saffi) s.saffi = { name: null, pfad: null, bis: 0, imZimmer: false, laeuft: false, kosten: false }; return s.saffi; }
 function saffiGrund(s) { saffiState(s); if (!s.schulden || typeof s.schulden !== "object") s.schulden = { vesse: 0 }; return s; }
 function migV16(s) {
@@ -2617,7 +2617,6 @@ CHOOSE_HOOKS.saffi = (go) => {
       const p = D.SAFFI.preis, bezahlt = Math.min(state.hero.gold, p);
       state.hero.gold -= bezahlt; wertDelta("Gold", -bezahlt); if (p - bezahlt > 0) schuldZu(p - bezahlt);
       const t = zu("gerne", "gerne");
-      setTimeout(() => { if (state.dialogue && state.dialogue.node === "saffi" && state.dialogue.schritt === "gerne") choose("saffi:w_mit"); }, SAFFI_ZEIT.mitgehen);
       return t;
     }
     case "mit": {
@@ -2636,7 +2635,6 @@ CHOOSE_HOOKS.saffi = (go) => {
     case "abschied": {
       const hals = d && d.schritt === "halsKomm"; saffiBelohnung(hals); saffiEnde(true);
       const t = zu("ende", "abschied");
-      setTimeout(() => { if (state.dialogue && state.dialogue.node === "saffi" && state.dialogue.schritt === "ende") { choose("clear"); } saffiNachEmpfang(SAFFI_ZEIT.teleport); }, SAFFI_ZEIT.schliessen);
       return t;
     }
   }
@@ -2997,6 +2995,7 @@ saffiWahl = function () {
     case "s2anziehen": c.push({ label: "Weiter", go: "saffi:s2szene" }); return c;
     case "s2szene": c.push({ label: "Verabschieden", go: "saffi:s2abschied" }); return c;
     case "s2hart": c.push({ label: "Auf Wiedersehen", go: "saffi:s2tschuess" }); return c;
+    case "ende": c.push({ label: "Weiter", go: "saffi:w_ende" }); return c;  // Abschied Stufe 1 und 2: erst per Knopf schließen
     case "s3": { const g = { label: "Gerne", go: "saffi:s3gerne" };
       g.gesperrt = !saffiHatHalsband() ? { text: "", title: "Du hast dein Halsband nicht dabei" } : !saffiHatRock() ? { text: "", title: "Du hast deinen Rock nicht dabei" } : { text: "folgt", title: "Stufe 3 folgt" };
       c.push(g, { label: "Auf Wiedersehen", go: "leave" }); return c; }
@@ -3029,9 +3028,8 @@ saffiZimmerStart = function () {
   saffiDialog("s2rock", { bild: D.SAFFI2.bild.rock, bildSeite: "rechts", immerBild: true });
   saffi2Zeigen(kopf + "\n" + saffi2Text(T.rock));
 };
-function saffi2Schliessen(schritt) {
-  setTimeout(() => { if (state.dialogue && state.dialogue.node === "saffi" && state.dialogue.schritt === schritt) choose("clear"); saffiNachEmpfang(SAFFI_ZEIT.teleport); }, SAFFI_ZEIT.schliessen);
-}
+// 17.10. (Nico): Interaktionsfenster schließen nie mehr von selbst – nur per Knopf („Weiter“ bzw. „Auf Wiedersehen“).
+function saffi2Schliessen() {}
 const _chooseHookSaffi1 = CHOOSE_HOOKS.saffi;
 CHOOSE_HOOKS.saffi = (go) => {
   const a = go.split(":")[1], d = state.dialogue, sf = saffiState(), T = D.SAFFI2.t, S2 = D.SAFFI2, g = heroGender();
@@ -3042,6 +3040,7 @@ CHOOSE_HOOKS.saffi = (go) => {
     if (sf.halsRunde && !saffiHatHalsband()) return false;
     return zu("schuldFrage", T.schuldFrage, { zurueck: d && d.schritt });
   }
+  if (a === "w_ende") { state.talkMin = Math.max(0, (state.talkMin || 0) - 5); choose("clear"); saffiNachEmpfang(SAFFI_ZEIT.teleport); return ""; }  // „Weiter“ kostet keine Zeit
   if (a === "schuldja") { if (d) d.schuldOk = true; return CHOOSE_HOOKS.saffi("saffi:gerne"); }
   if (a === "schuldnein") { saffiEnde(false); choose("leave"); return ""; }
   if (a === "gerne" && sf.runde2) {
@@ -3049,7 +3048,6 @@ CHOOSE_HOOKS.saffi = (go) => {
     const p = D.SAFFI.preis, bezahlt = Math.min(state.hero.gold, p);
     state.hero.gold -= bezahlt; wertDelta("Gold", -bezahlt); if (p - bezahlt > 0) schuldZu(p - bezahlt);
     const t = zu("gerne", T.gerne);
-    setTimeout(() => { if (state.dialogue && state.dialogue.node === "saffi" && state.dialogue.schritt === "gerne") choose("saffi:w_mit"); }, SAFFI_ZEIT.mitgehen);
     return t;
   }
   if (!a.startsWith("s2") && !a.startsWith("s3")) return _chooseHookSaffi1(go);
@@ -3064,7 +3062,7 @@ CHOOSE_HOOKS.saffi = (go) => {
     case "s2hart": {
       saffi2ZahlWk("rockHart"); sf.rock = "abgelehnt"; sf.rockAbgelehnt = (sf.rockAbgelehnt || 0) + 1; beziehungZu("saffi", S2.beziehung.hart);
       saffiEnde(true); sf.runde2 = false;  // kein Segen, keine Übung, keine Korruption; Stufe bleibt 1; Abklingzeit
-      const t = zu("s2hart", T.hart); saffi2Schliessen("s2hart"); return t;
+      return zu("s2hart", T.hart);
     }
     case "s2tschuess": choose("clear"); saffiNachEmpfang(SAFFI_ZEIT.teleport); return "";
     case "s2szene": return zu("s2szene", T.szene, { bild: S2.bild.akt[g], immerBild: true });
@@ -3078,7 +3076,7 @@ CHOOSE_HOOKS.saffi = (go) => {
       if (handel) rockAusziehen();  // „nur im Zimmer“: Rock nach Ende in den Beutel (Tragekorruption fällt weg)
       const zusatz = handel ? "" : "\n" + (g === "m" ? (sf.name === "spitz" ? T.zusatz.mSpitz : T.zusatz.m) : T.zusatz.w);
       const t = zu("ende", T.abschied + "\n" + (handel ? T.abschiedHandel : T.abschiedStandard) + zusatz);
-      saffi2Schliessen("ende"); return t;
+      return t;
     }
     case "s3gerne": return false;
   }

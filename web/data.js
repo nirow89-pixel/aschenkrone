@@ -131,7 +131,7 @@ const FLUECHE = {
 // Ext-Art-Dateien, die schon im Repo liegen (assets/…). Optionale Bilder werden nur geladen, wenn sie hier stehen,
 // sonst greift der Ersatz (keine 404). Neue Lieferungen aus Drive hier eintragen.
 const EXT_ART = [
-  "locations/saffi_akt_bestimmen_m.jpg", "locations/saffi_akt_bestimmen_w.jpg", "locations/saffi_akt_halsband_m.jpg", "locations/saffi_akt_halsband_w.jpg",
+  "locations/saffi_akt_bestimmen_m.jpg", "locations/saffi_akt_bestimmen_w.jpg", "locations/saffi_akt_halsband_m.jpg", "locations/saffi_akt_halsband_w.jpg", "locations/saffi_akt_rock_m.jpg", "locations/saffi_akt_rock_w.jpg",
   "ui/intro_welt.jpg",
   "questgegenstaende/quest_eimer_leer.jpg",
   "questgegenstaende/quest_aschenkrone.jpg",
@@ -211,19 +211,19 @@ const ITEMS = {
   // PLATZHALTER-Waren für Corin (Bordell, 15.10.) – Name, Bild und Werte werden später ersetzt
   platzhalter_hauswein: { id: "platzhalter_hauswein", img: "items/wein_der_stunde.jpg", name: "Hauswein (Platzhalter)", type: "verbrauch", heal: 3, price: 4, sell: 2, text: "PLATZHALTER: Wein von Corins Tresen." },
   platzhalter_brotteller: { id: "platzhalter_brotteller", img: "items/wein_der_stunde.jpg", name: "Brot und Käse (Platzhalter)", type: "verbrauch", heal: 4, price: 5, sell: 2, text: "PLATZHALTER: Speise von Corins Tresen." },
-  // Essen (Ausbesserungen5, 16.10.): Verbrauchsgegenstände bei Gasthaus, Schenke, Krämerin und Bordell. Bilder fehlen noch → Platzhalterbild.
-  brot: { id: "brot", img: "ui/platzhalter.jpg", bildSoll: "items/essen_brot.jpg", name: "Brot", type: "verbrauch", essen: true, heal: 4, price: 2, sell: 1, text: "Ein Laib dunkles Brot, die Kruste noch fest." },
-  apfel: { id: "apfel", img: "ui/platzhalter.jpg", bildSoll: "items/essen_apfel.jpg", name: "Apfel", type: "verbrauch", essen: true, heal: 2, wk: 1, price: 2, sell: 1, text: "Ein roter Apfel, ein wenig mehlig, aber süß." },
-  kaese: { id: "kaese", img: "ui/platzhalter.jpg", bildSoll: "items/essen_kaese.jpg", name: "Käse", type: "verbrauch", essen: true, heal: 5, price: 3, sell: 1, text: "Ein Keil harter Käse, in Tuch gewickelt." },
-  gebratenes_fleisch: { id: "gebratenes_fleisch", img: "ui/platzhalter.jpg", bildSoll: "items/essen_gebratenes_fleisch.jpg", name: "Gebratenes Fleisch", type: "verbrauch", essen: true, heal: 9, price: 6, sell: 3, text: "Ein Stück Fleisch vom Spieß, außen dunkel, innen saftig." },
-  eintopf: { id: "eintopf", img: "ui/platzhalter.jpg", bildSoll: "items/essen_eintopf.jpg", name: "Eintopf", type: "verbrauch", essen: true, heal: 7, wk: 2, price: 5, sell: 2, text: "Eine Schale heißer Eintopf mit Rüben und Speck. Wärmt bis in die Finger." },
-  raeucherwurst: { id: "raeucherwurst", img: "ui/platzhalter.jpg", bildSoll: "items/essen_raeucherwurst.jpg", name: "Räucherwurst", type: "verbrauch", essen: true, heal: 6, price: 4, sell: 2, text: "Eine harte Wurst, die lange hält und nach Rauch riecht." },
-  honigkuchen: { id: "honigkuchen", img: "ui/platzhalter.jpg", bildSoll: "items/essen_honigkuchen.jpg", name: "Honigkuchen", type: "verbrauch", essen: true, heal: 3, wk: 4, price: 4, sell: 2, text: "Ein klebriges Stück Kuchen. Süß genug, um die Laune zu heben." },
-  dunkelbier: { id: "dunkelbier", img: "ui/platzhalter.jpg", bildSoll: "items/essen_dunkelbier.jpg", name: "Dunkelbier", type: "verbrauch", essen: true, heal: 2, wk: 3, price: 3, sell: 1, text: "Ein Krug dunkles Bier, bitter und schwer." },
-  hauswein: { id: "hauswein", img: "ui/platzhalter.jpg", bildSoll: "items/essen_hauswein.jpg", name: "Hauswein", type: "verbrauch", essen: true, heal: 2, wk: 5, price: 5, sell: 2, text: "Corins Hauswein. Rot, schwer und ein wenig zu süß." },
-  kandierte_feigen: { id: "kandierte_feigen", img: "ui/platzhalter.jpg", bildSoll: "items/essen_kandierte_feigen.jpg", name: "Kandierte Feigen", type: "verbrauch", essen: true, heal: 3, wk: 6, price: 7, sell: 3, text: "Eine kleine Schale Feigen in Zuckerkruste, wie man sie in der Lounge reicht." },
-  // Saffi Stufe 2 (16.10.): eigener Typ „kleidung“ (konkurriert nicht als Rüstung), Questgegenstand, kein Preis, nicht verkäuflich. Bild fehlt → Platzhalter.
-  saffis_minirock: { id: "saffis_minirock", img: "ui/platzhalter.jpg", bildSoll: "items/saffi_minirock.jpg", name: "Saffis Minirock", type: "kleidung", slot: "beine", questItem: true, text: "Schwarzer Stoff, viel zu kurz, um irgendetwas zu verbergen. Saffi will ihn wiedersehen." },
+  // Essen (Ausbesserungen5, 16.10.): Verbrauchsgegenstände bei Gasthaus, Schenke, Krämerin und Bordell. Bilder von Ext Art (17.10.).
+  brot: { id: "brot", img: "items/essen_brot.jpg", name: "Brot", type: "verbrauch", essen: true, heal: 4, price: 2, sell: 1, text: "Ein Laib dunkles Brot, die Kruste noch fest." },
+  apfel: { id: "apfel", img: "items/essen_apfel.jpg", name: "Apfel", type: "verbrauch", essen: true, heal: 2, wk: 1, price: 2, sell: 1, text: "Ein roter Apfel, ein wenig mehlig, aber süß." },
+  kaese: { id: "kaese", img: "items/essen_kaese.jpg", name: "Käse", type: "verbrauch", essen: true, heal: 5, price: 3, sell: 1, text: "Ein Keil harter Käse, in Tuch gewickelt." },
+  gebratenes_fleisch: { id: "gebratenes_fleisch", img: "items/essen_gebratenes_fleisch.jpg", name: "Gebratenes Fleisch", type: "verbrauch", essen: true, heal: 9, price: 6, sell: 3, text: "Ein Stück Fleisch vom Spieß, außen dunkel, innen saftig." },
+  eintopf: { id: "eintopf", img: "items/essen_eintopf.jpg", name: "Eintopf", type: "verbrauch", essen: true, heal: 7, wk: 2, price: 5, sell: 2, text: "Eine Schale heißer Eintopf mit Rüben und Speck. Wärmt bis in die Finger." },
+  raeucherwurst: { id: "raeucherwurst", img: "items/essen_raeucherwurst.jpg", name: "Räucherwurst", type: "verbrauch", essen: true, heal: 6, price: 4, sell: 2, text: "Eine harte Wurst, die lange hält und nach Rauch riecht." },
+  honigkuchen: { id: "honigkuchen", img: "items/essen_honigkuchen.jpg", name: "Honigkuchen", type: "verbrauch", essen: true, heal: 3, wk: 4, price: 4, sell: 2, text: "Ein klebriges Stück Kuchen. Süß genug, um die Laune zu heben." },
+  dunkelbier: { id: "dunkelbier", img: "items/essen_dunkelbier.jpg", name: "Dunkelbier", type: "verbrauch", essen: true, heal: 2, wk: 3, price: 3, sell: 1, text: "Ein Krug dunkles Bier, bitter und schwer." },
+  hauswein: { id: "hauswein", img: "items/essen_hauswein.jpg", name: "Hauswein", type: "verbrauch", essen: true, heal: 2, wk: 5, price: 5, sell: 2, text: "Corins Hauswein. Rot, schwer und ein wenig zu süß." },
+  kandierte_feigen: { id: "kandierte_feigen", img: "items/essen_kandierte_feigen.jpg", name: "Kandierte Feigen", type: "verbrauch", essen: true, heal: 3, wk: 6, price: 7, sell: 3, text: "Eine kleine Schale Feigen in Zuckerkruste, wie man sie in der Lounge reicht." },
+  // Saffi Stufe 2 (16.10.): eigener Typ „kleidung“ (konkurriert nicht als Rüstung), Questgegenstand, kein Preis, nicht verkäuflich.
+  saffis_minirock: { id: "saffis_minirock", img: "items/saffi_minirock.jpg", name: "Saffis Minirock", type: "kleidung", slot: "beine", questItem: true, text: "Schwarzer Stoff, viel zu kurz, um irgendetwas zu verbergen. Saffi will ihn wiedersehen." },
   // Saffi-Interaktion (Nico, 15.10.): Questgegenstand im Amulett-Platz, nicht verkäuflich (kein Preis). Text PLATZHALTER.
   saffis_halsband: { id: "saffis_halsband", img: "items/lackchoker.jpg", name: "Saffis Halsband", type: "schmuck", slot: "amulett", questItem: true, text: "Schwarzer Lack und ein kleines Schloss. Saffi hat es dir angelegt." },
   teichbluete: { id: "teichbluete", img: "items/teichbluete.jpg", name: "Teichblüte", type: "ware", price: 8, sell: 4, text: "Eine helle, rosa Blüte vom Teich. Händler kaufen sie an." },
@@ -1297,9 +1297,8 @@ const SAFFI2 = {
   probe: { rockSchnappen: { beweg: 4 }, rockHandel: { rede: 3 } },
   uebung: 2, uebungSchnappen: 1,
   beziehung: { handel: 1, selbst: 2, zuwerfen: 1, hart: -1 },
-  // Bilder fehlen noch → Platzhalter; Sollnamen: items/saffi_minirock.jpg, locations/saffi_akt_rock_m.jpg / _w.jpg
-  bild: { rock: "ui/platzhalter.jpg", akt: { m: "ui/platzhalter.jpg", w: "ui/platzhalter.jpg" } },
-  bildSoll: { rock: "items/saffi_minirock.jpg", akt: { m: "locations/saffi_akt_rock_m.jpg", w: "locations/saffi_akt_rock_w.jpg" } }
+  // Bilder von Ext Art (17.10.): Minirock (rechts im Textfeld), Szene m/w (Spielfigur im Minirock mit Halsband an der Leine)
+  bild: { rock: "items/saffi_minirock.jpg", akt: { m: "locations/saffi_akt_rock_m.jpg", w: "locations/saffi_akt_rock_w.jpg" } }
 };
 // Korruption durch Saffis Kleidung (Nico 16.10.): dauerhaft, solange getragen; Handel „nur im Zimmer“ einmalig.
 const SAFFI_KORRUPTION_TRAGEN = { saffis_halsband: 5, saffis_minirock: 5 };
