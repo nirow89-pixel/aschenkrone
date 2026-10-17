@@ -2981,7 +2981,9 @@ saffiWahl = function () {
   switch (d.schritt) {
     case "frage": { const r = _saffiWahlS2.apply(this, arguments); const i = r.findIndex((x) => x.go === "saffi:gerne"); if (i >= 0) { const g = saffiGerneWahl(); if (r[i].gesperrt) g.gesperrt = r[i].gesperrt; r[i] = g; } return r; }
     case "schuldFrage": c.push({ label: "Ja", go: "saffi:schuldja" }, { label: "Nein", go: "saffi:schuldnein" }); return c;
-    case "s2frage": c.push(saffi2WahlKosten({ label: "Nein danke", go: "saffi:s2neindanke" }, "neinDanke"), { label: "Was für eine Kleinigkeit?", go: "saffi:s2neugier" }, saffiGerneWahl()); return c;
+    case "s2frage": c.push(saffi2WahlKosten({ label: "Nein danke", go: "saffi:s2neindanke" }, "neinDanke"));
+      if (!d.wiederholung) c.push({ label: "Was für eine Kleinigkeit?", go: "saffi:s2neugier" });  // in der Wiederholung kennt man die „Kleinigkeit“ schon
+      c.push(saffiGerneWahl()); return c;
     case "s2neugier": c.push(saffi2WahlKosten({ label: "Nein danke", go: "saffi:s2neindanke" }, "neinDanke"), saffiGerneWahl()); return c;
     case "s2rock": c.push({ label: "Anziehen", go: "saffi:s2an_angenommen" }, saffi2WahlKosten({ label: "Muss das sein?", go: "saffi:s2zoegern" }, "rockZoegern"),
       saffi2WahlKosten({ label: "Ablehnen", go: "saffi:s2ablehnen" }, "rockAblehnen"), { label: "Den Rock schnappen", go: "saffi:s2schnappen", probe: D.SAFFI2.probe.rockSchnappen },
@@ -2996,9 +2998,6 @@ saffiWahl = function () {
     case "s2szene": c.push({ label: "Verabschieden", go: "saffi:s2abschied" }); return c;
     case "s2hart": c.push({ label: "Auf Wiedersehen", go: "saffi:s2tschuess" }); return c;
     case "ende": c.push({ label: "Weiter", go: "saffi:w_ende" }); return c;  // Abschied Stufe 1 und 2: erst per Knopf schließen
-    case "s3": { const g = { label: "Gerne", go: "saffi:s3gerne" };
-      g.gesperrt = !saffiHatHalsband() ? { text: "", title: "Du hast dein Halsband nicht dabei" } : !saffiHatRock() ? { text: "", title: "Du hast deinen Rock nicht dabei" } : { text: "folgt", title: "Stufe 3 folgt" };
-      c.push(g, { label: "Auf Wiedersehen", go: "leave" }); return c; }
   }
   return _saffiWahlS2.apply(this, arguments);
 };
@@ -3006,7 +3005,14 @@ saffiWahl = function () {
 const _saffiBegruessungS2 = saffiBegruessung;
 saffiBegruessung = function () {
   const sf = saffiState(); saffi2Grund(state); if (sf.pfad === "halsband" && !(sf.stufe >= 1)) sf.stufe = 1;
-  if (sf.pfad === "halsband" && sf.stufe >= 2) { sf.halsRunde = true; saffiDialog("s3"); return saffi2Zeigen(D.SAFFI2.t.stufe3); }
+  // Stufe 3 gibt es noch nicht (Nico 17.10.): Stufe 2 wiederholt sich, mit wechselnder Begrüßung reihum
+  if (sf.pfad === "halsband" && sf.stufe >= 2) {
+    sf.halsRunde = true; sf.runde2 = true; const T = D.SAFFI2.t, n = sf.wiederholung || 0;
+    sf.wiederholung = n + 1;
+    const hals = state.equipped.amulett === "saffis_halsband" ? "" : saffiHatHalsband() ? T.halsB : T.halsC;
+    saffiDialog("s2frage", { wieder: true, wiederholung: true, gruss: n % T.wiederGruss.length });
+    return saffi2Zeigen([saffi2Text(T.wiederGruss[n % T.wiederGruss.length]), hals].filter(Boolean).join("\n"));
+  }
   if (sf.pfad === "halsband" && sf.stufe === 1) {
     sf.halsRunde = true; sf.runde2 = true; const T = D.SAFFI2.t;
     const hals = state.equipped.amulett === "saffis_halsband" ? T.halsA : saffiHatHalsband() ? T.halsB : T.halsC;
@@ -3078,7 +3084,6 @@ CHOOSE_HOOKS.saffi = (go) => {
       const t = zu("ende", T.abschied + "\n" + (handel ? T.abschiedHandel : T.abschiedStandard) + zusatz);
       return t;
     }
-    case "s3gerne": return false;
   }
   if (a.startsWith("s2an_")) {
     const weg = a.slice(5); sf.rock = weg;
