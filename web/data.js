@@ -53,6 +53,26 @@ const WAYS = (() => {
   return t;
 })();
 
+// Beziehungskategorien (Nico 17.10.): ein Beziehungswert je NPC (state.bonds, −100…100), Anzeige als Stufenname der Kategorie.
+// Neue Kategorie = neuer Eintrag hier; Zuordnung über BEZIEHUNG_ZUORDNUNG (oder npc.beziehung), sonst BEZIEHUNG_STANDARD.
+const BEZIEHUNG_NAME_VERTRAUT = "Vertraut";  // Arbeitsname für Nicos „Intim“, hier umbenennen
+const BEZIEHUNG_KATEGORIEN = {
+  familie: { id: "familie", name: "Familie", stufen: [
+    { min: -100, name: "Entfremdet" }, { min: -40, name: "Zerstritten" }, { min: -15, name: "Kühl" }, { min: -8, name: "Nah" },
+    { min: 30, name: "Herzlich" }, { min: 55, name: "Innig" }, { min: 80, name: "Unzertrennlich" } ] },
+  foermlich: { id: "foermlich", name: "Förmlich", stufen: [
+    { min: -100, name: "Feindselig" }, { min: -50, name: "Misstrauisch" }, { min: -15, name: "Distanziert" }, { min: -8, name: "Fremd" },
+    { min: 8, name: "Bekannt" }, { min: 22, name: "Geachtet" }, { min: 38, name: "Respektiert" }, { min: 55, name: "Geschätzt" }, { min: 80, name: "Verbündet" } ] },
+  vertraut: { id: "vertraut", name: BEZIEHUNG_NAME_VERTRAUT, stufen: [
+    { min: -100, name: "Verhasst" }, { min: -65, name: "Abgestoßen" }, { min: -37, name: "Ablehnend" }, { min: -15, name: "Kühl" }, { min: -8, name: "Fremd" },
+    { min: 8, name: "Neugierig" }, { min: 15, name: "Angetan" }, { min: 22, name: "Zugeneigt" }, { min: 30, name: "Vertraulich" }, { min: 38, name: "Verbunden" },
+    { min: 46, name: "Hingezogen" }, { min: 55, name: "Verfallen" }, { min: 70, name: "Hingegeben" }, { min: 85, name: "Seelenverwandt" } ],
+    unter: {} }  // vorbereitet für spätere Unterkategorien (z. B. { begehren: { name, stufen } })
+};
+const BEZIEHUNG_STANDARD = "foermlich";
+// Zuordnung: Familie = alle auf dem Bauernhof; Vertraut = Bordell (Saffi, Ila, Kes, Nim); alle übrigen Förmlich (Standard).
+const BEZIEHUNG_ZUORDNUNG = { hannes: "familie", ailsa: "familie", lene: "familie", oke: "familie", brannoc: "familie",
+  saffi: "vertraut", ila: "vertraut", kes: "vertraut", nim: "vertraut" };
 const BOND_STEPS = [
   { min: -100, id: "todfeind", name: "Todfeind" },
   { min: -80, id: "hass", name: "Hass" },
@@ -1392,7 +1412,7 @@ function ausstellungNeu() {
 ausstellungNeu();
 
 window.D = {
-  WORLD, FACTIONS, DAY_PHASES, BOND_STEPS, STAT_KEYS,
+  WORLD, FACTIONS, DAY_PHASES, BOND_STEPS, BEZIEHUNG_NAME_VERTRAUT, BEZIEHUNG_KATEGORIEN, BEZIEHUNG_STANDARD, BEZIEHUNG_ZUORDNUNG, STAT_KEYS,
   HERKUENFTE, FLUECHE, PORTRAITS, AVATARE, START_POOL, EXT_ART, ITEMS, SKILLS, MONSTER, NPCs, QUESTS, BITTEN, STORY, ANREDE,
   NARRATOR, REGIONS, LOCATIONS, BASE_HERO, WEEKDAYS, AUSSTELLUNG, ausstellungNeu, WOLF_LINES, SPAWN_TABLES, ZEICHEN, PFAD_ZEICHEN, GRAD_STUFEN, GRUNDWERTE, STUFE_MAX, STUFEN_KOSTEN, GRAD_AUFSTIEGE, RICHTUNGEN, GRAD_BELOHNUNG, NEBENRICHTUNG_AB, BLOCK_START, WAY_MIN, WAYS, BORDELL_THEMENRAEUME_OFFEN, SAFFI, SAFFI_KORRUPTION_HALSBAND, SAFFI2, SAFFI_KORRUPTION_TRAGEN, SAFFI_KORRUPTION_ROCK_HANDEL, SAFFI_TRAGEFFEKT, SCHULD
 };

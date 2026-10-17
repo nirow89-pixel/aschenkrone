@@ -184,7 +184,9 @@ const MIGRATIONS = [
   // v15 -> v16 (Saffi, 15.10.): Saffi-Zustand, Schulden bei Vessa.
   function v15to16(s) { return typeof migV16 === "function" ? migV16(s) : s; },
   // v16 -> v17 (Saffi Stufe 2, 16.10.): saffi.stufe/rock-Felder, Tragekorruption, Beziehungen.
-  function v16to17(s) { return typeof migV17 === "function" ? migV17(s) : s; }
+  function v16to17(s) { return typeof migV17 === "function" ? migV17(s) : s; },
+  // v17 -> v18 (Block 3, 17.10.): Beziehungskategorien – Saffis Extra-Wert und Alias-Schlüssel in state.bonds zusammengeführt.
+  function v17to18(s) { return typeof migV18 === "function" ? migV18(s) : s; }
 ];
 const SAVE_VERSION = MIGRATIONS.length;
 function migrate(s) {

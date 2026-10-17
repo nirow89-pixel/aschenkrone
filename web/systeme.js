@@ -442,7 +442,7 @@ function bumpBondSys(id, d, opts) {
     state.bonds[id] = round1(clamp(cur + gainV, -100, 100));
   } else state.bonds[id] = round1(clamp(cur + d, -100, 100));
   if (["talk", "gift", "quest", "quest_story"].includes(src)) r.lastContact = state.day;
-  if (typeof emitDelta === "function") emitDelta({ kind: "bond", key: id, npc: id, delta: state.bonds[id] - cur, value: state.bonds[id], source: src, rang: bondLabel(cur) !== bondLabel(state.bonds[id]) ? bondLabel(state.bonds[id]) : undefined });
+  if (typeof emitDelta === "function") emitDelta({ kind: "bond", key: id, npc: id, delta: state.bonds[id] - cur, value: state.bonds[id], source: src, rang: beziehungStufe(id, cur) !== beziehungStufe(id, state.bonds[id]) ? beziehungStufe(id, state.bonds[id]) : undefined });
   return state.bonds[id] - cur;
 }
 function bumpTrust(id, d, opts) {
@@ -2898,7 +2898,6 @@ function migV17(s) {
   // Halsband-Korruption galt bisher einmalig (+5); ab jetzt „solange getragen“ → als bereits gezählt übernehmen, der Abgleich zieht sie ab, falls es nicht getragen ist.
   if (!sf.tragKorr) sf.tragKorr = {};
   if (sf.pfad === "halsband" && typeof sf.tragKorr.saffis_halsband !== "number") sf.tragKorr.saffis_halsband = D.SAFFI_KORRUPTION_HALSBAND || 0;
-  if (!s.beziehungen || typeof s.beziehungen !== "object") s.beziehungen = {};
   return s;
 }
 function saffi2Grund(s) { migV17(s); return s; }
@@ -3106,3 +3105,60 @@ const _saffiBelohnungTrag = saffiBelohnung;
 saffiBelohnung = function (hals) { const r = _saffiBelohnungTrag.call(this, false); if (hals) { const sf = saffiState(); sf.stufe = Math.max(sf.stufe || 0, 1); } saffiTragKorrSync(); return r; };  // Stufe 1 abgeschlossen
 const _halsbandAnlegenTrag = halsbandAnlegen;
 halsbandAnlegen = function () { const r = _halsbandAnlegenTrag.apply(this, arguments); saffiTragKorrSync(); return r; };
+
+// =====================================================================
+// Block 3 (17.10.): Beziehungskategorien – ein Wert je NPC (state.bonds), Anzeige als Stufenname der Kategorie
+// =====================================================================
+function beziehungKategorie(id) {
+  id = npcId(id); const n = D.NPCs[id], K = D.BEZIEHUNG_KATEGORIEN;
+  if (n && n.beziehung && K[n.beziehung]) return n.beziehung;
+  return (D.BEZIEHUNG_ZUORDNUNG[id] && K[D.BEZIEHUNG_ZUORDNUNG[id]]) ? D.BEZIEHUNG_ZUORDNUNG[id] : D.BEZIEHUNG_STANDARD;
+}
+function beziehungStufe(id, v) {
+  const k = D.BEZIEHUNG_KATEGORIEN[beziehungKategorie(id)];
+  if (typeof v !== "number") v = (state && state.bonds && state.bonds[npcId(id)]) || 0;
+  let n = k.stufen[0].name; for (const st of k.stufen) if (v >= st.min) n = st.name;
+  return n;
+}
+function beziehungText(id) { return D.BEZIEHUNG_KATEGORIEN[beziehungKategorie(id)].name + " · " + beziehungStufe(id); }
+// Saffis Beziehung (16.10. eigener Speicher) läuft jetzt im gemeinsamen Wert mit
+beziehungWert = function (npc) { return (state.bonds || {})[npcId(npc)] || 0; };
+beziehungZu = function (npc, d) {
+  if (!d) return 0;
+  const echt = bumpBondSys(npc, d, { source: "hard" });
+  if (!(beziehungWert(npc) >= 8)) wertDelta("Beziehung " + ((D.NPCs[npcId(npc)] || {}).name || npc), echt);  // Bindungshinweis erscheint erst ab 8 → sonst hier zeigen
+  return echt;
+};
+// v17 → v18: Alias-Schlüssel (harn/eld/maera) und Saffis Extra-Speicher in state.bonds zusammenführen, nichts geht verloren
+function migV18(s) {
+  if (!s || typeof s !== "object") return s;
+  if (!s.bonds || typeof s.bonds !== "object") s.bonds = {};
+  const zu = (k, v) => { s.bonds[k] = round1(clamp((s.bonds[k] || 0) + v, -100, 100)); };
+  Object.entries(NPC_ALIAS).forEach(([echt, alias]) => { if (typeof s.bonds[alias] === "number") { zu(echt, s.bonds[alias]); delete s.bonds[alias]; } });
+  if (s.beziehungen && typeof s.beziehungen === "object") {
+    Object.entries(s.beziehungen).forEach(([id, o]) => {
+      const sum = Object.values(o || {}).reduce((a, x) => a + (typeof x === "number" ? x : 0), 0);
+      if (sum) zu(NPC_ALIAS_BACK[id] || id, sum);
+    });
+    delete s.beziehungen;
+  }
+  return s;
+}
+// Anzeige: Gesprächsporträt und Werte-Fenster zeigen Kategorie und Stufe, keine Zahlen (nur im Debug)
+const _showFaceKat = showFace;
+showFace = function (p) {
+  const r = _showFaceKat.apply(this, arguments);
+  const el = document.getElementById("face-bond");
+  if (el && p && D.NPCs[p.id] && state && el.textContent) el.textContent = beziehungText(p.id);
+  return r;
+};
+relationsHtml = function () {
+  const ids = Object.keys(state.bonds || {}).filter((id) => D.NPCs[id]);
+  if (!ids.length) return "<h3>Beziehungen</h3><p class='tiny'>Noch niemand kennt euch.</p>";
+  return "<h3>Beziehungen</h3>" + ids.map((id) => {
+    const r = state.relations && state.relations[id];
+    const st = r ? r.status.map((x) => STATUS_NAMES[x] || x).join(", ") : "";
+    return "<div class='tiny' data-bez='" + id + "'><b>" + esc(D.NPCs[id].name) + "</b>: " + esc(beziehungText(id)) + (r ? " · " + trustWord(r.trust) : "") + (st ? " · " + esc(st) : "") +
+      dbg("Wert " + state.bonds[id] + (r ? ", Vertrauen " + r.trust : "")) + "</div>";
+  }).join("");
+};
