@@ -186,7 +186,9 @@ const MIGRATIONS = [
   // v16 -> v17 (Saffi Stufe 2, 16.10.): saffi.stufe/rock-Felder, Tragekorruption, Beziehungen.
   function v16to17(s) { return typeof migV17 === "function" ? migV17(s) : s; },
   // v17 -> v18 (Block 3, 17.10.): Beziehungskategorien – Saffis Extra-Wert und Alias-Schlüssel in state.bonds zusammengeführt.
-  function v17to18(s) { return typeof migV18 === "function" ? migV18(s) : s; }
+  function v17to18(s) { return typeof migV18 === "function" ? migV18(s) : s; },
+  // v18 -> v19 (Block 4, 21.10.): Behälter-Inhalte (state.behaelter) und „Bitte verfolgen“ (state.verfolgen).
+  function v18to19(s) { return typeof migV19 === "function" ? migV19(s) : s; }
 ];
 const SAVE_VERSION = MIGRATIONS.length;
 function migrate(s) {
@@ -477,9 +479,8 @@ function talkChoices() {
   const node = state.dialogue.node;
   const choices = [];
   if (node === "start") {
-    if (npc.id === "burgvogt" && !state.quests.wolfspfad && !state.flags.wolf_alt_geschlossen) choices.push({ label: "Nach dem Pfad fragen", go: "quest" });
+    // Block 4: „Nach dem Pfad fragen“ / „Fragen, was das Dorf braucht“ kommen generisch aus QUESTS[x].start (systeme.js, quest_frage)
     if (npc.id === "burgvogt" && state.quests.wolfspfad === "active" && (state.flags.wolf_slain || state.flags.wolf_tot)) choices.push({ label: "Den Wolf melden", go: "done" });
-    if (npc.id === "tamsin" && !state.quests.tamsin_wolf && !state.flags.wolf_alt_geschlossen) choices.push({ label: "Fragen, was das Dorf braucht", go: "quest" });
     if (npc.id === "tamsin" && state.quests.tamsin_wolf === "active" && (state.flags.wolf_slain || state.flags.wolf_tot)) choices.push({ label: "Sagen, der Pfad ist frei", go: "done" });
     sysTalkChoices(npc, choices);
     if (npc.merchant && !haendlerVerweigert(npc)) choices.push({ label: "Handeln", go: "shop" });

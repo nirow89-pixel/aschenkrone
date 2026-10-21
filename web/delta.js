@@ -19,14 +19,21 @@ if (typeof advance === "function") {
 const KORR_HINT = { up: "Asche setzt sich in dir fest.", down: "Ein Rest Asche fällt von dir ab." };  // Platzhalter für Ext Text
 const deltaDbg = typeof DEBUG !== "undefined" && DEBUG;
 const deltaLive = {};            // kind:key -> { el, sum, t, timer }
+// Block 4 (21.10., Nico Antwort 6): jedes Plus/Minus sichtbar mit Zahl (außer Gegenstände), auch ohne Debug.
+// Eine Anzeige für alle Arten: stat (Stufe), uebung (Übungspunkte), ruf, bond (Beziehung „Name +1“), korr, gold, wert (frei beschriftet).
+const DELTA_MAX = 6;             // gleichzeitig sichtbare Einblendungen (vorher 3)
+function deltaZahl(sum) { const n = Math.abs(Math.round(sum * 10) / 10); return (sum > 0 ? "+" : "−") + String(n).replace(".", ","); }
 function deltaText(ev, sum) {
-  const sg = sum > 0 ? "+" : "−", n = Math.abs(Math.round(sum * 10) / 10);
-  if (ev.kind === "korr") return deltaDbg ? "Korruption " + sg + n : (sum > 0 ? KORR_HINT.up : KORR_HINT.down);
-  if (ev.kind === "stat") { const s = (D.STAT_KEYS.find((k) => k.id === ev.key) || {}).name || ev.key; return sg + n + " " + s; }
-  if (ev.kind === "ruf") { const f = (D.FACTIONS[ev.key] || {}).name || ev.key; return (deltaDbg ? sg + n : sg) + " " + f + (ev.rang ? " – " + ev.rang : ""); }
-  if (ev.kind === "wert") { const n = Math.round(Math.abs(ev.delta)); return (ev.delta > 0 ? "+" : "−") + n + " " + (ev.label || ev.key); }
-  if (ev.kind === "bond") { const p = (D.NPCs[ev.key] || {}).name || ev.key; return p + " " + (deltaDbg ? sg + n : sg) + (ev.rang ? " – " + ev.rang : ""); }
-  return sg + n;
+  const z = deltaZahl(sum);
+  const statName = (k) => (D.STAT_KEYS.find((x) => x.id === k) || {}).name || k;
+  if (ev.kind === "korr") return z + " Korruption";
+  if (ev.kind === "stat") return z + " " + statName(ev.key);
+  if (ev.kind === "uebung") return z + " Übung " + statName(ev.key);
+  if (ev.kind === "gold") return z + " Gold";
+  if (ev.kind === "ruf") { const f = (D.FACTIONS[ev.key] || {}).name || ev.key; return z + " " + f + (ev.rang ? " – " + ev.rang : ""); }
+  if (ev.kind === "wert") return z + " " + (ev.label || ev.key);
+  if (ev.kind === "bond") { const p = (D.NPCs[ev.key] || {}).name || ev.key; return p + " " + z + (ev.rang ? " – " + ev.rang : ""); }
+  return z;
 }
 function deltaStack() {
   let s = document.getElementById("delta-stack");
@@ -34,20 +41,19 @@ function deltaStack() {
   return s;
 }
 onDelta((ev) => {
-  // Bindung erst ab „bekannt“ (≥ 8) zeigen, außer im Debug.
-  if (ev.kind === "bond" && !deltaDbg && (ev.value || 0) < 8) return;
+  // Block 4: Beziehung immer zeigen (Name und Zahl), nicht erst ab „bekannt“.
   const id = ev.kind + ":" + ev.key, now = Date.now();
   let m = deltaLive[id];
   if (m && now - m.t < 1500) { m.sum += ev.delta; if (ev.rang) m.rang = ev.rang; }
   else {
     const stack = deltaStack();
-    while (stack.children.length >= 3) { const old = stack.firstChild; Object.keys(deltaLive).forEach((k) => { if (deltaLive[k].el === old) delete deltaLive[k]; }); old.remove(); }
+    while (stack.children.length >= DELTA_MAX) { const old = stack.firstChild; Object.keys(deltaLive).forEach((k) => { if (deltaLive[k].el === old) delete deltaLive[k]; }); old.remove(); }
     m = deltaLive[id] = { el: document.createElement("div"), sum: ev.delta, rang: ev.rang, t: now };
     stack.appendChild(m.el);
   }
   m.t = now;
   if (Math.abs(m.sum) < 0.05) { m.el.remove(); delete deltaLive[id]; return; }
-  m.el.className = "delta " + (ev.kind === "korr" && !deltaDbg ? "delta--hint" : m.sum > 0 ? "delta--pos" : "delta--neg");
+  m.el.className = "delta delta--" + ev.kind + " " + (m.sum > 0 ? "delta--pos" : "delta--neg");
   m.el.textContent = deltaText(Object.assign({}, ev, { rang: m.rang }), m.sum);
   clearTimeout(m.timer);
   const el = m.el;

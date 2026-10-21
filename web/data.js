@@ -233,6 +233,8 @@ const ITEMS = {
   platzhalter_brotteller: { id: "platzhalter_brotteller", img: "items/wein_der_stunde.jpg", name: "Brot und Käse (Platzhalter)", type: "verbrauch", heal: 4, price: 5, sell: 2, text: "PLATZHALTER: Speise von Corins Tresen." },
   // Essen (Ausbesserungen5, 16.10.): Verbrauchsgegenstände bei Gasthaus, Schenke, Krämerin und Bordell. Bilder von Ext Art (17.10.).
   brot: { id: "brot", img: "items/essen_brot.jpg", name: "Brot", type: "verbrauch", essen: true, heal: 4, price: 2, sell: 1, text: "Ein Laib dunkles Brot, die Kruste noch fest." },
+  // Block 4 (21.10.): Behälter = Gegenstand mit eigenem Inhalt (state.behaelter[id]), Kapazität und Filter „erlaubt“. Bild: Platzhalter, bis ein Korb-Bild in alle-bilder liegt.
+  korb: { id: "korb", img: "ui/platzhalter.jpg", name: "Korb", type: "behaelter", kapazitaet: 12, erlaubt: ["apfel"], erlaubtText: "Nur Äpfel", autoAufnahme: true, text: "Ein geflochtener Weidenkorb. Hinein passen ein Dutzend Äpfel." },
   apfel: { id: "apfel", img: "items/essen_apfel.jpg", name: "Apfel", type: "verbrauch", essen: true, heal: 2, wk: 1, price: 2, sell: 1, text: "Ein roter Apfel, ein wenig mehlig, aber süß." },
   kaese: { id: "kaese", img: "items/essen_kaese.jpg", name: "Käse", type: "verbrauch", essen: true, heal: 5, price: 3, sell: 1, text: "Ein Keil harter Käse, in Tuch gewickelt." },
   gebratenes_fleisch: { id: "gebratenes_fleisch", img: "items/essen_gebratenes_fleisch.jpg", name: "Gebratenes Fleisch", type: "verbrauch", essen: true, heal: 9, price: 6, sell: 3, text: "Ein Stück Fleisch vom Spieß, außen dunkel, innen saftig." },
@@ -735,14 +737,16 @@ const QUESTS = {
     where: "Nebelpfad, danach Burg der Aschenstadt",
     goal: "Tötet den Rußwolf am Nebelpfad und meldet Harn auf der Burg, dass der Weg wieder frei ist.",
     text: "Harn will den Pfad offen halten. Der Wolf hält Karren und Boten auf, und die Stadt verliert Zoll.",
-    reward: { gold: 18, ansehen: 1, bond: { burgvogt: 8 } }
+    reward: { gold: 18, ansehen: 1, bond: { burgvogt: 8 } },
+    start: { npc: "burgvogt", frage: "Nach dem Pfad fragen" }  // Block 4: Bitte erst auf Nachfrage (Text: talk.quest)
   },
   tamsin_wolf: {
     id: "tamsin_wolf", title: "Tamsins Ruhe", giver: "tamsin",
     where: "Nebelpfad, danach Schenke in Unterorten",
     goal: "Wenn der Rußwolf tot ist, geht zu Tamsin in die Schenke und sagt ihr, dass der Pfad wieder still ist.",
     text: "Tamsin ruht erst, wenn die Leute ohne Angst über den Pfad kommen.",
-    reward: { gold: 8, bond: { tamsin: 10 } }
+    reward: { gold: 8, bond: { tamsin: 10 } },
+    start: { npc: "tamsin", frage: "Fragen, was das Dorf braucht" }
   }
 };
 
@@ -1347,7 +1351,7 @@ const ANREDE = { eltern: { m: "Junge", w: "Mädel" } };
 // Kurze Erzähl-Gespräche mit Porträt (openStory): ein Text, ein Knopf „Weiter“, danach optional eine Bitte.
 const STORY = {
   vater_start: { id: "vater_start", npc: "hannes", anrede: "eltern", bitte: "wasser_kueche",
-    text: "Genug ausgeruht, {anrede}, es wird Zeit für dein Tagwerk. Gehe in die Scheune und hole dir einen Eimer und fülle diesen mit frischem Wasser aus dem Brunnen. Bring ihn dann deiner Mutter in die Küche." }
+    text: "Genug ausgeruht, {anrede}, es wird Zeit für dein Tagwerk." }  // Block 4: Rest des Textes erst auf Nachfrage (BITTEN.wasser_kueche.start)
 };
 // Bitten-Schema (Spec A 14.10.): eine Bitte = kompakter Datensatz, nur „schritte“ ausfüllen. Beispiel:
 //   meine_bitte: { id, title, giver, where, goal, schritte: [
@@ -1355,9 +1359,14 @@ const STORY = {
 //     { art: "umwandeln", ort: "<ortId>", von: "<itemId>", zu: "<itemId>", label: "…", bild: "…" },
 //     { art: "abgeben", npc: "<npcId>", item: "<itemId>", label: "…", text: "…", zwang: { ort: "<ortId>" } } ],
 //     lohn: { bond: { <npcId>: n } }, folge: { hinweis: "…", bitte: null } }
+//   Block 4: start: { npc, frage, text } = Bitte erst über eigene Gesprächsoption (sofortStart: true = ohne Nachfrage);
+//   Zähler je Schritt: { …, zaehler: { label: "Äpfel verteilt", ziel: 6 } } → „Äpfel verteilt 0/6“ in „Bitte verfolgen“.
 const BITTEN = {
   wasser_kueche: {
     id: "wasser_kueche", title: "Wasser für die Küche", giver: "hannes", empfaenger: "ailsa",
+    // Block 4 (Nico Antwort 9): Bitte erst auf Nachfrage; vorher kann man sich verabschieden. sofortStart: true = Sonderfall ohne Nachfrage.
+    start: { npc: "hannes", frage: "Nach dem Tagwerk fragen", anrede: "eltern",
+      text: "Gehe in die Scheune und hole dir einen Eimer und fülle diesen mit frischem Wasser aus dem Brunnen. Bring ihn dann deiner Mutter in die Küche." },
     where: "Scheune, Brunnen, Küche im Bauernhaus",
     goal: "Hol einen Eimer aus der Scheune, füll ihn am Brunnen und bring ihn deiner Mutter in die Küche.",
     schritte: [

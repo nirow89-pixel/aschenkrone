@@ -2587,7 +2587,7 @@ function beglueckt() {
 }
 function beglueckungPruefen() { const e = state && state.perks && perkState().segen.find((x) => x.id === "segen_beglueckt"); if (e && absMin() >= (e.bisAbs || 0)) removePerk("segen_beglueckt", "abgelaufen"); }
 function saffiBelohnung(hals) {
-  const xr = state.statXp.beweg || { xp: 0 }; gain("beweg", 2); wertDelta("Übung Beweglichkeit", 2);
+  const xr = state.statXp.beweg || { xp: 0 }; gain("beweg", 2);  /* Übung-Einblendung kommt aus gain (Block 4) */
   beglueckt();
   if (hals && D.SAFFI_KORRUPTION_HALSBAND) {  // fester Betrag, nicht vom Tagesdeckel gekürzt; sichtbarer +N-Hinweis
     const v = state.values, alt = v.korr || 0; v.korr = clamp(alt + D.SAFFI_KORRUPTION_HALSBAND, 0, KORR_MAX); v.korrPeak = Math.max(v.korrPeak || 0, v.korr);
@@ -2615,7 +2615,7 @@ CHOOSE_HOOKS.saffi = (go) => {
     case "gerne": {
       if (sf.halsRunde && !saffiHatHalsband()) return false;
       const p = D.SAFFI.preis, bezahlt = Math.min(state.hero.gold, p);
-      state.hero.gold -= bezahlt; wertDelta("Gold", -bezahlt); if (p - bezahlt > 0) schuldZu(p - bezahlt);
+      state.hero.gold -= bezahlt; if (p - bezahlt > 0) schuldZu(p - bezahlt);  /* Gold-Einblendung: goldBeobachten (Block 4) */
       const t = zu("gerne", "gerne");
       return t;
     }
@@ -2693,7 +2693,7 @@ TALK_HOOKS.push((npc, c) => {
 CHOOSE_HOOKS.schuld = (go) => {
   const a = go.split(":")[1], s = (state.schulden && state.schulden.vesse) || 0, n = Math.min(a === "alle" ? s : parseInt(a, 10) || 0, s);
   if (!n || state.hero.gold < n) return false;
-  state.hero.gold -= n; wertDelta("Gold", -n); schuldZu(-n);
+  state.hero.gold -= n; schuldZu(-n);  /* Gold-Einblendung: goldBeobachten (Block 4) */
   if (!state.schulden.vesse && state.flags.vessa_gefallen) state.flags.vessa_gefallen_offen = true;  // Gefallen bleibt fällig (Folgen später)
   return state.schulden.vesse ? D.SCHULD.teilText : state.flags.vessa_gefallen ? D.SCHULD.allesGefallenText : D.SCHULD.allesText;  // Gefallen bleibt offen (Nico 15.10.)
 };
@@ -3051,7 +3051,7 @@ CHOOSE_HOOKS.saffi = (go) => {
   if (a === "gerne" && sf.runde2) {
     if (!saffiHatHalsband()) return false;
     const p = D.SAFFI.preis, bezahlt = Math.min(state.hero.gold, p);
-    state.hero.gold -= bezahlt; wertDelta("Gold", -bezahlt); if (p - bezahlt > 0) schuldZu(p - bezahlt);
+    state.hero.gold -= bezahlt; if (p - bezahlt > 0) schuldZu(p - bezahlt);  /* Gold-Einblendung: goldBeobachten (Block 4) */
     const t = zu("gerne", T.gerne);
     return t;
   }
@@ -3074,7 +3074,7 @@ CHOOSE_HOOKS.saffi = (go) => {
     case "s2abschied": {
       const weg = (d && d.weg) || sf.rock || "angenommen", handel = weg === "gehandelt";
       const xr = state.statXp.beweg || { xp: 0 }; const ue = S2.uebung + (weg === "freiwillig" ? S2.uebungSchnappen : 0);
-      gain("beweg", ue); wertDelta("Übung Beweglichkeit", ue);
+      gain("beweg", ue);  /* Übung-Einblendung kommt aus gain (Block 4) */
       beglueckt();
       if (handel && D.SAFFI_KORRUPTION_ROCK_HANDEL) { const v = state.values, alt = v.korr || 0; v.korr = clamp(alt + D.SAFFI_KORRUPTION_ROCK_HANDEL, 0, KORR_MAX); v.korrPeak = Math.max(v.korrPeak || 0, v.korr); syncValueFlags(); wertDelta("Korruption", v.korr - alt); }
       sf.stufe = 2; saffiEnde(true); sf.runde2 = false;
@@ -3126,7 +3126,7 @@ beziehungWert = function (npc) { return (state.bonds || {})[npcId(npc)] || 0; };
 beziehungZu = function (npc, d) {
   if (!d) return 0;
   const echt = bumpBondSys(npc, d, { source: "hard" });
-  if (!(beziehungWert(npc) >= 8)) wertDelta("Beziehung " + ((D.NPCs[npcId(npc)] || {}).name || npc), echt);  // Bindungshinweis erscheint erst ab 8 → sonst hier zeigen
+  // Block 4: bumpBondSys blendet die Beziehung jetzt immer ein („Name +n“), keine zweite Zeile mehr
   return echt;
 };
 // v17 → v18: Alias-Schlüssel (harn/eld/maera) und Saffis Extra-Speicher in state.bonds zusammenführen, nichts geht verloren
@@ -3162,3 +3162,310 @@ relationsHtml = function () {
       dbg("Wert " + state.bonds[id] + (r ? ", Vertrauen " + r.trust : "")) + "</div>";
   }).join("");
 };
+
+// =====================================================================
+// Block 4 (21.10.): Systeme – Einblendungen, Behälter, Gegenstandsmenü, „Bitte verfolgen“, Bitten erst auf Nachfrage
+// Quelle: antworten-2026-10-17.md (Nico, Antworten 6, 7, 9, 11). Wächst über die bestehenden Haken, ersetzt nichts.
+// =====================================================================
+// ---- (1) Jedes Plus/Minus sichtbar (außer Gegenstände): eine Anzeige emitDelta()/deltaText() in delta.js ----
+const _gainB4 = gain;
+gain = function (key, amount) {
+  const r = _gainB4.apply(this, arguments);
+  if (amount && key !== "grad" && typeof emitDelta === "function") emitDelta({ kind: "uebung", key, delta: amount });
+  return r;
+};
+const _bumpWkB4 = bumpWk;
+bumpWk = function (d) { const alt = (state.values && state.values.wk) || 0; const r = _bumpWkB4.apply(this, arguments); wertDelta("Willenskraft", ((state.values && state.values.wk) || 0) - alt); return r; };
+const _bumpHaltungB4 = bumpHaltung;
+bumpHaltung = function (d) { const r = _bumpHaltungB4.apply(this, arguments); wertDelta("Haltung", r); return r; };
+const _bumpTrustB4 = bumpTrust;
+bumpTrust = function (id, d, opts) {
+  const r0 = state.relations && state.relations[npcId(id)], alt = r0 ? r0.trust : null;
+  const r = _bumpTrustB4.apply(this, arguments);
+  const neu = rel(id).trust;
+  if (alt !== null) wertDelta("Vertrauen " + ((D.NPCs[npcId(id)] || {}).name || id), neu - alt);
+  return r;
+};
+// Gold: eine Stelle für alle Änderungen (Lohn, Beute, Handel, Arbeit) – Vergleich beim Zeichnen, nicht in jedem Aufrufer.
+let goldBasis = null;
+function goldBeobachten() {
+  if (!state || !state.hero) return;
+  const g = state.hero.gold || 0;
+  if (goldBasis !== null && g !== goldBasis && typeof emitDelta === "function") emitDelta({ kind: "gold", key: "gold", delta: g - goldBasis });
+  goldBasis = g;
+}
+
+// ---- (2) Behälter: Gegenstand vom Typ „behaelter“ mit eigenem Inhalt, Kapazität und Filter ----
+// Inhalt liegt im Spielstand unter state.behaelter[<Schlüssel>] (Schlüssel = Item-Id; Kisten an Orten später über WELT_BEHAELTER).
+const WELT_BEHAELTER = {};      // später: { "<schlüssel>": { id, name, kapazitaet, erlaubt, erlaubtText } } – z. B. Kisten, mit denen man interagiert
+let aktiverBehaelter = null;    // Behälter, mit dem gerade interagiert wird (UI, nicht im Spielstand)
+let offenerBehaelter = null;    // im Beutel geöffnetes Behälterfenster
+function behaelterState() { return state.behaelter || (state.behaelter = {}); }
+function istBehaelter(it) { return !!it && it.type === "behaelter"; }
+function behaelterDef(key) { return WELT_BEHAELTER[key] || D.ITEMS[key] || null; }
+function behaelterInhalt(key) { const b = behaelterState(); if (!Array.isArray(b[key])) b[key] = []; return b[key]; }
+function behaelterImBeutel() { return [...new Set((state.inventory || []).filter((id) => istBehaelter(D.ITEMS[id])))]; }
+function behaelterZiele() { const z = behaelterImBeutel(); if (aktiverBehaelter && behaelterDef(aktiverBehaelter) && !z.includes(aktiverBehaelter)) z.push(aktiverBehaelter); return z; }
+// "" = passt, sonst der Grund (ausgegraut im Menü)
+function behaelterPasst(key, itemId) {
+  const d = behaelterDef(key), it = D.ITEMS[itemId];
+  if (!d || !it) return "Geht nicht";
+  if (istBehaelter(it)) return "Kein Behälter in Behälter";
+  if (Array.isArray(d.erlaubt) && !d.erlaubt.includes(itemId)) return d.erlaubtText || "Passt nicht hinein";
+  if (typeof d.erlaubt === "string" && it.type !== d.erlaubt) return d.erlaubtText || "Passt nicht hinein";
+  if (behaelterInhalt(key).length >= (d.kapazitaet || Infinity)) return "Voll";
+  return "";
+}
+// Ein Stück verschieben: von/nach = "beutel" oder Behälter-Schlüssel.
+function verschieben(itemId, von, nach) {
+  if (!state || von === nach) return false;
+  const quelle = von === "beutel" ? state.inventory : behaelterInhalt(von);
+  const i = quelle.indexOf(itemId); if (i < 0) return false;
+  if (nach !== "beutel" && behaelterPasst(nach, itemId)) return false;
+  quelle.splice(i, 1);
+  (nach === "beutel" ? state.inventory : behaelterInhalt(nach)).push(itemId);
+  persist();
+  return true;
+}
+// Neu erhaltene Gegenstände: erlaubte wandern automatisch in einen Behälter mit autoAufnahme (Korb: Äpfel), sonst in den Beutel.
+function legeAb(itemId) {
+  const ziel = behaelterImBeutel().find((k) => behaelterDef(k).autoAufnahme && !behaelterPasst(k, itemId));
+  (ziel ? behaelterInhalt(ziel) : state.inventory).push(itemId);
+  return ziel || "beutel";
+}
+function behaelterOeffnen(key) { offenerBehaelter = key; if (sheet === "inventory") paintSheet(); }
+function behaelterSchliessen() { offenerBehaelter = null; menueZu(); if (sheet === "inventory") paintSheet(); }
+function behaelterKachel(it, n, ort) {
+  const d = document.createElement("div");
+  d.className = "card tile"; d.dataset.item = it.id; d.dataset.ort = ort;
+  d.dataset.tip = it.id; d.dataset.tipMode = "bag"; if (n > 1) d.dataset.tipCount = n;
+  d.innerHTML = '<span class="tile-art"><img alt=""></span><b>' + esc(stackName(it, n)) + "</b>";
+  const im = d.querySelector("img"); if (it.img) onImg(im, it.img); else im.hidden = true;
+  d.onclick = (e) => { e.stopPropagation(); gegenstandMenue(it.id, ort, d); };
+  return d;
+}
+function behaelterFensterMalen() {
+  const col = document.querySelector("#sheet-body .doll-col"); if (!col || !offenerBehaelter) return;
+  const key = offenerBehaelter, d = behaelterDef(key); if (!d) { offenerBehaelter = null; return; }
+  const inhalt = behaelterInhalt(key);
+  const w = document.createElement("div"); w.id = "behaelter-win"; w.className = "behaelter-win"; w.dataset.behaelter = key;
+  w.innerHTML = "<div class='sheet-bar'><span class='bh-titel'>" + esc(d.name) + " · " + inhalt.length + "/" + (d.kapazitaet || "∞") + "</span><button type='button' class='bh-close'>Schließen</button></div>" +
+    (d.erlaubtText ? "<div class='tiny bh-hinweis'>" + esc(d.erlaubtText) + "</div>" : "") + "<div class='bh-list'></div>";
+  const list = w.querySelector(".bh-list");
+  const gruppen = groupItems(inhalt);
+  if (!gruppen.length) list.innerHTML = "<p class='tiny'>Leer.</p>";
+  gruppen.forEach(({ it, n }) => list.appendChild(behaelterKachel(it, n, key)));
+  w.querySelector(".bh-close").onclick = behaelterSchliessen;
+  col.appendChild(w);
+}
+
+// ---- (3) Gegenstandsmenü: Klick benutzt/legt nicht mehr sofort an, sondern bietet Benutzen/Anlegen und „Verschieben in …“ ----
+function menueZu() { const m = document.getElementById("item-menu"); if (m) m.remove(); document.removeEventListener("mousedown", menueAussen, true); document.removeEventListener("keydown", menueEsc, true); }
+function menueAussen(e) { const m = document.getElementById("item-menu"); if (m && !m.contains(e.target)) menueZu(); }
+function menueEsc(e) { if (e.key === "Escape") menueZu(); }
+function nachGegenstandAktion() { if (sheet === "inventory") paintSheet(); render(); }
+function gegenstandMenue(itemId, ort, anker) {
+  menueZu();
+  const it = D.ITEMS[itemId]; if (!it || !state) return null;
+  const m = document.createElement("div"); m.id = "item-menu"; m.className = "item-menu"; m.dataset.item = itemId; m.dataset.ort = ort;
+  m.innerHTML = "<div class='im-titel'>" + esc(it.name) + "</div>";
+  const eintrag = (label, fn, grund, art) => {
+    const b = document.createElement("button"); b.type = "button"; b.dataset.aktion = art || label;
+    b.innerHTML = esc(label) + (grund ? " <span class='im-grund'>· " + esc(grund) + "</span>" : "");
+    if (grund) { b.disabled = true; b.classList.add("aus"); b.title = grund; }
+    else b.onclick = (e) => { e.stopPropagation(); menueZu(); fn(); };
+    m.appendChild(b);
+  };
+  const herHolen = () => (ort === "beutel" ? true : verschieben(itemId, ort, "beutel"));
+  if (it.type === "verbrauch") eintrag("Benutzen", () => { if (herHolen()) useItem(itemId); nachGegenstandAktion(); }, "", "benutzen");
+  else if (it.slot && it.type !== "quest") eintrag("Anlegen", () => { if (herHolen()) equip(itemId); nachGegenstandAktion(); }, "", "anlegen");
+  behaelterZiele().filter((k) => k !== ort).forEach((k) => eintrag("Verschieben in " + behaelterDef(k).name, () => { verschieben(itemId, ort, k); nachGegenstandAktion(); }, behaelterPasst(k, itemId), "nach:" + k));
+  if (ort !== "beutel") eintrag("Verschieben in Beutel", () => { verschieben(itemId, ort, "beutel"); nachGegenstandAktion(); }, "", "nach:beutel");
+  if (m.querySelectorAll("button").length === 0) eintrag("Keine Aktion möglich", null, " ", "keine");
+  document.body.appendChild(m);
+  const r = anker && anker.getBoundingClientRect ? anker.getBoundingClientRect() : { left: 40, bottom: 40, top: 40 };
+  const mw = m.offsetWidth, mh = m.offsetHeight;
+  let x = Math.min(r.left, window.innerWidth - mw - 6), y = r.bottom + 4;
+  if (y + mh > window.innerHeight - 6) y = Math.max(6, r.top - mh - 4);
+  m.style.left = Math.max(6, x) + "px"; m.style.top = y + "px";
+  setTimeout(() => { if (document.getElementById("item-menu") === m) { document.addEventListener("mousedown", menueAussen, true); document.addEventListener("keydown", menueEsc, true); } }, 0);
+  if (typeof hideTip === "function") hideTip();
+  return m;
+}
+const _paintSheetB4 = paintSheet;
+paintSheet = function () {
+  const r = _paintSheetB4.apply(this, arguments);
+  if (sheet !== "inventory") { offenerBehaelter = null; return r; }
+  document.querySelectorAll("#bag-list .tile[data-item]").forEach((d) => {
+    const it = D.ITEMS[d.dataset.item]; if (!it) return;
+    d.dataset.ort = "beutel";
+    if (istBehaelter(it)) {
+      d.classList.add("behaelter");
+      const b = document.createElement("span"); b.className = "bh-zahl"; b.textContent = behaelterInhalt(it.id).length + "/" + (it.kapazitaet || "∞"); d.appendChild(b);
+      d.onclick = (e) => { e.stopPropagation(); menueZu(); behaelterOeffnen(it.id); };
+    } else d.onclick = (e) => { e.stopPropagation(); gegenstandMenue(it.id, "beutel", d); };
+  });
+  if (offenerBehaelter && !behaelterZiele().includes(offenerBehaelter)) offenerBehaelter = null;
+  if (offenerBehaelter) behaelterFensterMalen();
+  return r;
+};
+document.getElementById("sheet-close").addEventListener("click", () => { menueZu(); offenerBehaelter = null; });
+document.querySelectorAll("[data-sheet]").forEach((b) => b.addEventListener("click", menueZu));
+
+// ---- (4) „Bitte verfolgen“ je Bitte, kompakter Stand oben rechts im Ortsfenster; Zähler je Schritt ----
+function verfolgenState() { return state.verfolgen || (state.verfolgen = {}); }
+function bitteZaehler(id, i) { const b = bittenState()[id]; return (b && b.zaehler && b.zaehler[i]) || 0; }
+// Stufenwechsel (größerer Schritt) → „Bitte aktualisiert“; Zähler allein blenden nichts ein.
+function bitteSchrittSetzen(id, n) {
+  const b = bittenState()[id], q = D.BITTEN[id]; if (!b || !q || n <= b.schritt) return false;
+  b.schritt = n;
+  if (b.status === "aktiv" && n < q.schritte.length) { bitteToast("Bitte aktualisiert"); bitteBlink(); }
+  return true;
+}
+function bitteZaehlen(id, i, n) {
+  const q = D.BITTEN[id], b = bittenState()[id], st = q && q.schritte[i];
+  if (!st || !st.zaehler || !b || b.status !== "aktiv") return 0;
+  b.zaehler = b.zaehler || {};
+  const alt = b.zaehler[i] || 0; b.zaehler[i] = Math.min(st.zaehler.ziel, alt + (n || 1));
+  if (b.zaehler[i] >= st.zaehler.ziel && b.schritt <= i) bitteSchrittSetzen(id, i + 1);
+  persist(); render();
+  return b.zaehler[i] - alt;
+}
+const _bitteKnopfB4 = bitteKnopf;
+bitteKnopf = function (id, i) {
+  const b = bittenState()[id], vor = b ? b.schritt : 0, st = D.BITTEN[id] && D.BITTEN[id].schritte[i];
+  const r = _bitteKnopfB4.apply(this, arguments);
+  const b2 = bittenState()[id]; if (!b2) return r;
+  if (st && st.zaehler) { b2.schritt = vor; bitteZaehlen(id, i, 1); return r; }  // Zählschritt: weiter erst bei vollem Zähler
+  if (b2.schritt > vor && b2.status === "aktiv" && b2.schritt < D.BITTEN[id].schritte.length) { bitteToast("Bitte aktualisiert"); bitteBlink(); }
+  return r;
+};
+// Alte Aufträge (QUESTS) im selben Feld: Zähler/Schritt aus dem Zustand.
+const QUEST_VERFOLGEN = {
+  wolfspfad: () => { const t = !!(state.flags.wolf_slain || state.flags.wolf_tot); return [{ text: "Rußwolf besiegt " + (t ? 1 : 0) + "/1", fertig: t }].concat(t ? [{ text: "Harn auf der Burg Bescheid geben" }] : []); },
+  tamsin_wolf: () => { const t = !!(state.flags.wolf_slain || state.flags.wolf_tot); return [{ text: "Rußwolf besiegt " + (t ? 1 : 0) + "/1", fertig: t }].concat(t ? [{ text: "Tamsin in der Schenke Bescheid geben" }] : []); }
+};
+function bitteFortschritt(id) {
+  const q = D.BITTEN[id], b = bittenState()[id]; if (!q || !b) return [];
+  const out = [];
+  q.schritte.forEach((st, i) => { if (st.zaehler && i <= b.schritt) { const n = bitteZaehler(id, i); out.push({ text: st.zaehler.label + " " + n + "/" + st.zaehler.ziel, fertig: n >= st.zaehler.ziel }); } });
+  const cur = q.schritte[b.schritt];
+  if (cur && !cur.zaehler) out.push({ text: cur.label });
+  return out;
+}
+function verfolgteEintraege() {
+  if (!state) return [];
+  const vf = verfolgenState(), out = [];
+  Object.keys(vf).filter((k) => vf[k]).forEach((k) => {
+    const [art, id] = k.split(":");
+    if (art === "bitte" && bitteAktiv(id)) out.push({ key: k, title: D.BITTEN[id].title, zeilen: bitteFortschritt(id) });
+    if (art === "quest" && (state.quests || {})[id] === "active" && D.QUESTS[id]) out.push({ key: k, title: D.QUESTS[id].title, zeilen: QUEST_VERFOLGEN[id] ? QUEST_VERFOLGEN[id]() : [{ text: D.QUESTS[id].goal }] });
+  });
+  return out;
+}
+function verfolgenMalen() {
+  const body = document.querySelector("#pane-scene .pane-body"); if (!body) return;
+  let p = document.getElementById("bitten-verfolgen");
+  const e = verfolgteEintraege();
+  if (!e.length) { if (p) p.hidden = true; return; }
+  if (!p) { p = document.createElement("div"); p.id = "bitten-verfolgen"; body.appendChild(p); }
+  p.hidden = false;
+  p.innerHTML = e.map((x) => "<div class='bv-eintrag' data-verfolgt='" + x.key + "'><b>" + esc(x.title) + "</b>" + x.zeilen.map((z) => "<div class='bv-zeile" + (z.fertig ? " fertig" : "") + "'>" + esc(z.text) + "</div>").join("") + "</div>").join("");
+}
+bittenSheetHtml = function () {
+  const vf = verfolgenState();
+  const card = (key, q, st) => "<div class='card quest" + (st !== "offen" ? " done" : "") + "' data-bitte='" + key + "'><b>" + esc(q.title) + "</b><div><b>Wo:</b> " + esc(q.where) + "</div><div><b>Was:</b> " + esc(q.goal) + "</div><div class='tiny'>" + st + "</div>" +
+    (st === "offen" ? "<label class='bitte-verfolgen'><input type='checkbox' data-verfolgen='" + key + "'" + (vf[key] ? " checked" : "") + "> Bitte verfolgen</label>" : "") + "</div>";
+  const offen = [], fertig = [], fehl = [];
+  Object.keys(state.quests || {}).forEach((id) => { const q = D.QUESTS[id]; if (!q) return; (state.quests[id] === "done" ? fertig : offen).push(card("quest:" + id, q, state.quests[id] === "done" ? "erledigt" : "offen")); });
+  Object.entries(state.bitten || {}).forEach(([id, b]) => { const q = D.BITTEN[id]; if (!q) return;
+    if (b.status === "aktiv") offen.push(card("bitte:" + id, q, "offen")); else if (b.status === "abgeschlossen") fertig.push(card("bitte:" + id, q, "abgeschlossen")); else fehl.push(card("bitte:" + id, q, "fehlgeschlagen")); });
+  const p = uiPrefs(), sec = (key, name, list) => "<details class='bitten-abschnitt' data-ui='" + key + "'" + (p["bitten_" + key] === false ? "" : " open") + "><summary>" + name + " (" + list.length + ")</summary>" + (list.join("") || "<p class='tiny'>Keine.</p>") + "</details>";
+  return "<h3>Offen</h3>" + (offen.join("") || "<p>Keine offene Bitte.</p>") + sec("abgeschlossen", "Abgeschlossen", fertig) + sec("fehlgeschlagen", "Fehlgeschlagen", fehl);
+};
+const _wireBittenSheetB4 = wireBittenSheet;
+wireBittenSheet = function (body) {
+  const r = _wireBittenSheetB4.apply(this, arguments);
+  body.querySelectorAll("input[data-verfolgen]").forEach((cb) => cb.addEventListener("change", () => {
+    verfolgenState()[cb.dataset.verfolgen] = cb.checked; if (!cb.checked) delete verfolgenState()[cb.dataset.verfolgen];
+    persist(); verfolgenMalen();
+  }));
+  return r;
+};
+
+// ---- (5) Bitten erst auf Nachfrage: eigene Gesprächsoption, vorher Verabschieden möglich (außer start.sofortStart) ----
+function bitteSofort(q) { return !!(q && (q.sofortStart || (q.start && q.start.sofortStart))); }
+function bitteAngebot(id) { const q = D.BITTEN[id]; return !!(state && q && q.start && !bitteSofort(q) && !bittenState()[id]); }
+function questAngebotOffen(id) {
+  const q = D.QUESTS[id]; if (!state || !q || !q.start || (state.quests || {})[id]) return false;
+  const a = QUEST_ANGEBOTE.find((x) => x.q === id); return a ? !!a.offen() : true;
+}
+TALK_HOOKS.push((npc, c) => {
+  Object.keys(D.QUESTS).forEach((id) => { if (questAngebotOffen(id) && D.QUESTS[id].start.npc === npc.id) c.push({ label: D.QUESTS[id].start.frage, go: "quest_frage:" + id }); });
+  Object.keys(D.BITTEN).forEach((id) => { if (bitteAngebot(id) && D.BITTEN[id].start.npc === npc.id) c.push({ label: D.BITTEN[id].start.frage, go: "bitte_frage:" + id }); });
+});
+CHOOSE_HOOKS.quest_frage = (go) => {
+  const id = go.split(":")[1], q = D.QUESTS[id]; if (!questAngebotOffen(id)) return "";
+  state.quests[id] = "active";
+  bumpBond(q.giver, 3, { source: "quest_story" });
+  log("Neue Bitte: " + q.title + ".");
+  bitteToast("Neue Bitte erhalten"); bitteBlink();
+  const n = D.NPCs[q.start.npc] || D.NPCs[q.giver];
+  return (n && n.talk && n.talk.quest) || q.text || "";
+};
+CHOOSE_HOOKS.bitte_frage = (go) => {
+  const id = go.split(":")[1], q = D.BITTEN[id]; if (!bitteAngebot(id)) return "";
+  if (state.startFolge === "vater" && D.STORY.vater_start && D.STORY.vater_start.bitte === id) state.startFolge = null;
+  giveBitte(id);
+  return textVars(q.start.text || "", q.start.anrede);
+};
+// Erzähl-Gespräch mit Bitte (Vater-Start): erst Begrüßung, dann „Nach … fragen“ oder „Verabschieden“.
+const _openStoryB4 = openStory;
+openStory = function (st) {
+  if (!st) return;
+  const q = st.bitte && D.BITTEN[st.bitte];
+  _openStoryB4(st);
+  if (!q || !q.start || bitteSofort(q) || bittenState()[st.bitte]) return;
+  showLine(textVars(st.text, st.anrede), [{ label: q.start.frage, go: "story_frage:" + st.id }, { label: "Verabschieden", go: "story_weiter:" + st.id + ":ohne" }]);
+};
+CHOOSE_HOOKS.story_frage = (go) => {
+  const st = D.STORY[go.split(":")[1]], q = st && D.BITTEN[st.bitte]; if (!q) return "";
+  if (st.id === "vater_start") state.startFolge = null;
+  giveBitte(st.bitte);
+  naechsteWahl = [{ label: "Weiter", go: "leave" }];
+  return textVars(q.start.text || "", q.start.anrede || st.anrede);
+};
+const _storyWeiterB4 = CHOOSE_HOOKS.story_weiter;
+CHOOSE_HOOKS.story_weiter = (go, npc) => {
+  const [, sid, art] = go.split(":");
+  if (art !== "ohne") return _storyWeiterB4(go, npc);
+  if (sid === "vater_start") state.startFolge = null;
+  choose("leave");
+  return "";
+};
+// Marker „!“ auch für Bitten, die man erfragen kann
+const _questMarkerB4 = questMarker;
+questMarker = function (npcId) {
+  const m = _questMarkerB4.apply(this, arguments); if (m || !state) return m;
+  return Object.keys(D.BITTEN).some((id) => bitteAngebot(id) && D.BITTEN[id].start.npc === npcId) ? "angebot" : null;
+};
+
+// ---- Spielstand v19, Neues Spiel, Laden, Zeichnen ----
+function migV19(s) {
+  if (!s || typeof s !== "object") return s;
+  if (!s.behaelter || typeof s.behaelter !== "object" || Array.isArray(s.behaelter)) s.behaelter = {};
+  if (!s.verfolgen || typeof s.verfolgen !== "object" || Array.isArray(s.verfolgen)) s.verfolgen = {};
+  return s;
+}
+const _newGameB4 = newGame;
+newGame = function () { goldBasis = null; offenerBehaelter = null; aktiverBehaelter = null; menueZu(); const r = _newGameB4.apply(this, arguments); if (state) migV19(state); return r; };
+const _loadB4 = load;
+load = function () { const r = _loadB4.apply(this, arguments); if (r !== false && state) { migV19(state); goldBasis = null; offenerBehaelter = null; aktiverBehaelter = null; menueZu(); } return r; };
+const _renderB4 = render;
+render = function () {
+  const r = _renderB4.apply(this, arguments);
+  if (state) { goldBeobachten(); verfolgenMalen(); }
+  return r;
+};
+const _slotWordB4 = slotWord;
+slotWord = function (it) { return it && it.type === "behaelter" ? "Behälter" : _slotWordB4.apply(this, arguments); };
