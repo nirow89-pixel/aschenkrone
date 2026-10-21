@@ -437,6 +437,13 @@ const NPCs = {
       "nacht": "Die Tür war zu. Aus gutem Grund. Morgen früh, ja?",
       "sonnrast.vormittag": "Sonnrast. Kein Pflug, kein Verwalter. Der Fisch beißt nicht, aber er schuldet mir auch nichts.",
       "sonnrast.nachmittag": "Setz dich zu mir. Wir reden nicht über Arbeit. Ich zähle sie nur im Kopf." },
+    // Hannes-Werkstatt (21.10., Leitung): eigene Begrüßung je Tageszeit, nur solange er in der Werkstatt steht (geht vor slotTalk). Nachts ist er nicht dort.
+    ortTalk: { lotfild_werkstatt: {
+      "morgen": "*Dein Vater steht an der Werkbank und reibt sich die Hände warm.* Morgen, {anrede}. Brannoc ist schon länger wach als wir beide zusammen.",
+      "vormittag": "*Dein Vater prüft eine Zinke an der Egge.* Die hält noch, solange Brannoc nicht hinsieht. Was gibt's, {anrede}?",
+      "mittag": "*Dein Vater sitzt auf dem Hackklotz und kaut an einem Kanten Brot.* Setz dich, {anrede}. Eine Stunde gehört uns.",
+      "nachmittag": "*Dein Vater hält ein Brett gegen das Licht und kneift ein Auge zu.* Krumm wie der Verwalter. Na, {anrede}, brauchst du was?",
+      "abend": "*Dein Vater wischt sich die Späne von der Hose.* Feierabend, {anrede}. Deine Mutter wartet nicht ewig mit dem Essen." } },
     schedule: {
       default: { morgen: "bauernhaus_kueche", vormittag: "lotfild_feld", mittag: "bauernhaus_kueche", nachmittag: "lotfild_feld", abend: "bauernhaus_wohnzimmer", nacht: "bauernhaus_elternzimmer" },
       mittwend: { nachmittag: "lotfild_werkstatt" },

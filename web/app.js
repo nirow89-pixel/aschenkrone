@@ -534,7 +534,11 @@ function renderTalk() {
   const npc = lastTalk;
   const node = state.dialogue && state.dialogue.node;
   // slotTalk (Hof, 14.10.): Begrüßung je Zeitfenster, "<wochentag>.<phase>" vor "<phase>", sonst talk.start.
-  const slot = node === "start" && npc.slotTalk ? (npc.slotTalk[weekday(typeof nightDay === "function" ? nightDay(state.day, state.min) : state.day).id + "." + state.phase] || npc.slotTalk[state.phase]) : null;
+  // ortTalk (21.10.): Begrüßung je Ort und Tageszeit (Hannes in der Werkstatt) ersetzt die allgemeine Tageszeit-Zeile; eine eigene Wochentag-Zeile
+  // („mittwend.nachmittag“, ohnehin für die Werkstatt geschrieben) bleibt vorn. {anrede} wie bei den Eltern.
+  const wtSlot = node === "start" && npc.slotTalk ? npc.slotTalk[weekday(typeof nightDay === "function" ? nightDay(state.day, state.min) : state.day).id + "." + state.phase] : null;
+  const ortGruss = node === "start" && npc.ortTalk && npc.ortTalk[state.location] ? npc.ortTalk[state.location][state.phase] : null;
+  const slot = wtSlot || (ortGruss ? (typeof textVars === "function" ? textVars(ortGruss, "eltern") : ortGruss) : node === "start" && npc.slotTalk ? npc.slotTalk[state.phase] : null);
   const spoken = slot || (npc.talk && (npc.talk[node] || npc.talk.start)) || npc.text;
   showFace(npc);
   showLine(spoken, talkChoices());

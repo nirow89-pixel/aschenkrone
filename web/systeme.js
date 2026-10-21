@@ -3625,3 +3625,49 @@ CHOOSE_HOOKS.aepfel_fertig = (go) => {
 };
 const _renderB5 = render;
 render = function () { if (state) { try { aepfelPruefen(); } catch (e) { console.error(e); } } return _renderB5.apply(this, arguments); };
+
+// =====================================================================
+// Verschieben-Regler (21.10., Nico): Stapel (mehr als 1 Stück) → Mengenregler 1 … Maximum, das ins Ziel passt (Kapazität, Filter; auch zurück in den Beutel).
+// Einzelstücke wie bisher direkt. Ziel ohne Platz bleibt ausgegraut (behaelterPasst).
+// =====================================================================
+function stapelAnzahl(itemId, ort) { return (ort === "beutel" ? state.inventory : behaelterInhalt(ort)).filter((x) => x === itemId).length; }
+function verschiebenMax(itemId, von, nach) {
+  if (!state || von === nach) return 0;
+  const n = stapelAnzahl(itemId, von);
+  if (nach === "beutel") return n;  // Beutel ohne Platzgrenze
+  if (behaelterPasst(nach, itemId)) return 0;
+  const d = behaelterDef(nach), frei = (d.kapazitaet || Infinity) - behaelterInhalt(nach).length;
+  return Math.max(0, Math.min(n, frei));
+}
+function verschiebenMenge(itemId, von, nach, menge) {
+  const m = Math.min(Math.max(0, Math.floor(menge) || 0), verschiebenMax(itemId, von, nach));
+  let k = 0; for (; k < m; k++) if (!verschieben(itemId, von, nach)) break;
+  return k;
+}
+function verschiebenRegler(m, itemId, von, nach) {
+  const max = verschiebenMax(itemId, von, nach); if (max < 1) return;
+  const alt = m.querySelector(".im-regler"); if (alt) alt.remove();
+  m.querySelectorAll("button[data-aktion^='nach:']").forEach((b) => b.classList.toggle("gewaehlt", b.dataset.aktion === "nach:" + nach));
+  const zielName = nach === "beutel" ? "Beutel" : behaelterDef(nach).name;
+  const r = document.createElement("div"); r.className = "im-regler"; r.dataset.nach = nach;
+  r.innerHTML = "<div class='im-regler-kopf'>Menge nach " + esc(zielName) + "</div>"
+    + "<div class='im-regler-zeile'><input type='range' min='1' max='" + max + "' step='1' value='" + max + "' aria-label='Menge'><span class='im-zahl'>" + max + " / " + max + "</span></div>"
+    + "<button type='button' class='im-ok' data-aktion='bestaetigen'>Verschieben</button>";
+  const sl = r.querySelector("input"), z = r.querySelector(".im-zahl");
+  sl.addEventListener("input", () => { z.textContent = sl.value + " / " + max; });
+  r.addEventListener("mousedown", (e) => e.stopPropagation());
+  r.querySelector(".im-ok").onclick = (e) => { e.stopPropagation(); verschiebenMenge(itemId, von, nach, +sl.value); menueZu(); nachGegenstandAktion(); };
+  m.appendChild(r);
+}
+const _gegenstandMenueRegler = gegenstandMenue;
+gegenstandMenue = function (itemId, ort, anker) {
+  const m = _gegenstandMenueRegler.apply(this, arguments); if (!m) return m;
+  const it = D.ITEMS[itemId];
+  if (!stackable(it) || stapelAnzahl(itemId, ort) <= 1) return m;
+  m.querySelectorAll("button[data-aktion^='nach:']").forEach((b) => {
+    if (b.disabled) return;
+    const nach = b.dataset.aktion.slice(5);
+    b.onclick = (e) => { e.stopPropagation(); verschiebenRegler(m, itemId, ort, nach); };
+  });
+  return m;
+};
