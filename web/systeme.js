@@ -3469,3 +3469,159 @@ render = function () {
 };
 const _slotWordB4 = slotWord;
 slotWord = function (it) { return it && it.type === "behaelter" ? "Behälter" : _slotWordB4.apply(this, arguments); };
+
+// =====================================================================
+// Block 5 (21.10.): Hofquest „Ein Korb voll Äpfel“ (BITTEN.hof_aepfel) und allgemeine Bitten-Bausteine
+// Quelle: Entwurf „Äpfel für alle“ (16.10.) + Nicos Antworten (antworten-2026-10-17.md, Apfelquest 1–12).
+// Neu im Bitten-Schema: voraus, start.gibt, start.nichtNachts, zwang (bis zur Annahme), Schritt-Arten „verteilen“ und „melden“, lohn.uebung.
+// =====================================================================
+// ---- Gegenstände in Behältern zählen wie Gegenstände im Beutel (Äpfel im Korb) ----
+function behaelterMit(id) { return behaelterImBeutel().find((k) => behaelterInhalt(k).includes(id)) || null; }
+const _hatItemB5 = hatItem;
+hatItem = function (id) { return _hatItemB5.apply(this, arguments) || !!behaelterMit(id); };
+const _nimmItemB5 = nimmItem;
+nimmItem = function (id) {
+  if (_nimmItemB5.apply(this, arguments)) return true;
+  const k = behaelterMit(id); if (!k) return false;
+  const inh = behaelterInhalt(k); inh.splice(inh.indexOf(id), 1); return true;
+};
+function itemAnzahl(id) { return (state.inventory || []).filter((x) => x === id).length + behaelterImBeutel().reduce((n, k) => n + behaelterInhalt(k).filter((x) => x === id).length, 0); }
+
+// ---- Angebot erst nach der Vorbitte (voraus), nachts kein Angebot (start.nichtNachts) ----
+function bitteVorausOk(q) { return !q.voraus || ((bittenState()[q.voraus] || {}).status === "abgeschlossen"); }
+const _bitteAngebotB5 = bitteAngebot;
+bitteAngebot = function (id) {
+  const q = D.BITTEN[id];
+  return _bitteAngebotB5.apply(this, arguments) && bitteVorausOk(q) && !(q.start.nichtNachts && state.phase === "nacht");
+};
+// start.gibt: Gegenstände bei Annahme (Korb)
+const _bitteFrageB5 = CHOOSE_HOOKS.bitte_frage;
+CHOOSE_HOOKS.bitte_frage = (go, npc) => {
+  const id = go.split(":")[1], q = D.BITTEN[id], vorher = !!bittenState()[id];
+  const r = _bitteFrageB5(go, npc);
+  if (q && !vorher && bittenState()[id]) (q.start.gibt || []).forEach((it) => { if (!hatItem(it)) state.inventory.push(it); });
+  return r;
+};
+// zwang: NPC steht bis zur Annahme der Bitte am Ort (außer in den Tageszeiten nichtIn). Hannes in der Werkstatt, auch schon während der Wasser-Bitte.
+function bitteVorZwang(npcId, phase) {
+  if (!state) return null;
+  for (const id of Object.keys(D.BITTEN)) {
+    const z = D.BITTEN[id].zwang;
+    if (!z || z.npc !== npcId || (state.bitten || {})[id]) continue;
+    if ((z.nichtIn || []).includes(phase || state.phase)) continue;
+    return z.ort;
+  }
+  return null;
+}
+const _npcLocationNowB5 = npcLocationNow;
+npcLocationNow = function (n, day, phase) {
+  const z = n && state ? bitteVorZwang(n.id, phase) : null;
+  return z || _npcLocationNowB5.apply(this, arguments);
+};
+// lohn.uebung: Übungspunkte (keine Stufe), Einblendung über gain()
+const _finishBitteB5 = finishBitte;
+finishBitte = function (id, ok) {
+  const b = bittenState()[id], war = b && b.status, q = D.BITTEN[id];
+  const r = _finishBitteB5.apply(this, arguments);
+  if (ok !== false && q && war === "aktiv" && b.status === "abgeschlossen") Object.entries((q.lohn && q.lohn.uebung) || {}).forEach(([k, n]) => gain(k, n));
+  return r;
+};
+
+// ---- Äpfel pflücken: 6 Stellen im Baum, landen im Korb ----
+function aepfelState() {
+  const A = D.AEPFEL;
+  if (!state.aepfel || !Array.isArray(state.aepfel.haengt)) state.aepfel = { haengt: A.stellen.map(() => true), gefuellt: state.day, nach: 0, leerWeg: false };
+  return state.aepfel;
+}
+function aepfelSichtbar() { const b = bittenState()[D.AEPFEL.bitte]; return !!b && b.status !== "fehlgeschlagen"; }
+function aepfelFuellen(neu) { const a = aepfelState(); a.haengt = D.AEPFEL.stellen.map(() => true); a.gefuellt = state.day; a.leerWeg = false; if (neu) a.nach += 1; }
+// Nachwachsen: bei aktiver Bitte bis zu 2× sofort, wenn man den leeren Baum verlassen hat und wiederkommt; sonst alle 7 Tage.
+function aepfelPruefen() {
+  if (!state || !aepfelSichtbar()) return;
+  const A = D.AEPFEL, a = aepfelState(), leer = !a.haengt.some(Boolean);
+  if (state.location !== A.ort) { if (leer) a.leerWeg = true; return; }
+  if (leer && a.leerWeg && bitteAktiv(A.bitte) && a.nach < A.nachQuest) { aepfelFuellen(true); log("An den Ästen hängen wieder reife Äpfel."); return; }
+  if (state.day - (a.gefuellt || 0) >= A.tageNeu && a.haengt.some((h) => !h)) { aepfelFuellen(false); log("An den Ästen hängen wieder reife Äpfel."); }
+}
+function apfelPfluecken(i) {
+  const A = D.AEPFEL, a = aepfelState();
+  if (state.location !== A.ort || !a.haengt[i]) return false;
+  a.haengt[i] = false;
+  const wo = legeAb(A.item);
+  log(wo === "beutel" ? "Du pflückst einen Apfel. Der Korb ist voll, er wandert in den Beutel." : "Du pflückst einen Apfel und legst ihn in den Korb.");
+  if (A.minuten) advanceMin(A.minuten);
+  persist(); render();
+  return true;
+}
+// Bild liegt mit object-fit: cover im Ortsfenster: Bildprozent → Fensterprozent
+function coverProzent(scene, x, y) {
+  const A = D.AEPFEL, W = scene.clientWidth || 1, H = scene.clientHeight || 1, ar = A.bildW / A.bildH;
+  let w = W, h = W / ar; if (W / H < ar) { h = H; w = H * ar; }
+  return { x: ((W - w) / 2 + x / 100 * w) / W * 100, y: ((H - h) / 2 + y / 100 * h) / H * 100 };
+}
+SCENE_ROUND_HOOKS.push((scene) => {
+  const A = D.AEPFEL; if (state.location !== A.ort || !aepfelSichtbar()) return;
+  aepfelState().haengt.forEach((h, i) => {
+    if (!h) return;
+    const p = coverProzent(scene, A.stellen[i].x, A.stellen[i].y);
+    const b = document.createElement("button");
+    b.className = "act-round apfel-spot"; b.dataset.apfel = i; b.title = "Apfel pflücken"; b.setAttribute("aria-label", "Apfel pflücken");
+    b.style.left = p.x.toFixed(2) + "%"; b.style.top = p.y.toFixed(2) + "%";
+    b.innerHTML = '<span class="ring"></span>';
+    b.onclick = (e) => { e.stopPropagation(); apfelPfluecken(i); };
+    scene.appendChild(b);
+  });
+});
+
+// ---- Verteilen: „Einen Apfel geben“ bei jedem Empfänger, nachts nur Hinweis ----
+function verteilSchritt(id) { const q = D.BITTEN[id]; const i = q ? q.schritte.findIndex((s) => s.art === "verteilen") : -1; return i; }
+function verteiltAn(id) { const b = bittenState()[id]; return (b && b.verteilt) || []; }
+TALK_HOOKS.push((npc, c) => Object.keys(D.BITTEN).filter(bitteAktiv).forEach((id) => {
+  const q = D.BITTEN[id], i = verteilSchritt(id); if (i < 0) return;
+  const st = q.schritte[i], b = bittenState()[id];
+  if (b.schritt === i && st.npcs.includes(npc.id) && !verteiltAn(id).includes(npc.id) && hatItem(st.item))
+    c.push({ label: st.label, go: "aepfel_geben:" + id + ":" + npc.id });
+  q.schritte.forEach((s, j) => { if (s.art === "melden" && s.npc === npc.id && b.schritt === j) c.push({ label: s.frage, go: "aepfel_fertig:" + id }); });
+}));
+function aepfelText(npcId, key) { const t = (D.AEPFEL_TEXTE[npcId] || {})[key]; return t ? textVars(typeof t === "string" ? t : t.text, "eltern") : ""; }
+function aepfelFehlt(id) {
+  const st = D.BITTEN[id].schritte[verteilSchritt(id)], z = [];
+  st.npcs.filter((n) => !verteiltAn(id).includes(n)).forEach((n) => {
+    const npc = D.NPCs[n]; if (!npc) return;
+    const wer = n === "ailsa" ? "Deine Mutter" : n === "hannes" ? null : npc.name;
+    if (!wer) return;
+    const ort = npcLocationNow(npc, state.day, state.phase);
+    z.push(ort && D.AEPFEL_ORTE[ort] ? wer + " ist gerade " + D.AEPFEL_ORTE[ort] + "." : wer + " ist heute nicht mehr auf dem Hof. Versuch es morgen.");
+  });
+  return z.length ? z.join(" ") : "Keiner mehr, so wie ich das sehe. Dann komm zu mir.";
+}
+CHOOSE_HOOKS.aepfel_geben = (go, npc) => {
+  const [, id, npcId] = go.split(":"), q = D.BITTEN[id], i = verteilSchritt(id);
+  if (!q || i < 0 || !bitteAktiv(id) || verteiltAn(id).includes(npcId)) return "";
+  const st = q.schritte[i];
+  if (state.phase === "nacht") { naechsteWahl = null; return aepfelText(npcId, "nacht") || "*Es ist mitten in der Nacht.* Komm morgen wieder."; }
+  if (!nimmItem(st.item)) return "";
+  const b = bittenState()[id]; b.verteilt = verteiltAn(id).concat(npcId);
+  bumpBond(npcId, st.bond || 1, { source: "quest_story" });
+  log((D.NPCs[npcId] || {}).name + " hat einen Apfel bekommen.");
+  bitteZaehlen(id, i, 1);
+  const t = D.AEPFEL_TEXTE[npcId] || {};
+  naechsteWahl = ["a", "b"].filter((k) => t[k]).map((k) => ({ label: t[k].label, go: "aepfel_antwort:" + npcId + ":" + k + ":" + id }));
+  if (!naechsteWahl.length) naechsteWahl = null;
+  return aepfelText(npcId, "geben");
+};
+CHOOSE_HOOKS.aepfel_antwort = (go) => {
+  const [, npcId, k, id] = go.split(":");
+  const t = (D.AEPFEL_TEXTE[npcId] || {})[k]; if (!t) return "";
+  return t.text === "@fehlt" ? aepfelFehlt(id) : aepfelText(npcId, k);
+};
+CHOOSE_HOOKS.aepfel_fertig = (go) => {
+  const id = go.split(":")[1], q = D.BITTEN[id], b = bittenState()[id];
+  if (!q || !bitteAktiv(id) || b.schritt !== q.schritte.findIndex((s) => s.art === "melden")) return "";
+  b.schritt = q.schritte.length;
+  finishBitte(id, true);
+  naechsteWahl = [{ label: "Weiter", go: "leave" }];
+  return textVars(D.AEPFEL_ENDE, "eltern");
+};
+const _renderB5 = render;
+render = function () { if (state) { try { aepfelPruefen(); } catch (e) { console.error(e); } } return _renderB5.apply(this, arguments); };

@@ -534,3 +534,8 @@ body.interaktion #scene .spot,body.interaktion #scene .arch,body.interaktion #sc
 #bitten-verfolgen .bv-zeile.fertig{color:#9fb88a;text-decoration:line-through}
 .bitte-verfolgen{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:#e0b45a;cursor:pointer}
 .bitte-verfolgen input{accent-color:#c7a056}
+/* Block 5: Äpfel einzeln pflücken – kleine leuchtende Stellen im Baum */
+.act-round.apfel-spot{width:34px;height:34px;gap:0;z-index:7}
+.act-round.apfel-spot .ring{width:30px;height:30px;border:2px solid rgba(255,214,120,.95);outline:1px solid rgba(58,38,20,.8);outline-offset:1px;background:radial-gradient(circle,rgba(255,220,140,.35),rgba(255,200,90,.08) 70%);box-shadow:0 0 10px rgba(255,200,90,.85);animation:apfelGlimmen 1.8s ease-in-out infinite}
+.act-round.apfel-spot:hover .ring{border-color:#fff4c8;box-shadow:0 0 16px rgba(255,230,150,1)}
+@keyframes apfelGlimmen{0%,100%{box-shadow:0 0 6px rgba(255,200,90,.6)}50%{box-shadow:0 0 14px rgba(255,214,120,1)}}

@@ -55,7 +55,7 @@ const WAYS = (() => {
 
 // Beziehungskategorien (Nico 17.10.): ein Beziehungswert je NPC (state.bonds, −100…100), Anzeige als Stufenname der Kategorie.
 // Neue Kategorie = neuer Eintrag hier; Zuordnung über BEZIEHUNG_ZUORDNUNG (oder npc.beziehung), sonst BEZIEHUNG_STANDARD.
-const BEZIEHUNG_NAME_VERTRAUT = "Vertraut";  // Arbeitsname für Nicos „Intim“, hier umbenennen
+const BEZIEHUNG_NAME_VERTRAUT = "Persönlich";  // Block 5 (21.10.): Anzeigename „Persönlich“ (vorher „Vertraut“); interne ID bleibt „vertraut“
 const BEZIEHUNG_KATEGORIEN = {
   familie: { id: "familie", name: "Familie", stufen: [
     { min: -100, name: "Entfremdet" }, { min: -40, name: "Zerstritten" }, { min: -15, name: "Kühl" }, { min: -8, name: "Nah" },
@@ -233,8 +233,8 @@ const ITEMS = {
   platzhalter_brotteller: { id: "platzhalter_brotteller", img: "items/wein_der_stunde.jpg", name: "Brot und Käse (Platzhalter)", type: "verbrauch", heal: 4, price: 5, sell: 2, text: "PLATZHALTER: Speise von Corins Tresen." },
   // Essen (Ausbesserungen5, 16.10.): Verbrauchsgegenstände bei Gasthaus, Schenke, Krämerin und Bordell. Bilder von Ext Art (17.10.).
   brot: { id: "brot", img: "items/essen_brot.jpg", name: "Brot", type: "verbrauch", essen: true, heal: 4, price: 2, sell: 1, text: "Ein Laib dunkles Brot, die Kruste noch fest." },
-  // Block 4 (21.10.): Behälter = Gegenstand mit eigenem Inhalt (state.behaelter[id]), Kapazität und Filter „erlaubt“. Bild: Platzhalter, bis ein Korb-Bild in alle-bilder liegt.
-  korb: { id: "korb", img: "ui/platzhalter.jpg", name: "Korb", type: "behaelter", kapazitaet: 12, erlaubt: ["apfel"], erlaubtText: "Nur Äpfel", autoAufnahme: true, text: "Ein geflochtener Weidenkorb. Hinein passen ein Dutzend Äpfel." },
+  // Block 4 (21.10.): Behälter = Gegenstand mit eigenem Inhalt (state.behaelter[id]), Kapazität und Filter „erlaubt“. Bild seit Block 5: items/korb.jpg.
+  korb: { id: "korb", img: "items/korb.jpg", name: "Korb", type: "behaelter", kapazitaet: 12, erlaubt: ["apfel"], erlaubtText: "Nur Äpfel", autoAufnahme: true, text: "Ein geflochtener Weidenkorb. Hinein passen ein Dutzend Äpfel." },
   apfel: { id: "apfel", img: "items/essen_apfel.jpg", name: "Apfel", type: "verbrauch", essen: true, heal: 2, wk: 1, price: 2, sell: 1, text: "Ein roter Apfel, ein wenig mehlig, aber süß." },
   kaese: { id: "kaese", img: "items/essen_kaese.jpg", name: "Käse", type: "verbrauch", essen: true, heal: 5, price: 3, sell: 1, text: "Ein Keil harter Käse, in Tuch gewickelt." },
   gebratenes_fleisch: { id: "gebratenes_fleisch", img: "items/essen_gebratenes_fleisch.jpg", name: "Gebratenes Fleisch", type: "verbrauch", essen: true, heal: 9, price: 6, sell: 3, text: "Ein Stück Fleisch vom Spieß, außen dunkel, innen saftig." },
@@ -362,11 +362,12 @@ const NPCs = {
     talk: { start: "Sprecht leise. Die Totenlichter brennen für jene, die nicht mehr sprechen können." }
   },
   // ---- NPC-Bau 2 (Leitung 13.10., plan/npc-verteilung-2026-10-13.md; ohne Quests; Texte PLATZHALTER für Ext Text) ----
-  anselm: { id: "anselm", name: "Bruder Anselm", title: "Wanderprediger", location: "lotfild_strasse",
-    text: "Ein hagerer Mann in grober Kutte, barfuß. Am Gürtel hängt eine Glocke ohne Klöppel.",
+  // Block 5 (Nico 17.10., Antwort 3): Anselm gehört zum Tempel, kein Bettler und kein Wanderprediger.
+  anselm: { id: "anselm", name: "Bruder Anselm", title: "Bruder vom Tempel", location: "lotfild_strasse",
+    text: "Ein hagerer Mann in der grauen Kutte des Tempels. Er geht barfuß, das gehört zu seinem Gelübde. Am Gürtel hängt eine Glocke ohne Klöppel.",
     art: "npcs/npc_anselm.jpg", merchant: false, pin: { x: 44, y: 80 }, faction: "tempel",
     lines: ["Auf dem Feld bereut man ehrlicher als im Tempel."],
-    talk: { start: "Friede mit euch. Wer etwas loswerden will, findet mich hier an der Straße." } },
+    talk: { start: "Friede mit dir. Der Tempel schickt mich, damit hier draußen auch einer zuhört. Wenn dich etwas drückt, findest du mich an der Straße." } },
   morwen: { id: "morwen", name: "Morwen Nachtweyd", title: "Wahrsagerin der Fahrenden", location: "auen_kreuzung",
     text: "Vor einem bemalten Wagen sitzt eine Frau mit dunklen Locken und einer Kette aus Wolfszähnen.",
     art: "npcs/npc_morwen.jpg", merchant: false, pin: { x: 28, y: 80 }, faction: "fahrende",
@@ -423,7 +424,7 @@ const NPCs = {
   // ---- Hof Lotfild (Spec Wochentage 14.10.): Tagesablauf über schedule; location = Heimatort. Porträts fehlen -> Platzhalter-Schild. Texte PLATZHALTER für Ext Text ----
   hannes: { id: "hannes", name: "Hannes", title: "Bauer", location: "bauernhaus_kueche", hof: true,
     text: "Dein Vater, um die fünfzig. Die Hände sind vom Pflug gespalten, und ein Daumennagel ist schwarz. Er sagt wenig. Was er sagt, hat er sich vorher überlegt.",
-    art: "npcs/npc_hannes.jpg", merchant: false, pin: { x: 14, y: 86 }, faction: "",
+    art: "npcs/npc_hannes.jpg", merchant: false, pin: { x: 14, y: 86 }, pins: { lotfild_werkstatt: { x: 22, y: 88 } }, faction: "",
     lines: ["Die Pacht will ihr Korn, ob es geregnet hat oder nicht."],
     talk: { start: "Na. Du bist wach. Das spart mir einen Eimer Wasser." },
     slotTalk: {
@@ -468,7 +469,7 @@ const NPCs = {
       "morgen": "Das Seil ist feucht und die Kurbel quietscht. Brannoc sagt, er hat sie geölt. Brannoc lügt.",
       "vormittag": "Eine Henne fehlt. Entweder der Fuchs oder jemand von der Straße. Der Fuchs lässt Federn liegen.",
       "mittag": "Deine Mutter gibt mir die Ecke vom Brot. Sie meint, ich merk das nicht.",
-      "nachmittag": "Von oben sieht man bis zur Straße. Ein Wanderprediger stand heute dort, barfuß. Hat lange zum Hof hergesehen.",
+      "nachmittag": "Von oben sieht man bis zur Straße. Bruder Anselm vom Tempel stand heute wieder dort, barfuß. Hat lange zum Hof hergesehen.",
       "abend": "Feierabend. Auf dem Weg heim komm ich an drei Höfen vorbei, und an jedem weiß ich was Neues. Morgen weißt du es auch.",
       "freyatag.abend": "Freyatag, ich ess mit euch. Dein Vater sagt dann einen ganzen Satz mehr als sonst. Ich zähl mit.",
       "sonnrast.vormittag": "Die Füße im Wasser, kein Eimer. Wenn du jemandem sagst, dass ich hier faul war, sag ich, mit wem du am Teich warst." },
@@ -1377,8 +1378,70 @@ const BITTEN = {
     ],
     lohn: { bond: { ailsa: 2 } },  // Leitung 14.10.
     folge: { hinweis: "Vater in der Werkstatt", bitte: null }  // nur Text, keine Folgebitte
+  },
+  // Block 5 (21.10.): Hofquest 2 nach Entwurf „Äpfel für alle“ (16.10.) und Nicos Antworten (17.10.).
+  // Kein Gold, Lohn = je 2 Übungspunkte Beweglichkeit und Kraft (keine Stufe); jede Übergabe Beziehung +1; keine Folgebitte.
+  // Äpfel einzeln an 6 Stellen im Baum (aepfel.stellen, Bildprozent 1000×671), landen automatisch im Korb (legeAb).
+  hof_aepfel: {
+    id: "hof_aepfel", title: "Ein Korb voll Äpfel", giver: "hannes", voraus: "wasser_kueche",
+    start: { npc: "hannes", frage: "Was soll ich als Nächstes tun?", anrede: "eltern", gibt: ["korb"], nichtNachts: true,
+      text: "*Dein Vater hält einen Weidenkorb in der Hand und zieht am Henkel.* Hält. Brannoc hat ihn neu geflochten. Deine Mutter sagt, du hast beim Wasser nichts verschüttet. Gut gemacht, {anrede}. *Er drückt dir den Korb in die Hand.* Geh zu den Apfelbäumen und pflück ihn voll. Dann bringst du jedem auf dem Hof einen Apfel: deiner Mutter, Lene, Oke, Brannoc und mir. Bruder Anselm drüben an der Straße kriegt auch einen. Der betet jeden Tag für den Hof, da ist ein Apfel das Mindeste." },
+    // Hannes steht in der Werkstatt, bis man die Bitte angenommen hat (auch schon während der Wasser-Bitte), außer nachts.
+    zwang: { npc: "hannes", ort: "lotfild_werkstatt", nichtIn: ["nacht"] },
+    where: "Apfelbäume, ganzer Hof, Die Straße",
+    goal: "Pflück an den Apfelbäumen Äpfel in den Korb und bring jedem auf dem Hof einen: Mutter, Vater, Lene, Oke und Brannoc. Bruder Anselm an der Straße bekommt auch einen.",
+    schritte: [
+      { art: "verteilen", item: "apfel", label: "Einen Apfel geben", npcs: ["hannes", "ailsa", "lene", "oke", "brannoc", "anselm"], bond: 1,
+        zaehler: { label: "Äpfel verteilt", ziel: 6 } },
+      { art: "melden", npc: "hannes", label: "Zurück zu deinem Vater", frage: "Alle haben ihren Apfel." }
+    ],
+    lohn: { bond: { hannes: 1 }, uebung: { beweg: 2, atk: 2 } },
+    folge: { hinweis: "Die anderen auf dem Hof fragen, ob sie Hilfe brauchen", bitte: null }
   }
 };
+// Block 5: Äpfel einzeln pflücken. stellen = Prozent im Ortsbild (1000×671), 6 Stück; nachwachsen 2× bei aktiver Bitte (nach erneutem Hingehen), sonst wöchentlich.
+const AEPFEL = {
+  ort: "lotfild_apfelbaeume", bitte: "hof_aepfel", item: "apfel", minuten: 3, nachQuest: 2, tageNeu: 7, bildW: 1000, bildH: 671,
+  stellen: [ { x: 43, y: 16 }, { x: 61, y: 18 }, { x: 75, y: 36 }, { x: 59, y: 37 }, { x: 55, y: 52 }, { x: 41, y: 58 } ]
+};
+// Block 5: Texte der Übergabe. geben = Reaktion auf den Apfel, a/b = zwei Antworten, nacht = Hinweis statt Abgabe.
+const AEPFEL_TEXTE = {
+  hannes: {
+    geben: "*Dein Vater nimmt den Apfel, ohne groß hinzusehen, und beißt hinein.* Sauer. Gut.",
+    a: { label: "Wer fehlt mir noch?", text: "@fehlt" },
+    b: { label: "Warum ist sauer gut?", text: "Süße Äpfel verkauft man. Saure behält man. *Er kaut.* Die halten bis zum Frühjahr, so wie wir." },
+    nacht: "*Dein Vater brummt im Halbschlaf.* Mitten in der Nacht, {anrede}? Den Apfel gibst du mir morgen. Komm morgen wieder." },
+  ailsa: {
+    geben: "*Deine Mutter wischt sich die Hände an der Schürze ab.* Ein Apfel für mich? Von unserem eigenen Baum, und ich freu mich trotzdem. Hast du selbst schon einen gegessen?",
+    a: { label: "Ja.", text: "Gut so. Wer arbeitet, soll auch essen. *Sie streicht dir eine Strähne aus der Stirn, als wärst du noch klein.*" },
+    b: { label: "Nein.", text: "Dann nimm dir einen. Wer den ganzen Tag Äpfel schleppt und keinen isst, ist nicht fleißig, sondern dumm. *Sie lächelt, damit es nicht so hart klingt.*" },
+    nacht: "*Deine Mutter zieht die Decke hoch.* Nicht jetzt, mein Schatz, es ist mitten in der Nacht. Komm morgen wieder." },
+  lene: {
+    geben: "*Lene sieht den Korb und lässt alles stehen und liegen.* Für mich? *Sie reibt den Apfel am Ärmel blank und hält ihn ins Licht.* Kein Wurm. Du hast extra einen guten ausgesucht, das merk ich mir. Und, gibt's was Neues?",
+    a: { label: "Nichts, ehrlich.", text: "Schade. Dann erzähl ich dir was. Seit gestern fehlt eine Henne, und der Fuchs war's nicht. Der lässt nämlich Federn liegen. *Sie beißt in den Apfel und schaut dabei zur Straße rüber.*" },
+    b: { label: "Brannoc hat den Korb neu geflochten.", text: "Dann hält er bis zum Winter. Und danach sagt Brannoc, wir hätten ihn falsch getragen. *Sie lacht und beißt ab.* Danke, wirklich." },
+    nacht: "*Lene ist längst daheim.* Komm morgen wieder." },
+  oke: {
+    geben: "*Oke richtet sich auf, eine Hand im Kreuz.* *Er schaut erst den Apfel an, dann dich.* Ein Apfel, von dir? Dein Großvater hat mir auch mal einen gebracht. Da war ich jünger als du, und er hat ihn mir hinterhergeworfen.",
+    a: { label: "Soll ich ihn dir zuwerfen?", text: "*Oke lacht, bis er husten muss.* Lass mal. Ich fang nichts mehr, nur noch Schnupfen. *Er steckt den Apfel in die Jackentasche.* Für später, die Zähne müssen erst warm werden." },
+    b: { label: "Erzähl mir von Großvater.", text: "Ein sturer Hund war das. Den Brunnen hat er selbst gegraben, mit einem Spaten und einem Fluch pro Elle. *Er dreht den Apfel in der Hand.* Dein Vater hat seine Hände. Und du hast, glaub ich, seinen Dickkopf. Das ist nicht bös gemeint." },
+    nacht: "*Oke schnarcht im Heu und wacht nicht auf.* Den Apfel gibst du ihm besser, wenn er wach ist. Komm morgen wieder." },
+  brannoc: {
+    geben: "*Brannoc hobelt weiter und schaut nicht auf.* *Sein Blick geht zu deinen Stiefeln, dann zum Apfel.* Leg ihn hin. Nicht da, da liegt der Pfahl.",
+    a: { label: "Auf die Bank?", text: "*Er nickt zur Ecke der Werkbank.* Da. *Du legst den Apfel hin, und er schiebt ihn einen Fingerbreit zurecht.* Danke. *Er hobelt weiter, aber langsamer.*" },
+    b: { label: "Nimm ihn doch einfach.", text: "*Brannoc hält inne und wischt sich die Hand an der Schürze ab.* *Er nimmt den Apfel und sieht dir zum ersten Mal ins Gesicht, nur kurz.* Hm, guter Apfel. Sag deinem Vater, der Henkel hält. Glauben tut er's mir eh nicht." },
+    nacht: "*Brannoc ist längst daheim.* Komm morgen wieder." },
+  anselm: {
+    geben: "*Bruder Anselm hebt die Hand zum Gruß, als er dich mit dem Korb kommen sieht.* Ein Apfel vom Hof? Das ist freundlich von euch. Sag deinem Vater, ich denk heute Abend beim Gebet an euch alle.",
+    a: { label: "Vater meint, Ihr sollt auch einen haben.", text: "Dein Vater denkt an mehr Leute, als er zugibt. *Er steckt den Apfel in die Tasche seiner Kutte.* Ich ess ihn auf dem Rückweg zum Tempel, dann ist der Weg kürzer." },
+    b: { label: "Warum steht Ihr immer hier an der Straße?", text: "Weil hier die Leute vorbeikommen, die nicht in den Tempel gehen. Mit denen muss auch einer reden. *Er lächelt und beißt in den Apfel.* Und manchmal bringt mir einer was vom Hof." },
+    nacht: "*Bruder Anselm hebt seine Laterne.* So spät nehm ich nichts mehr an, Kind. Geh schlafen und komm morgen wieder." }
+};
+// Block 5: Abschluss bei Hannes; danach keine Folgebitte, sondern der Hinweis, die anderen zu fragen (Nico, Antwort 10).
+const AEPFEL_ENDE = "*Dein Vater schaut in den Korb.* Alle haben einen? Auch der Bruder an der Straße? Gut. *Er nickt, und bei ihm ist das schon viel.* Den Korb behältst du, den brauchst du noch öfter. Und jetzt hör dich auf dem Hof um. Frag die anderen, ob sie bei irgendwas Hilfe brauchen. So lernst du am schnellsten, wie hier alles läuft.";
+const AEPFEL_ORTE = { lotfild_brunnen: "am Brunnen", lotfild_scheune: "an der Scheune", lotfild_scheune_innen: "in der Scheune", lotfild_feld: "auf dem Feld",
+  lotfild_werkstatt: "bei der Werkstatt", lotfild_werkstatt_innen: "in der Werkstatt", bauernhaus_kueche: "in der Küche", lotfild_apfelbaeume: "bei den Apfelbäumen",
+  lotfild_bauernhaus: "vorm Haus", bauernhaus_wohnzimmer: "in der Stube", bauernhaus_elternzimmer: "oben in der Kammer", lotfild_teich: "am Teich", lotfild_strasse: "an der Straße" };
 
 const WOLF_LINES = {
   wolf_niederlage: "Ihr liegt am Brunnen, nicht auf dem Pfad. Der Wolf hat euch umgeworfen und ist geblieben. Trinkt, dann entscheidet, ob ihr noch einmal hingeht."
@@ -1423,7 +1486,7 @@ ausstellungNeu();
 window.D = {
   WORLD, FACTIONS, DAY_PHASES, BOND_STEPS, BEZIEHUNG_NAME_VERTRAUT, BEZIEHUNG_KATEGORIEN, BEZIEHUNG_STANDARD, BEZIEHUNG_ZUORDNUNG, STAT_KEYS,
   HERKUENFTE, FLUECHE, PORTRAITS, AVATARE, START_POOL, EXT_ART, ITEMS, SKILLS, MONSTER, NPCs, QUESTS, BITTEN, STORY, ANREDE,
-  NARRATOR, REGIONS, LOCATIONS, BASE_HERO, WEEKDAYS, AUSSTELLUNG, ausstellungNeu, WOLF_LINES, SPAWN_TABLES, ZEICHEN, PFAD_ZEICHEN, GRAD_STUFEN, GRUNDWERTE, STUFE_MAX, STUFEN_KOSTEN, GRAD_AUFSTIEGE, RICHTUNGEN, GRAD_BELOHNUNG, NEBENRICHTUNG_AB, BLOCK_START, WAY_MIN, WAYS, BORDELL_THEMENRAEUME_OFFEN, SAFFI, SAFFI_KORRUPTION_HALSBAND, SAFFI2, SAFFI_KORRUPTION_TRAGEN, SAFFI_KORRUPTION_ROCK_HANDEL, SAFFI_TRAGEFFEKT, SCHULD
+  NARRATOR, REGIONS, LOCATIONS, BASE_HERO, WEEKDAYS, AUSSTELLUNG, ausstellungNeu, WOLF_LINES, AEPFEL, AEPFEL_TEXTE, AEPFEL_ENDE, AEPFEL_ORTE, SPAWN_TABLES, ZEICHEN, PFAD_ZEICHEN, GRAD_STUFEN, GRUNDWERTE, STUFE_MAX, STUFEN_KOSTEN, GRAD_AUFSTIEGE, RICHTUNGEN, GRAD_BELOHNUNG, NEBENRICHTUNG_AB, BLOCK_START, WAY_MIN, WAYS, BORDELL_THEMENRAEUME_OFFEN, SAFFI, SAFFI_KORRUPTION_HALSBAND, SAFFI2, SAFFI_KORRUPTION_TRAGEN, SAFFI_KORRUPTION_ROCK_HANDEL, SAFFI_TRAGEFFEKT, SCHULD
 };
 
 // ---- Male, Flüche, Segen (male-fluche-segen.md §6, fx laut grad-zeichen-kampf.md §12.4) ----
