@@ -1559,3 +1559,11 @@ window.D.FLUCH_MIGRATION = { glasherz: "fluch_glasherz", kronenbrand: "fluch_kro
 // Nichts ist gelöscht: Code, Texte, Items, Bilder und Flags bleiben erhalten; mit true läuft alles exakt wie bisher.
 const SAFFI_ROUTE_AKTIV = false;
 window.D.SAFFI_ROUTE_AKTIV = SAFFI_ROUTE_AKTIV;
+// 25.10. (Nico): Eigene Grüße in Du-Form, solange die Route ruht (SAFFI_ROUTE_AKTIV = false); reihum bei jedem Ansprechen, nur Gruß + „Gehen“.
+// Zähler im Save: state.saffiRuheGruss (eigenes Feld, berührt die Routen-Daten state.saffi nicht; fehlt er, gilt 0).
+const SAFFI_RUHE_GRUESSE = [
+  "*Saffi lächelt dich über den Rand ihres Glases an.*\nNa, du.\nHeute nur zum Schauen hier?",
+  "*Saffi streicht sich eine Strähne hinters Ohr.*\nSetz dich ruhig einen Moment.\nIch beiß nicht.\nHeute nicht.",
+  "*Saffi winkt dir mit zwei Fingern zu.*\nSchön, dass du vorbeischaust.\nVessa hat heute schlechte Laune, sei lieb zu ihr."
+];
+window.D.SAFFI_RUHE_GRUESSE = SAFFI_RUHE_GRUESSE;

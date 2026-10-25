@@ -3723,3 +3723,12 @@ const _saffiBegruessungRoute = saffiBegruessung;
 saffiBegruessung = function () { if (!saffiRouteAktiv()) return; return _saffiBegruessungRoute.apply(this, arguments); };
 const _saffiZimmerRoute = saffiZimmerStart;
 saffiZimmerStart = function () { if (!saffiRouteAktiv()) return; return _saffiZimmerRoute.apply(this, arguments); };
+// Ruhe-Grüße (25.10., Nico): bei ruhender Route statt der allgemeinen talk.start-Zeile reihum ein eigener Gruß in Du-Form.
+// Pro Gespräch wird genau einmal weitergezählt (Index im Gespräch gemerkt); mit Schalter true unverändert.
+const _renderTalkRuhe = renderTalk;
+renderTalk = function () {
+  const npc = lastTalk, d = state && state.dialogue, G = D.SAFFI_RUHE_GRUESSE;
+  if (saffiRouteAktiv() || !npc || npc.id !== "saffi" || !d || d.npcId !== "saffi" || d.node !== "start" || !G || !G.length) return _renderTalkRuhe.apply(this, arguments);
+  if (typeof d.ruheGruss !== "number") { const n = state.saffiRuheGruss || 0; d.ruheGruss = n % G.length; state.saffiRuheGruss = n + 1; if (typeof persist === "function") persist(); }
+  showFace(npc); showLine(G[d.ruheGruss], talkChoices());
+};
