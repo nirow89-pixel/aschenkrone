@@ -188,7 +188,9 @@ const MIGRATIONS = [
   // v17 -> v18 (Block 3, 17.10.): Beziehungskategorien – Saffis Extra-Wert und Alias-Schlüssel in state.bonds zusammengeführt.
   function v17to18(s) { return typeof migV18 === "function" ? migV18(s) : s; },
   // v18 -> v19 (Block 4, 21.10.): Behälter-Inhalte (state.behaelter) und „Bitte verfolgen“ (state.verfolgen).
-  function v18to19(s) { return typeof migV19 === "function" ? migV19(s) : s; }
+  function v18to19(s) { return typeof migV19 === "function" ? migV19(s) : s; },
+  // v19 -> v20 (Apfelkorb-Rückgabe, 25.10.): bei abgeschlossener Apfelquest Korb weg, Restinhalt vorher in den Beutel.
+  function v19to20(s) { return typeof migV20 === "function" ? migV20(s) : s; }
 ];
 const SAVE_VERSION = MIGRATIONS.length;
 function migrate(s) {

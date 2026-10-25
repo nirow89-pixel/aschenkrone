@@ -1445,7 +1445,8 @@ const AEPFEL_TEXTE = {
     nacht: "*Bruder Anselm hebt seine Laterne.* So spät nehm ich nichts mehr an, Kind. Geh schlafen und komm morgen wieder." }
 };
 // Block 5: Abschluss bei Hannes; danach keine Folgebitte, sondern der Hinweis, die anderen zu fragen (Nico, Antwort 10).
-const AEPFEL_ENDE = "*Dein Vater schaut in den Korb.* Alle haben einen? Auch der Bruder an der Straße? Gut. *Er nickt, und bei ihm ist das schon viel.* Den Korb behältst du, den brauchst du noch öfter. Und jetzt hör dich auf dem Hof um. Frag die anderen, ob sie bei irgendwas Hilfe brauchen. So lernst du am schnellsten, wie hier alles läuft.";
+// 25.10. (Nico): Den Korb behält man nicht mehr – Hannes nimmt ihn zurück (Erzählzeile hier, Logik: korbZurueck in systeme.js).
+const AEPFEL_ENDE = "*Dein Vater schaut in den Korb.* Alle haben einen? Auch der Bruder an der Straße? Gut. *Er nickt, und bei ihm ist das schon viel.* *Dein Vater nimmt dir den Korb ab.* Und jetzt hör dich auf dem Hof um. Frag die anderen, ob sie bei irgendwas Hilfe brauchen. So lernst du am schnellsten, wie hier alles läuft.";
 const AEPFEL_ORTE = { lotfild_brunnen: "am Brunnen", lotfild_scheune: "an der Scheune", lotfild_scheune_innen: "in der Scheune", lotfild_feld: "auf dem Feld",
   lotfild_werkstatt: "bei der Werkstatt", lotfild_werkstatt_innen: "in der Werkstatt", bauernhaus_kueche: "in der Küche", lotfild_apfelbaeume: "bei den Apfelbäumen",
   lotfild_bauernhaus: "vorm Haus", bauernhaus_wohnzimmer: "in der Stube", bauernhaus_elternzimmer: "oben in der Kammer", lotfild_teich: "am Teich", lotfild_strasse: "an der Straße" };

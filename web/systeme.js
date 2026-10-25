@@ -3671,3 +3671,44 @@ gegenstandMenue = function (itemId, ort, anker) {
   });
   return m;
 };
+
+// =====================================================================
+// Apfelkorb-Rückgabe (25.10., Nico): Beim Abschluss von „Ein Korb voll Äpfel“ nimmt Hannes den Korb zurück.
+// Reihenfolge: Abgabe wie bisher (Verteilen) → Restinhalt des Korbs in den Beutel (Beutel ohne Platzgrenze, Stapeln über groupItems)
+// → Korb weg aus Beutel und allen Behältern. Keine Einblendung für Gegenstände; Erzählzeile steht in AEPFEL_ENDE.
+// Save v20 (migV20): Altstände mit abgeschlossener Apfelquest ebenso; laufende/nicht begonnene Quest unverändert.
+// =====================================================================
+const KORB_RUECKGABE = { bitte: "hof_aepfel", item: "korb" };
+// Arbeitet auf einem Spielstand-Objekt (state oder roher Save). true = Korb war da und ist jetzt weg.
+function korbZurueck(s) {
+  if (!s || typeof s !== "object") return false;
+  const K = KORB_RUECKGABE.item, inv = Array.isArray(s.inventory) ? s.inventory : [];
+  const b = s.behaelter && typeof s.behaelter === "object" && !Array.isArray(s.behaelter) ? s.behaelter : null;
+  let weg = inv.includes(K);
+  const rest = b && Array.isArray(b[K]) ? b[K].filter((x) => x !== K) : [];
+  if (b && K in b) { delete b[K]; weg = true; }
+  if (b) Object.keys(b).forEach((k) => { if (Array.isArray(b[k]) && b[k].includes(K)) { b[k] = b[k].filter((x) => x !== K); weg = true; } });
+  if (!weg) return false;
+  const neu = inv.filter((x) => x !== K);
+  // Restäpfel zu gleichartigen Stücken im Beutel legen (sonst ans Ende)
+  rest.forEach((id) => { const i = neu.lastIndexOf(id); if (i < 0) neu.push(id); else neu.splice(i + 1, 0, id); });
+  inv.length = 0; neu.forEach((x) => inv.push(x)); s.inventory = inv;
+  return true;
+}
+function migV20(s) {
+  if (!s || typeof s !== "object") return s;
+  const b = s.bitten && s.bitten[KORB_RUECKGABE.bitte];
+  if (b && b.status === "abgeschlossen") korbZurueck(s);
+  return s;
+}
+const _aepfelFertigKorb = CHOOSE_HOOKS.aepfel_fertig;
+CHOOSE_HOOKS.aepfel_fertig = (go, npc) => {
+  const id = go.split(":")[1], vorher = (bittenState()[id] || {}).status;
+  const r = _aepfelFertigKorb(go, npc);
+  if (id === KORB_RUECKGABE.bitte && vorher === "aktiv" && (bittenState()[id] || {}).status === "abgeschlossen" && korbZurueck(state)) {
+    if (offenerBehaelter === KORB_RUECKGABE.item) offenerBehaelter = null;
+    if (aktiverBehaelter === KORB_RUECKGABE.item) aktiverBehaelter = null;
+    persist();
+  }
+  return r;
+};
