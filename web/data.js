@@ -1554,3 +1554,8 @@ window.D.MERCHANT_ECON = {
 };
 // Alte Fluch-IDs (Erstellung bis Oktober 2026) -> Perk-ID
 window.D.FLUCH_MIGRATION = { glasherz: "fluch_glasherz", kronenbrand: "fluch_kronenbrand", stumme_glocke: "fluch_stumme_glocke", blutmond: "fluch_blutmond" };
+// 25.10. (Nico): Die Saffi-Route (Halsband-Pfad, Stufe 1 und 2 inkl. Wiederholung mit den rotierenden Grüßen) ruht.
+// Zentraler Schalter: false blendet den Einstieg bzw. die Fortsetzung der Route bei Saffi aus (Logik: saffiRouteAktiv in systeme.js).
+// Nichts ist gelöscht: Code, Texte, Items, Bilder und Flags bleiben erhalten; mit true läuft alles exakt wie bisher.
+const SAFFI_ROUTE_AKTIV = false;
+window.D.SAFFI_ROUTE_AKTIV = SAFFI_ROUTE_AKTIV;

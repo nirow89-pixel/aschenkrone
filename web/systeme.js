@@ -3712,3 +3712,14 @@ CHOOSE_HOOKS.aepfel_fertig = (go, npc) => {
   }
   return r;
 };
+
+// ---- Saffi-Route ruht (25.10., Nico) ----
+// Schalter D.SAFFI_ROUTE_AKTIV (data.js). Bei false: Gespräch mit Saffi ist das normale NPC-Gespräch (wie während der Abklingzeit) –
+// kein Routenstart, keine Fortsetzung (Stufe 1/2, Wiederholung). Flags, Items, getragenes Halsband/Minirock bleiben unangetastet.
+function saffiRouteAktiv() { return !!(window.D && D.SAFFI_ROUTE_AKTIV); }
+const _saffiBereitRoute = saffiBereit;
+saffiBereit = function () { if (!saffiRouteAktiv()) return false; return _saffiBereitRoute.apply(this, arguments); };
+const _saffiBegruessungRoute = saffiBegruessung;
+saffiBegruessung = function () { if (!saffiRouteAktiv()) return; return _saffiBegruessungRoute.apply(this, arguments); };
+const _saffiZimmerRoute = saffiZimmerStart;
+saffiZimmerStart = function () { if (!saffiRouteAktiv()) return; return _saffiZimmerRoute.apply(this, arguments); };
