@@ -3732,3 +3732,195 @@ renderTalk = function () {
   if (typeof d.ruheGruss !== "number") { const n = state.saffiRuheGruss || 0; d.ruheGruss = n % G.length; state.saffiRuheGruss = n + 1; if (typeof persist === "function") persist(); }
   showFace(npc); showLine(G[d.ruheGruss], talkChoices());
 };
+
+// =====================================================================
+// Dungeonbound Stufe 1–3 (06.11.2026, Nico via Ext Leitung)
+// Sichtbare Zustandszeilen, Kniffe, kleine Synergien. Wachsen: Wrapper, nichts gelöscht.
+// Stufe 4–6 (Tausch-Loot, Schmieden, Beutelwachsen) NICHT angefasst. SAFFI_ROUTE_AKTIV unverändert.
+// =====================================================================
+const DOT_ZEILE = {
+  gift: (c, n) => "Gift frisst an " + c.name + " (" + n + ").",
+  blutung: (c, n) => "Die Wunde blutet (" + n + ").",
+  brand: (c, n) => "Brand leckt an " + c.name + " (" + n + ")."
+};
+function dbSchwereWaffe() {
+  const w = weaponOf("waffeL");
+  return !!(w && (w.twoHanded || (w.dmgMax || 0) >= 9));
+}
+function dbLeichteKlinge() {
+  const w = weaponOf("waffeL");
+  if (!w) return false;
+  if (/dolch|nadel/i.test(w.id) || /dolch|nadel/i.test(w.name || "")) return true;
+  return /Dolch|Stichdolch/i.test(w.text || "");
+}
+function dbMagischerFokus() {
+  return Object.values(state.equipped || {}).some((id) => {
+    const it = D.ITEMS[id];
+    return it && ((it.will || 0) > 0);
+  });
+}
+function dbPfad(p) { return ((gradState().pfad || {})[p] || 0) > 0; }
+function dbVsTeile(c) {
+  const out = [];
+  Object.values(state.equipped || {}).forEach((id) => {
+    const it = D.ITEMS[id], n = it && it.fx && it.fx.vsMonster && it.fx.vsMonster[c.id];
+    if (n) out.push({ id, name: it.name, n });
+  });
+  return out;
+}
+function dbAnnOnce(c, key, line) {
+  if (!c.dbAnn) c.dbAnn = {};
+  if (c.dbAnn[key]) return false;
+  c.dbAnn[key] = true;
+  combatLine(c, line);
+  return true;
+}
+function dbSynKrieger(zeichenId) {
+  return dbPfad("krieger") && dbSchwereWaffe() && ["schnellschlag", "eisenhaut", "solarplexus"].includes(zeichenId);
+}
+function dbSynMagier(zeichenId) {
+  return dbPfad("magier") && dbMagischerFokus() && D.ZEICHEN[zeichenId] && D.ZEICHEN[zeichenId].magic;
+}
+function dbSynDieb(zeichenId) {
+  return dbPfad("dieb") && dbLeichteKlinge() && ["giftklinge", "schattenhieb", "blutung"].includes(zeichenId);
+}
+function combatFleeLoot(c) {
+  stopTimer();
+  let take = Math.min(8, rnd(3, 6));
+  take = Math.min(take, state.hero.gold || 0);
+  if (take >= (state.hero.gold || 0) && (state.hero.gold || 0) > 1) take = Math.max(1, Math.floor(state.hero.gold / 2));
+  if (take > 0) state.hero.gold -= take;
+  const line = c.name + " entkommt" + (take ? " und nimmt " + take + " Gold mit" : "") + ".";
+  combatLine(c, line);
+  // Zeit wie bei gelungener Flucht (Wrapper sysFlee), damit Uhrzeit-Tests nicht bei 0 min landen
+  if (typeof advanceMin === "function") advanceMin(10);
+  state.inCombat = false; state.combat = null;
+  lastTalk = null;
+  log(line);
+  showFace(null);
+  showLine(line + "\nKein Siegesloot.", [{ label: "Weiter", go: "clear" }]);
+  persist(); render();
+}
+const _startCombatSysDb = startCombatSys;
+startCombatSys = function (id) {
+  const ok = _startCombatSysDb.apply(this, arguments);
+  const c = state && state.combat;
+  if (!ok || !c) return ok;
+  const kniff = (D.MONSTER[id] || c).kniffText || c.kniffText;
+  const start = c.name + " steht im Weg." + (kniff ? " Kniff: " + kniff + "." : "");
+  // Original-Logzeile ohne Kniff ersetzen
+  if (state.log && state.log[0] && /steht im Weg\.?$/.test(state.log[0])) state.log[0] = start;
+  else log(start);
+  c.log = [start];
+  c.dbAnn = {};
+  return ok;
+};
+const _useZeichenDb = useZeichen;
+useZeichen = function (c, id, cost) {
+  const r = _useZeichenDb.apply(this, arguments);
+  if (!c || !r) return r;
+  if (dbSynKrieger(id)) {
+    if (id === "eisenhaut" && c.eisenhaut) {
+      c.eisenhaut.amt += 1;
+      dbAnnOnce(c, "synKrieger", "Kriegerpfad und schwere Waffe: Eisenhaut hält besser (+1).");
+    } else if (r.dmg > 0) {
+      r.dmg += 1;
+      dbAnnOnce(c, "synKrieger", "Kriegerpfad und schwere Waffe: der Hieb sitzt fester (+1).");
+    }
+  }
+  if (dbSynMagier(id)) {
+    if (id === "heilfunke") {
+      const m = (r.line.match(/\+(\d+)/) || [])[1];
+      if (m) {
+        state.hero.hp = Math.min(maxHp(), state.hero.hp + 1);
+        r.line = r.line.replace("+" + m, "+" + (parseInt(m, 10) + 1));
+      }
+      dbAnnOnce(c, "synMagier", "Magierpfad und Fokus: der Funke heilt stärker (+1).");
+    } else if (r.dmg > 0) {
+      r.dmg += 1;
+      dbAnnOnce(c, "synMagier", "Magierpfad und Fokus: der Zauber brennt schärfer (+1).");
+    }
+  }
+  if (dbSynDieb(id)) {
+    if (id === "giftklinge") {
+      const d = c.dots.find((x) => x.kind === "gift");
+      if (d) d.per += 1;
+      dbAnnOnce(c, "synDieb", "Diebespfad und leichte Klinge: das Gift beißt schärfer (+1).");
+    } else if (id === "blutung") {
+      const d = c.dots.find((x) => x.kind === "blutung");
+      if (d) d.per += 1;
+      dbAnnOnce(c, "synDieb", "Diebespfad und leichte Klinge: die Wunde blutet stärker (+1).");
+    } else if (id === "schattenhieb") {
+      r.dmg += 1;
+      dbAnnOnce(c, "synDieb", "Diebespfad und leichte Klinge: der Schattenhieb trifft härter (+1).");
+    }
+  }
+  return r;
+};
+heroSwing = function (c) {
+  c.heroHits += 1;
+  Object.keys(c.cd).forEach((k) => { if (c.cd[k] > 0) c.cd[k] -= 1; });
+  let hitDmg = 0, line = "";
+  const z = pickZeichen(c);
+  c.fxHero = z ? (ZEICHEN_FX[z.id] || "schwert") : weaponFx();
+  const vsTeile = dbVsTeile(c);
+  if (z) {
+    const r = useZeichen(c, z.id, z.cost);
+    hitDmg = r.dmg;
+    line = r.line + (hitDmg ? " (" + hitDmg + ")" : "") + ".";
+    c.lastMagic = !!D.ZEICHEN[z.id].magic;
+  } else {
+    hitDmg = heroHit(c);
+    if (c.lastCrit) c.fxHero = "blitz";
+    line = "Ihr trefft " + c.name + " (" + hitDmg + ")" + (c.lastCrit ? ", ein harter Treffer" : "") + ".";
+    c.lastMagic = false;
+  }
+  c.hp -= hitDmg;
+  combatLine(c, line);
+  if (c.weaponHalf) dbAnnOnce(c, "kniffNebelleib", "Nebelleib: die Klinge geht nur halb durch.");
+  if (c.armored && hitDmg <= 1) dbAnnOnce(c, "kniffPanzer", "Panzerhaut: der schwache Treffer prallt ab.");
+  if (hitDmg > 0) vsTeile.forEach((t) => dbAnnOnce(c, "gear:" + t.id, t.name + " reißt nach (+" + t.n + ")."));
+  const dots = (c.dots || []).slice();
+  dots.forEach((d) => {
+    c.hp -= d.per;
+    combatLine(c, (DOT_ZEILE[d.kind] || ((cc, nn) => d.kind + " (" + nn + ")."))(c, d.per));
+    d.left -= 1;
+  });
+  c.dots = (c.dots || []).filter((d) => d.left > 0);
+  const totalForFx = hitDmg + dots.reduce((s, d) => s + d.per, 0);
+  const ls = perkFxNum("lifesteal");
+  if (ls > 0 && totalForFx >= 4) state.hero.hp = Math.min(maxHp(), state.hero.hp + Math.max(1, Math.floor(totalForFx * ls / 100)));
+  if (c.reflect && hitDmg > 0) {
+    const back = Math.min(3, Math.max(1, Math.floor(hitDmg * c.reflect / 100)));
+    state.hero.hp -= back;
+    combatLine(c, "Dornen stechen euch (" + back + ").");
+  }
+  if (c.fleeLoot && !c.unique && !c.quest && c.id !== "russwolf" && c.hp > 0
+      && c.heroHits >= (c.fleeAfterHits || 5) && c.hp <= c.hpMax * 0.5) {
+    return combatFleeLoot(c);
+  }
+};
+const _foeSwingDb = foeSwing;
+foeSwing = function (c, free) {
+  if (c && c.speed2 && c.hp < c.hpMax / 2) dbAnnOnce(c, "kniffWut", "Wut ergreift " + c.name + ".");
+  if (c && c.kniff === "festbiss" && !c.festbissUsed) c.festbissReady = true;
+  return _foeSwingDb.apply(this, arguments);
+};
+const _foeHitDb = foeHit;
+foeHit = function (c) {
+  let dmg = _foeHitDb.apply(this, arguments);
+  if (c && c.festbissReady && !c.festbissUsed) { dmg += 1; c.festbissUsed = true; c.festbissReady = false; }
+  return dmg;
+};
+// Diplomat: −1 Gold auf Kaufpreis, wenn Diplomatenpfad aktiv (bestehender buyPrice-Haken). Einmalige Tagesmeldung.
+const _buyPriceDb = buyPrice;
+buyPrice = function (it) {
+  let p = _buyPriceDb.apply(this, arguments);
+  if (!it || !it.price || !dbPfad("diplomat")) return p;
+  const neu = Math.max(1, p - 1);
+  if (neu < p && state && state.daily && !state.daily.diploHandelMsg) {
+    state.daily.diploHandelMsg = true;
+    log("Diplomatischer Weg: der Preis fällt um 1 Gold.");
+  }
+  return neu;
+};
