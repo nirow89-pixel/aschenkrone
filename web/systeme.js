@@ -3924,3 +3924,13 @@ buyPrice = function (it) {
   }
   return neu;
 };
+// Diplomat-Gespräch (06.11., Leitung): einmal am Tag +1 Beziehung bei normalem Gespräch, getrennt vom Kauf-Tagesflag.
+const _onTalkDiplo = onTalk;
+onTalk = function (id) {
+  const r = _onTalkDiplo.apply(this, arguments);
+  if (!dbPfad("diplomat") || !state || !state.daily || state.daily.diploGespraechMsg) return r;
+  state.daily.diploGespraechMsg = true;
+  bumpBondSys(id, 1, { source: "talk" });
+  log("Diplomatischer Weg: das Gespräch nähert euch (+1).");
+  return r;
+};
